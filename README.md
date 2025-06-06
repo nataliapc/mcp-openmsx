@@ -82,7 +82,7 @@ export OPENMSX_SCREENDUMP_DIR="/my_project/screendumps"
 export MCP_HTTP_PORT=3000
 ```
 
-### Manuel usage
+### Manual usage
 
 #### As MCP Server (stdio)
 
