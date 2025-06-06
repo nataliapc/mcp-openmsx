@@ -1,0 +1,60 @@
+{
+  "name": "@nataliapc/mcp-openmsx",
+  "version": "1.0.0",
+  "description": "Model context protocol server for openMSX automation and control",
+  "main": "dist/server.js",
+  "type": "module",
+  "bin": {
+    "mcp-openmsx": "dist/server.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "openmsx",
+    "msx",
+    "emulator",
+    "automation",
+    "retro-computing"
+  ],
+  "author": "Natalia Pujol Cremades <info@abitwitches.com>",
+  "license": "GPL2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nataliapc/mcp-openmsx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nataliapc/mcp-openmsx/issues"
+  },
+  "homepage": "https://github.com/nataliapc/mcp-openmsx#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/server.js",
+    "watch": "tsc --watch",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.2",
+    "@types/express": "^5.0.2",
+    "express": "^5.1.0",
+    "tsx": "^4.7.1",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.27",
+    "shx": "^0.4.0",
+    "typescript": "^5.8.3"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

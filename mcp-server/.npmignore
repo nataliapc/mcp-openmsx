@@ -1,0 +1,14 @@
+.env
+src/
+*.tgz
+*.ts
+!*.d.ts
+tsconfig.json
+.gitignore
+.git/
+.github/
+node_modules/
+npm-debug.log*
+.nyc_output/
+coverage/
+.vscode/

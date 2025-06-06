@@ -1,0 +1,11 @@
+**/.env
+.github
+.vscode
+*.tgz
+test-scripts/
+mcp-server/dist
+mcp-server/node_modules
+mcp-output.log
+mcp-server/README.md
+mcp-server/LICENSE
+mcp-server/package-lock.json
