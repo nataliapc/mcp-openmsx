@@ -22,3 +22,35 @@ export async function extractDescriptionFromXML(filePath: string): Promise<strin
         return 'Error reading description';
     }
 }
+
+/**
+ * Decode HTML entities in a string to plain text
+ * @param text - String containing HTML entities
+ * @returns string - String with HTML entities decoded
+ */
+export function decodeHtmlEntities(text: string): string {
+    const htmlEntities: Record<string, string> = {
+        '&lt;': '<',
+        '&gt;': '>',
+        '&amp;': '&',
+        '&quot;': '"',
+        '&#x27;': "'",
+        '&#x2F;': '/',
+        '&#x60;': '`',
+        '&#x3D;': '=',
+        '&#39;': "'",
+        '&#47;': '/',
+        '&#96;': '`',
+        '&#61;': '=',
+        '&apos;': "'",
+        '&nbsp;': ' ',
+        '&#x0a;': '\n',
+        '&#x0A;': '\n',
+        '&#10;': '\n',
+        '&#13;': '\r',
+        '&#9;': '\t'
+    };
+    return text.replace(/&[#\w]+;/g, (entity) => {
+        return htmlEntities[entity] || entity;
+    });
+}

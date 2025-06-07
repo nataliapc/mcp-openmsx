@@ -62,43 +62,48 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 - `screen_shot`: Capture emulator screen: _`as_image`, `to_file`_.
 - `screen_dump`: Export screen data as BASIC BSAVE.
 
+
 ## 🚀 Quick Start
 
-### Manual installation
+### 🟢 Basic Usage with VSCode
 
-```bash
-npm install -g @nataliapc/mcp-openmsx
+* Install [Github Copilot extension](https://code.visualstudio.com/docs/copilot/overview)
+* Add to your workspace a file `.vscode/mcp.json` with:
+
+### STDIO mode (recommended)
+
+```json
+{
+  "servers": {
+    "mcp-openmsx": {
+      "command": "npx",
+      "args": ["@nataliapc/mcp-openmsx"],
+      "env": {
+        "OPENMSX_SHARE_DIR": "/usr/share/openmsx"
+      }
+    }
+  }
+}
+```
+**Note:** Environment variables are optional.
+
+### Streamed HTTP mode (more advanced)
+
+```json
+{
+  "servers": {
+    "mcp-openmsx": {
+      "type": "http",
+      "url": "http://localhost:3000/mcp",
+      "headers": { }
+    }
+  }
+}
 ```
 
-### Configuration
+**Note:** The MCP HTTP Server must be running standalone in the same computer or in another (`make run_http`).
 
-Set optional environment variables to customize the server:
-
-```bash
-export OPENMSX_EXECUTABLE="openmsx"
-export OPENMSX_SHARE_DIR="/usr/share/openmsx"
-export OPENMSX_SCREENSHOT_DIR="/my_project/screenshots"
-export OPENMSX_SCREENDUMP_DIR="/my_project/screendumps"
-export MCP_HTTP_PORT=3000
-```
-
-### Manual usage
-
-#### As MCP Server (stdio)
-
-```bash
-mcp-openmsx
-```
-
-#### As HTTP Server
-
-```bash
-MCP_TRANSPORT=http mcp-openmsx
-# or
-mcp-openmsx http
-```
-
-### Basic Usage with Claude Desktop
+### 🟢 Basic Usage with Claude Desktop
 
 Add to your `claude_desktop_config.json`:
 
@@ -116,43 +121,51 @@ Add to your `claude_desktop_config.json`:
 }
 ```
 
-### Basic Usage with VSCode
+### 🟢 Environment Variables
 
-* Install [Github Copilot extension](https://code.visualstudio.com/docs/copilot/overview)
-* Add to your workspace a file `.vscode/mcp.json` with:
+| Variable | Description | Default Value | Example |
+|----------|-------------|---------------|---------|
+| `OPENMSX_EXECUTABLE` | Path or command to the openMSX executable | `openmsx` | `/usr/local/bin/openmsx` |
+| `OPENMSX_SHARE_DIR` | Directory containing openMSX data files (machines, extensions, etc.) | System dependent | `/home/myuser/.openmsx/share` |
+| `OPENMSX_SCREENSHOT_DIR` | Directory where screenshots will be saved | Current working directory | `/myproject/screenshots` |
+| `OPENMSX_SCREENDUMP_DIR` | Directory where screen dumps will be saved | Current working directory | `/myproject/screendumps` |
+| `MCP_TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` | `http` |
+| `MCP_HTTP_PORT` | Port number for HTTP transport mode | `3000` | `8080` |
 
-#### stdio mode
 
-```json
-{
-  "servers": {
-    "mcp-openmsx": {
-      "command": "npx",
-      "args": ["@nataliapc/mcp-openmsx"],
-      "env": {
-        "OPENMSX_SHARE_DIR": "/usr/share/openmsx"
-      }
-    }
-  }
-}
-```
-**Note:** Environment variables are optional.
+## 🧑‍💻 Advanced Manual Usage
 
-#### http mode
+### Manual installation
 
-```json
-{
-  "servers": {
-    "mcp-openmsx": {
-      "type": "http",
-      "url": "http://localhost:3000/mcp",
-      "headers": { }
-    }
-  }
-}
+```bash
+npm install -g @nataliapc/mcp-openmsx
 ```
 
-**Note:** The MCP HTTP Server must be running standalone in the same computer or in another (`make run_http`).
+### Manual set of Environment Variables
+
+Set optional environment variables to customize the server:
+
+```bash
+export OPENMSX_EXECUTABLE="openmsx"
+export OPENMSX_SHARE_DIR="/usr/share/openmsx"
+export OPENMSX_SCREENSHOT_DIR="/my_project/screenshots"
+export OPENMSX_SCREENDUMP_DIR="/my_project/screendumps"
+export MCP_HTTP_PORT=3000
+```
+
+### As MCP Server (stdio)
+
+```bash
+mcp-openmsx
+```
+
+### As HTTP Server
+
+```bash
+MCP_TRANSPORT=http mcp-openmsx
+# or
+mcp-openmsx http
+```
 
 
 ## 💡 Development
@@ -178,16 +191,19 @@ npm run build
 npm run dev
 ```
 
-## License
+
+## 🪪 License
 
 GPL2 License - see [LICENSE](LICENSE) file for details.
 
-## Contributing
+
+## 🆘 Support
+
+If you need help, or have questions or suggestions, please open an issue on the [GitHub Issues](https://github.com/nataliapc/mcp-openmsx/issues) page or check the project discussions.
+
+
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Support
-
-For issues and questions, please use the [GitHub Issues](https://github.com/nataliapc/mcp-openmsx/issues) page.
 
 ---

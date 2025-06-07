@@ -5,7 +5,7 @@
  * @license GPL2
  */
 import fs from "fs/promises";
-import { extractDescriptionFromXML } from "./utils.js";
+import { extractDescriptionFromXML, decodeHtmlEntities } from "./utils.js";
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 
@@ -280,13 +280,15 @@ export class OpenMSX {
             // Look for reply tags in the output
             const replyMatch = output.match(/<reply result="(ok|nok)"[^>]*>(.*?)<\/reply>/s);
             if (replyMatch) {
+                const outputContent = decodeHtmlEntities(replyMatch[2].trim());
                 if (replyMatch[1] === 'ok') {
-                    return replyMatch[2];
+                    return outputContent;
                 } else {
-                    return `Error: ${replyMatch[2].trim()}`;
+                    return `Error: ${outputContent}`;
                 }
             }
-            return output.trim(); // Return raw output if no reply tag found
+            // Return raw output with HTML entities decoded
+            return decodeHtmlEntities(output.trim());
         } catch (error) {
             return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
