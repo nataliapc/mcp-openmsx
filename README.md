@@ -127,8 +127,8 @@ Add to your `claude_desktop_config.json`:
 |----------|-------------|---------------|---------|
 | `OPENMSX_EXECUTABLE` | Path or command to the openMSX executable | `openmsx` | `/usr/local/bin/openmsx` |
 | `OPENMSX_SHARE_DIR` | Directory containing openMSX data files (machines, extensions, etc.) | System dependent | `/home/myuser/.openmsx/share` |
-| `OPENMSX_SCREENSHOT_DIR` | Directory where screenshots will be saved | Current working directory | `/myproject/screenshots` |
-| `OPENMSX_SCREENDUMP_DIR` | Directory where screen dumps will be saved | Current working directory | `/myproject/screendumps` |
+| `OPENMSX_SCREENSHOT_DIR` | Directory where screenshots will be saved | Default for openmsx | `/myproject/screenshots` |
+| `OPENMSX_SCREENDUMP_DIR` | Directory where screen dumps will be saved | Default for openmsx | `/myproject/screendumps` |
 | `MCP_TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` | `http` |
 | `MCP_HTTP_PORT` | Port number for HTTP transport mode | `3000` | `8080` |
 
