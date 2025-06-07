@@ -6,7 +6,7 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.0.0
+ * @version 1.0.1
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
@@ -22,7 +22,7 @@ import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 
 // Version info for CLI
-const PACKAGE_VERSION = "1.0.0";
+const PACKAGE_VERSION = "1.0.1";
 
 // Defaults for openMSX paths
 var OPENMSX_EXECUTABLE = 'openmsx';
@@ -121,7 +121,7 @@ function registerAllTools(server: McpServer)
 			return {
 				content: [{
 					type: "text",
-					text: result,
+					text: result === '' ? 'Ok' : result,
 				}],
 			};
 		});
@@ -188,7 +188,7 @@ function registerAllTools(server: McpServer)
 			return {
 				content: [{
 					type: "text",
-					text: response === "" ? "Ok" : response,
+					text: response === '' ? 'Ok' : response,
 				}],
 			};
 		});
@@ -366,7 +366,7 @@ function registerAllTools(server: McpServer)
 			return {
 				content: [{
 					type: "text",
-					text: response,
+					text: response === '' ? 'Ok' : response,
 				}],
 			};
 		});
@@ -425,7 +425,7 @@ function registerAllTools(server: McpServer)
 			return {
 				content: [{
 					type: "text",
-					text: response,
+					text: response === '' ? 'Ok' : response,
 				}],
 			};
 		});
@@ -488,7 +488,7 @@ function registerAllTools(server: McpServer)
 			return {
 				content: [{
 					type: "text",
-					text: response,
+					text: response === '' ? 'Ok' : response,
 				}],
 			};
 		});
@@ -534,7 +534,7 @@ function registerAllTools(server: McpServer)
 			return {
 				content: [{
 					type: "text",
-					text: response,
+					text: response === '' ? 'Ok' : response,
 				}],
 			};
 		});
@@ -666,7 +666,7 @@ function registerAllTools(server: McpServer)
 			return {
 				content: [{
 					type: "text",
-					text: response,
+					text: response === '' ? 'Ok' : response,
 				}],
 			};
 		});
@@ -743,6 +743,9 @@ function registerAllTools(server: McpServer)
 			const response = await openMSXInstance.sendCommand(openmsxCommand);
 			return {
 				content: [{
+					type: "text",
+					text: response.startsWith('Error:') ? 'Fail:' : 'Screendump file saved as:',
+				}, {
 					type: "text",
 					text: response,
 				}],
@@ -900,8 +903,8 @@ function createServerInstance()
 {
 	// Create a new server instance (you might want to extract server creation logic)
 	const newServer = new McpServer({
-		name: "mcp-stdio-server",
-		version: "1.0.0"
+		name: "mcp-openmsx",
+		version: PACKAGE_VERSION,
 	});
 	
 	// Re-register all tools (you might want to extract this to a separate function)
