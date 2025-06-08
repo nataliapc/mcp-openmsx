@@ -196,7 +196,7 @@ export class OpenMSX {
                 const trimmedLine = param.trim();
                 if (trimmedLine) {
                     const value = await this.sendCommand(`machine_info ${trimmedLine}`);
-                    machineInfo[trimmedLine] = value;
+                    machineInfo[trimmedLine] = value.trim();
                 }
             }
             return JSON.stringify(machineInfo, null, 2);

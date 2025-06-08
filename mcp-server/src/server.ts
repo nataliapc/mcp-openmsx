@@ -44,24 +44,26 @@ function registerAllTools(server: McpServer)
 		"emu_control",
 		// Description of the tool (what it does)
 		"Controls an openMSX emulator. Commands: " +
-		"'launch [machine] [extensions]': opens a powered on openMSX emulator, machine and extensions parameters could be specified, always use 'machine_list' and 'extension_list' resources to obtain valid values. " +
+		"'launch [machine] [extensions]': opens a powered-on openMSX emulator; machine and extensions parameters can be specified; use 'machineList' and 'extensionList' tools to obtain valid values. " +
 		"'close': closes the openMSX emulator. " +
 		"'powerOn': powers on the openMSX emulator. " +
 		"'powerOff': powers off the openMSX emulator. " +
 		"'reset': resets the current machine. " +
-		"'getEmulatorSpeed': get current emulator speed in percentage, default is 100. " +
-		"'setEmulatorSpeed <emuspeed>': set the emulator speed in percentage, valid values are 1-10000, default is 100. " +
-		"'machineList': get a list of all available MSX machines that can be emulated with openMSX. " +
-		"'extensionList': get a list of all available MSX extensions that can be used with openMSX. ",
+		"'getEmulatorSpeed': gets the current emulator speed as a percentage, default is 100. " +
+		"'setEmulatorSpeed <emuspeed>': sets the emulator speed as a percentage, valid values are 1-10000, default is 100. " +
+		"'machineList': gets a list of all available MSX machines that can be emulated with openMSX. " +
+		"'extensionList': gets a list of all available MSX extensions that can be used with openMSX. " +
+		"'wait <seconds>': performs a wait for the specified number of seconds, default is 2. ",
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed", "machineList", "extensionList"]),
+			command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed", "machineList", "extensionList", "wait"]),
 			machine: z.string().min(1).max(100).optional(),
 			extensions: z.array(z.string().min(1).max(100)).optional(),
 			emuspeed: z.number().min(1).max(10000).optional().default(100),
+			seconds: z.number().min(1).max(10).optional().default(2),	// Seconds to wait
 		},
 		// Handler for the tool (function to be executed when the tool is called)
-		async ({ command, machine, extensions, emuspeed }: { command: string, machine?: string; extensions?: string[]; emuspeed?: number }) => {
+		async ({ command, machine, extensions, emuspeed, seconds }: { command: string, machine?: string; extensions?: string[]; emuspeed?: number, seconds?: number }) => {
 			let result = "Error";
 			switch (command) {
 				case "launch":
@@ -112,6 +114,10 @@ function registerAllTools(server: McpServer)
 					break;
 				case "extensionList":
 					result = await openMSXInstance.getExtensionList(EXTENSIONS_DIR);
+					break;
+				case "wait":
+					await new Promise(resolve => setTimeout(resolve, seconds! * 1000));
+					result = `Waited for ${seconds} seconds.`;
 					break;
 				default:
 					result = `Error: Unknown command "${command}".`;
