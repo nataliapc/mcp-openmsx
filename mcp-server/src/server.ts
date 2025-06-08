@@ -6,7 +6,7 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.0.2
+ * @version 1.1.0
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
@@ -22,7 +22,7 @@ import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 
 // Version info for CLI
-const PACKAGE_VERSION = "1.0.2";
+const PACKAGE_VERSION = "1.1.0";
 
 // Defaults for openMSX paths
 var OPENMSX_EXECUTABLE = 'openmsx';
@@ -561,7 +561,7 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_replay",
 		// Description of the tool (what it does)
-		"When replay is enabled (the default) the emulator collect data while emulating, which enables you to go back and forward in MSX time. Commands: " +
+		"When replay is enabled (the default) the emulator collect data while emulating, which enables you to go back and forward in MSX time; consider do a 'pause' to maintain the the timeline before a 'goBack' or 'absoluteGoto'. Commands: " +
 		"'start': starts the replay mode (enabled by default when emulator is launched). " +
 		"'stop': stops the replay mode. " +
 		"'status': gives information about the replay feature and the data that is collected. " +
