@@ -12,13 +12,13 @@ Currently, the MCP server requires Linux to run. It has not been tested on Windo
 
 This project creates a bridge between modern AI-assisted development (e.g. GitHub Copilot, Claude Desktop) and retro computing (MSX systems) by providing:
 
-- **Emulator Control**: Launch, configure, and manage openMSX instances
-- **Media Management**: Handle ROM cartridges, floppy disks, and cassette tapes
-- **Debugging Tools**: Full CPU debugging with breakpoints, memory inspection, and step execution
-- **Video Control**: VDP register manipulation and screen capture
-- **Memory Operations**: Read/write RAM, VRAM, and I/O port access
-- **Automation**: Keyboard input simulation and savestate management
-- **Dual Transport**: Support for both stdio and HTTP transports
+- **Emulator Control**: Launch, configure, manage openMSX instances, and replay timelines.
+- **Media Management**: Handle ROM cartridges, floppy disks, and cassette tapes.
+- **Debugging Tools**: Full CPU debugging with breakpoints, memory inspection, and step execution.
+- **Video Control**: VDP register manipulation and screen capture.
+- **Memory Operations**: Read/write RAM, VRAM, and I/O port access.
+- **Automation**: Keyboard input simulation and savestate management.
+- **Dual Transport**: Support for both stdio and HTTP transports.
 
 ## 🏗️ Architecture
 
@@ -44,7 +44,8 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 ## 🛠️ Available MCP Tools
 
 ### Emulator Control Tools
-- `emu_control`: Controls an openMSX emulator: _`launch`, `close`, `powerOn`, `powerOff`, `reset`, `getEmulatorSpeed`, `setEmulatorSpeed`, `machineList`, `extensionList`_.
+- `emu_control`: Controls an openMSX emulator: _`launch`, `close`, `powerOn`, `powerOff`, `reset`, `getEmulatorSpeed`, `setEmulatorSpeed`, `machineList`, `extensionList`, `wait`_.
+- `emu_replay`: Controls emulation timeline: _`start`, `strop`, `status`, `goBack`, `absoluteGoto`, `truncate`, `saveReplay`, `loadReplay`_.
 - `emu_info`: Obtain informacion about the current emulated machine: _`getStatus`, `getSlotsMap`, `getIOPortsMap`_.
 - `emu_media`: Manage ROM, disk, and tape media: _`tapeInsert`, `tapeRewind`, `tapeEject`, `romInsert`, `romEject`, `diskInsert`, `diskInsertFolder`, `diskEject`_.
 - `emu_vdp`: Manage VDP (Video Display Processor): _`getPalette`, `getRegisters`, `getRegisterValue`, `setRegisterValue`, `screenGetMode`, `screenGetFullText`_.

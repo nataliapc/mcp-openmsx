@@ -13,7 +13,7 @@
 import { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { CallToolResult, isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import express, { Request, Response } from "express";
@@ -72,19 +72,6 @@ function registerAllTools(server: McpServer)
 						machine || "", 
 						extensions || []
 					);
-					// Check if launch was successful
-					if (result === "Ok") {
-						result = "openMSX emulator launched";
-						if (machine) {
-							result += ` with machine "${machine}"`;
-						}
-						if (extensions && extensions.length > 0) {
-							if (machine) {
-								result += ' and ';
-							}
-							result += ` with extensions: ${extensions.join(', ')}`;
-						}
-					}
 					break;
 				case "close":
 					result = await openMSXInstance.emu_close();
@@ -124,12 +111,9 @@ function registerAllTools(server: McpServer)
 					break;
 			}
 			// Return result with proper format for MCP
-			return {
-				content: [{
-					type: "text",
-					text: result === '' ? 'Ok' : result,
-				}],
-			};
+			return getResponseContent([
+				result
+			]);
 		});
 
 	server.tool(
@@ -182,21 +166,15 @@ function registerAllTools(server: McpServer)
 					tclCommand = "diska eject";
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown emulator media command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown emulator media command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
 			// Return the response from openMSX
-			return {
-				content: [{
-					type: "text",
-					text: response === '' ? 'Ok' : response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -216,12 +194,9 @@ function registerAllTools(server: McpServer)
 			let tclCommand: string;
 			switch (command) {
 				case "getStatus":
-					return {
-						content: [{
-							type: "text",
-							text: await openMSXInstance.emu_status(),
-						}],
-					};
+					return getResponseContent([
+						await openMSXInstance.emu_status()
+					]);
 				case "getSlotsMap":
 					tclCommand = "slotmap";
 					break;
@@ -229,20 +204,14 @@ function registerAllTools(server: McpServer)
 					tclCommand = "iomap";
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown emulator info command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown emulator info command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -283,34 +252,18 @@ function registerAllTools(server: McpServer)
 					break;
 				case "screenGetFullText":
 					const response = await openMSXInstance.sendCommand('get_screen');
-					return response.startsWith('Error:') ? {
-							content: [{
-								type: "text",
-								text: response,
-						}]} : {
-							content: [{
-								type: "text",
-								text: "The screen text is:",
-							}, {
-								type: "text",
-								text: response,
-							}],
-					};
+					return response.startsWith('Error:') ?
+							getResponseContent([response]) :
+							getResponseContent(["The screen text is:", response]);
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown emulator vdp command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown emulator vdp command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response === "" ? "Ok" : response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -361,20 +314,14 @@ function registerAllTools(server: McpServer)
 					tclCommand = `run_to ${address}`;
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown debug command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown debug command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response === '' ? 'Ok' : response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -420,20 +367,14 @@ function registerAllTools(server: McpServer)
 					tclCommand = "get_active_cpu";
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown memory command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown memory command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response === '' ? 'Ok' : response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -483,20 +424,14 @@ function registerAllTools(server: McpServer)
 					tclCommand = "listing";
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown memory command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown memory command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response === '' ? 'Ok' : response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -529,20 +464,14 @@ function registerAllTools(server: McpServer)
 					tclCommand = `vpoke ${address} ${value8}`;
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown video memory command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown video memory command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response === '' ? 'Ok' : response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -575,20 +504,14 @@ function registerAllTools(server: McpServer)
 					tclCommand = 'debug list_bp';
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown breakpoint command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown breakpoint command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -623,23 +546,76 @@ function registerAllTools(server: McpServer)
 					tclCommand = 'list_savestates';
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown savestate command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown savestate command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: textResponse,
-				}, {
-					type: "text",
-					text: response,
-				}],
-			};
+			return getResponseContent([
+				textResponse,
+				response
+			]);
+		});
+
+	server.tool(
+		// Name of the tool (used to call it)
+		"emu_replay",
+		// Description of the tool (what it does)
+		"When replay is enabled (the default) the emulator collect data while emulating, which enables you to go back and forward in MSX time. Commands: " +
+		"'start': starts the replay mode (enabled by default when emulator is launched). " +
+		"'stop': stops the replay mode. " +
+		"'status': gives information about the replay feature and the data that is collected. " +
+		"'goBack <seconds>': go back specified seconds (1-60) in the timeline, you cannot go back to a time before the time the replay started. " +
+		"'absoluteGoto <time>': go to the indicated absolute time in seconds in the MSX timeline, if time is before replay started it will jump to the time when is started. " +
+		"'truncate': stop replaying and wipe all the future replay data after now. " +
+		"'saveReplay [filename]': saves the current replay data to a file (extension .omr), filename is returned in the response. " +
+		"'loadReplay <filename>': loads a previously saved replay file (extension .omr), starts replaying from the begin, and starts replay mode.",
+		// Schema for the tool (input validation)
+		{
+			command: z.enum(["start", "stop", "status", "goBack", "absoluteGoto", "truncate", "saveReplay", "loadReplay"]),
+			seconds: z.number().min(1).max(60).optional(),			// Seconds to go back
+			time: z.string().regex(/^\d+$/).optional(),				// Time in seconds to go to
+			filename: z.string().min(1).max(200).optional(),		// Filename to save/load replay
+		},
+		// Handler for the tool (function to be executed when the tool is called)
+		async ({ command, seconds, time, filename }: { command: string; seconds?: number; time?: string; filename?: string }) => {
+			let tclCommand: string;
+			switch (command) {
+				case "start":
+					tclCommand = "reverse start";
+					break;
+				case "stop":
+					tclCommand = "reverse stop";
+					break;
+				case "status":
+					tclCommand = "reverse status";
+					break;
+				case "goBack":
+					tclCommand = `reverse goback ${seconds}`;
+					break;
+				case "absoluteGoto":
+					tclCommand = `reverse goto ${time}`;
+					break;
+				case "truncate":
+					tclCommand = "reverse truncatereplay";
+					break;
+				case "saveReplay":
+					if (filename) filename = `"${filename}"`;
+					tclCommand = `reverse savereplay ${filename || ''}`;
+					break;
+				case "loadReplay":
+					if (filename) filename = `"${filename}"`;
+					tclCommand = `reverse loadreplay ${filename}`;
+					break;
+				default:
+					return getResponseContent([
+						`Error: Unknown replay command "${command}".`
+					]);
+			}
+			const response = await openMSXInstance.sendCommand(tclCommand);
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -661,20 +637,14 @@ function registerAllTools(server: McpServer)
 					tclCommand = `type "${text}"`;
 					break;
 				default:
-					return {
-						content: [{
-							type: "text",
-							text: `Error: Unknown keyboard command "${command}".`,
-						}],
-					};
+					return getResponseContent([
+						`Error: Unknown keyboard command "${command}".`
+					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response === '' ? 'Ok' : response,
-				}],
-			};
+			return getResponseContent([
+				response
+			]);
 		});
 
 	server.tool(
@@ -708,30 +678,19 @@ function registerAllTools(server: McpServer)
 							}],
 						};
 					} catch (error) {
-						return {
-							content: [{
-								type: "text",
-								text: 'Error creating screenshot: '+response,
-							}, {
-								type: "text",
-								text: error instanceof Error ? error.message : String(error),
-							}],
-						};
+						return getResponseContent([
+							'Error creating screenshot: '+response,
+							error instanceof Error ? error.message : String(error)
+						]);
 					}
 				case "to_file":
-					return {
-						content: [{
-							type: "text",
-							text: response.startsWith('Error:') ? response : 'Screenshot taken in file: '+response,
-						}],
-					};
+					return getResponseContent([
+						response.startsWith('Error:') ? response : 'Screenshot taken in file: '+response
+					]);
 			}
-			return {
-				content: [{
-					type: "text",
-					text: `Error: Unknown screen_shot command "${command}".`,
-				}],
-			};
+			return getResponseContent([
+				`Error: Unknown screen_shot command "${command}".`
+			]);
 		});
 
 	server.tool(
@@ -747,19 +706,24 @@ function registerAllTools(server: McpServer)
 		async ({ scrbasename }: { scrbasename: string }) => {
 			const openmsxCommand = `save_msx_screen "${OPENMSX_SCREENDUMP_DIR + scrbasename}"`;
 			const response = await openMSXInstance.sendCommand(openmsxCommand);
-			return {
-				content: [{
-					type: "text",
-					text: response.startsWith('Error:') ? 'Fail:' : 'Screendump file saved as:',
-				}, {
-					type: "text",
-					text: response,
-				}],
-			};
+			return getResponseContent([
+				response.startsWith('Error:') ? 'Fail:' : 'Screendump file saved as:',
+				response
+			]);
 		});
 
 }
 
+
+function getResponseContent(response: string[]): CallToolResult
+{
+	return {
+		content: response.map(line => ({
+			type: "text",
+			text: line == '' ? "Ok" : line,
+		})),
+	};
+}
 
 // ============================================================================
 // Cleanup handlers for graceful shutdown of MCP server

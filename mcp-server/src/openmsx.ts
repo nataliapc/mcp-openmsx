@@ -100,8 +100,21 @@ export class OpenMSX {
                                     this.sendCommand('set renderer SDLGL-PP');
                                     // set machine on
                                     this.sendCommand('set power on');
+                                    // start reverse replay mode
+                                    this.sendCommand('reverse start');
                                     // Return success message
-                                    safeResolve('Ok: openMSX emulator launched successfully');
+                                    let result = 'Ok: openMSX emulator launched successfully';
+                                    if (machine) {
+                                        result += ` with machine "${machine}"`;
+                                    }
+                                    if (extensions && extensions.length > 0) {
+                                        if (machine) {
+                                            result += ' and';
+                                        }
+                                        result += ` with extensions: "${extensions.join('", "')}"`;
+                                    }
+                                    result += ', is powered on, and replay mode is started.';
+                                    safeResolve(result);
                                 } catch (error) {
                                     safeResolve(`Error: Failed to send control commands - ${error instanceof Error ? error.message : 'Unknown error'}`);
                                 }
