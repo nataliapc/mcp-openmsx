@@ -6,7 +6,7 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.1.0
+ * @version 1.1.2
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
@@ -22,7 +22,7 @@ import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 
 // Version info for CLI
-const PACKAGE_VERSION = "1.1.0";
+const PACKAGE_VERSION = "1.1.2";
 
 // Defaults for openMSX paths
 var OPENMSX_EXECUTABLE = 'openmsx';

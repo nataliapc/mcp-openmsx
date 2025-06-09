@@ -236,7 +236,7 @@ export class OpenMSX {
                     .map(async (file: string) => {
                         return {
                             name: file.replace('.xml', ''),
-                            description: await extractDescriptionFromXML(`${machinesDirectory}+path.sep+${file}`)
+                            description: await extractDescriptionFromXML(path.join(machinesDirectory, file))
                         };
                     })
             );
@@ -265,7 +265,7 @@ export class OpenMSX {
                     .map(async (file: string) => {
                         return {
                             name: file.replace('.xml', ''),
-                            description: await extractDescriptionFromXML(`${extensionDirectory}+path.sep+${file}`)
+                            description: await extractDescriptionFromXML(path.join(extensionDirectory, file))
                         };
                     })
             );
