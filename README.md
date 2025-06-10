@@ -6,8 +6,6 @@ A [Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) s
 
 This server provides comprehensive tools for MSX software development, testing, and automation through standardized MCP protocols.
 
-Currently, the MCP server requires Linux to run. It has not been tested on Windows or macOS, although it will likely work on the latter as well.
-
 ## 🎯 Project Overview
 
 This project creates a bridge between modern AI-assisted development (e.g. GitHub Copilot, Claude Desktop) and retro computing (MSX systems) by providing:
@@ -66,6 +64,8 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 
 ## 🚀 Quick Start
 
+You can use this MCP server in this basic way with the [precompiled NPM package](https://www.npmjs.com/package/@nataliapc/mcp-openmsx). You may need to have `nodejs` installed for this to work.
+
 ### 🟢 Basic Usage with VSCode
 
 * Install [Github Copilot extension](https://code.visualstudio.com/docs/copilot/overview)
@@ -86,7 +86,8 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
   }
 }
 ```
-**Note:** Environment variables are optional.
+
+**Note:** Environment variables are optional. Customize them as you need.
 
 ### Streamed HTTP mode (more advanced)
 
@@ -135,6 +136,8 @@ Add to your `claude_desktop_config.json`:
 
 
 ## 🧑‍💻 Advanced Manual Usage
+
+Currently, the MCP server requires Linux to be compiled. It has not been tested on Windows or macOS, although it will likely work on the latter as well.
 
 ### Manual installation
 
