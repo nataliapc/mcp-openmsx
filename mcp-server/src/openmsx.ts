@@ -157,7 +157,7 @@ export class OpenMSX {
     async emu_close(): Promise<string> {
         return new Promise((resolve) => {
             if (!this.process) {
-                resolve("No emulator process running");
+                resolve("Error: No emulator process running");
                 return;
             }
 
@@ -167,8 +167,8 @@ export class OpenMSX {
                 resolve("Ok: Emulator process closed successfully");
             });
 
-            this.process.on('error', (error) => {
-                resolve(`Error closing emulator: ${error.message}`);
+            this.process.on('error', (error: Error) => {
+                resolve(`Error: error closing emulator: ${error.message}`);
             });
 
             // Try graceful shutdown first
@@ -200,7 +200,7 @@ export class OpenMSX {
         try {
             const response = await this.sendCommand('machine_info');
             if (response.startsWith('Error:')) {
-                return JSON.stringify({ error: response });
+                return response;
             }
             // Parse machine_info output into key-value pairs
             const parameters = response.trim().split(' ');
@@ -214,9 +214,7 @@ export class OpenMSX {
             }
             return JSON.stringify(machineInfo, null, 2);
         } catch (error) {
-            return JSON.stringify({ 
-                error: `Failed to get machine status: ${error instanceof Error ? error.message : 'Unknown error'}` 
-            });
+            return `Error: Failed to get machine status - ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
     }
 
@@ -227,7 +225,7 @@ export class OpenMSX {
     async getMachineList(machinesDirectory: string): Promise<string> {
         // Read the machines directory
         let machines: { name: string; description: string }[] = [];
-        let machinesList = "No machines found.";
+        let machinesList = "Error: No machines found.";
         try {
             const allFiles = await fs.readdir(machinesDirectory);
             machines = await Promise.all(
@@ -240,13 +238,13 @@ export class OpenMSX {
                         };
                     })
             );
+            if (machines.length !== 0) {
+                machinesList = JSON.stringify(machines, null, 2);
+            }
+            return machinesList;
         } catch (error) {
-            machinesList = 'Error reading machines directory: ' + error;
+            return `Error: error reading machines directory - ${error instanceof Error ? error.message : error}`;
         }
-        if (machines.length !== 0) {
-            machinesList = JSON.stringify(machines, null, 2);
-        }
-        return machinesList;
     }
 
     /**
@@ -256,7 +254,7 @@ export class OpenMSX {
     async getExtensionList(extensionDirectory: string): Promise<string> {
         // Read the extensions directory
         let extensions: { name: string; description: string }[] = [];
-        let extensionsList = "No extensions found.";
+        let extensionsList = "Error: No extensions found.";
         try {
             const allFiles = await fs.readdir(extensionDirectory);
             extensions = await Promise.all(
@@ -269,13 +267,13 @@ export class OpenMSX {
                         };
                     })
             );
+            if (extensions.length !== 0) {
+                extensionsList = JSON.stringify(extensions, null, 2);
+            }
+            return extensionsList;
         } catch (error) {
-            extensionsList = 'Error reading extensions directory: ' + error;
+            return `Error: error reading extensions directory - ${error instanceof Error ? error.message : error}`;
         }
-        if (extensions.length !== 0) {
-            extensionsList = JSON.stringify(extensions, null, 2);
-        }
-        return extensionsList;
     };
 
 
@@ -303,7 +301,7 @@ export class OpenMSX {
             // Return raw output with HTML entities decoded
             return decodeHtmlEntities(output.trim());
         } catch (error) {
-            return `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            return `Error: ${error instanceof Error ? error.message : error}`;
         }
     }
 

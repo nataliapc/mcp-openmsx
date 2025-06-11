@@ -6,7 +6,7 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.1.2
+ * @version 1.1.3
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
@@ -22,7 +22,7 @@ import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 
 // Version info for CLI
-const PACKAGE_VERSION = "1.1.2";
+const PACKAGE_VERSION = "1.1.3";
 
 // Defaults for openMSX paths
 var OPENMSX_EXECUTABLE = 'openmsx';
@@ -44,7 +44,7 @@ function registerAllTools(server: McpServer)
 		"emu_control",
 		// Description of the tool (what it does)
 		"Controls an openMSX emulator. Commands: " +
-		"'launch [machine] [extensions]': opens a powered-on openMSX emulator; machine and extensions parameters can be specified; use 'machineList' and 'extensionList' tools to obtain valid values. " +
+		"'launch [machine] [extensions]': opens a powered-on openMSX emulator; you must wait some time waiting the machine is fully booted; machine and extensions parameters can be specified so use 'machineList' and 'extensionList' commands to obtain valid values. " +
 		"'close': closes the openMSX emulator. " +
 		"'powerOn': powers on the openMSX emulator. " +
 		"'powerOff': powers off the openMSX emulator. " +
@@ -64,7 +64,7 @@ function registerAllTools(server: McpServer)
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, machine, extensions, emuspeed, seconds }: { command: string, machine?: string; extensions?: string[]; emuspeed?: number, seconds?: number }) => {
-			let result = "Error";
+			let result = '';
 			switch (command) {
 				case "launch":
 					result = await openMSXInstance.emu_launch(
@@ -78,23 +78,23 @@ function registerAllTools(server: McpServer)
 					break;
 				case "powerOn":
 					result = await openMSXInstance.sendCommand('set power on');
-					result += result === "Ok" ? ": openMSX emulator powered on" : "";
+					result = result === "true" ? "openMSX emulator powered on" : "Error: " + result;
 					break;
 				case "powerOff":
 					result = await openMSXInstance.sendCommand('set power off');
-					result += result === "Ok" ? ": openMSX emulator powered off" : "";
+					result = result === "false" ? "openMSX emulator powered off" : "Error: " + result;
 					break;
 				case "reset":
 					result = await openMSXInstance.sendCommand('reset');
-					result += result === "Ok" ? ": openMSX emulator reset" : "";
+					result = result === "" ? "openMSX emulator reset successful" : "Error: " + result;
 					break;
 				case 'getEmulatorSpeed':
 					result = await openMSXInstance.sendCommand('set speed');
-					result = !isNaN(Number(result)) ? `Current emulator speed is ${result}%` : result;
+					result = !isNaN(Number(result)) ? `Current emulator speed is ${result}%` : "Error: " + result;
 					break;
 				case 'setEmulatorSpeed':
 					result = await openMSXInstance.sendCommand(`set speed ${emuspeed}`);
-					result = !isNaN(Number(result)) ? `Emulator speed set to ${emuspeed}%` : result;
+					result = !isNaN(Number(result)) ? `Emulator speed set to ${emuspeed}%` : "Error: " + result;
 					break;
 				case "machineList":
 					result = await openMSXInstance.getMachineList(MACHINES_DIR);
@@ -218,13 +218,13 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_vdp",
 		// Description of the tool (what it does)
-		"Manage VDP (Video Display Processor). Commands: " +
-		"'getPalette': return the current V9938/V9958 colors palette in format RGB333. " +
-		"'getRegisters': return all the VDP register values. " +
-		"'getRegisterValue <register>': return the value of a specific VDP register (0-31) in decimal format. " +
-		"'setRegisterValue <register> <value>': set a hexadecimal value to a specific VDP register (0-31). " +
-		"'screenGetMode': returns the current screen mode (0-12) as a number which would also be used for the basic command SCREEN. " +
-		"'screenGetFullText': return the full content of an MSX text screen (screen 0 or 1) as a string, useful for debugging. ",
+		"Manage the VDP (Video Display Processor). Commands: " +
+		"'getPalette': returns the current V9938/V9958 color palette in RGB333 format. " +
+		"'getRegisters': returns all VDP register values. " +
+		"'getRegisterValue <register>': returns the value of a specific VDP register (0-31) in decimal format. " +
+		"'setRegisterValue <register> <value>': sets a hexadecimal value to a specific VDP register (0-31). " +
+		"'screenGetMode': returns the current screen mode (0-12) as a number, which matches the BASIC SCREEN command. " +
+		"'screenGetFullText': returns the full content of an MSX text screen (screen 0 or 1) as a string; PRIORITIZE this command to view screen content in text modes. ",
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["getPalette", "getRegisters", "getRegisterValue", "setRegisterValue", "screenGetMode", "screenGetFullText"]),
@@ -623,11 +623,13 @@ function registerAllTools(server: McpServer)
 		"emu_keyboard",
 		// Description of the tool (what it does)
 		"Send a text to the openMSX emulator. Commands: " +
-		"'sendText <text>': type a string in the emulated MSX, this command automatically press and release keys in the MSX keyboard matrix, is useful for automating tasks in BASIC, use \\r for Return key. ",
+		"'sendText <text>': type a string in the emulated MSX, this command automatically press and release keys in the MSX keyboard matrix, is useful for automating tasks in BASIC. " +
+		"Note: each 'text' sent is limited to 200 characters, and the 'text' is sent as if it was typed in the MSX keyboard. " +
+		"Note: escape keys that needs it as Return key (use \\r), double quotes (use \\\"), etc...",
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["sendText"]),
-			text: z.string().min(1).max(100).optional().default(''),	// Key to send to the emulator
+			text: z.string().min(1).max(200).optional().default(''),	// Key to send to the emulator
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, text }: { command: string; text: string }) => {
@@ -679,9 +681,11 @@ function registerAllTools(server: McpServer)
 						};
 					} catch (error) {
 						return getResponseContent([
-							'Error creating screenshot: '+response,
-							error instanceof Error ? error.message : String(error)
-						]);
+								'Error creating screenshot: '+response,
+								error instanceof Error ? error.message : String(error),
+							],
+							true
+						);
 					}
 				case "to_file":
 					return getResponseContent([
@@ -715,13 +719,17 @@ function registerAllTools(server: McpServer)
 }
 
 
-function getResponseContent(response: string[]): CallToolResult
+function getResponseContent(response: string[], isError: boolean = false): CallToolResult
 {
+	// Check if any response line starts with "Error:" to automatically set isError to true
+	const hasError = isError || response.some(line => line.startsWith("Error:"));
 	return {
 		content: response.map(line => ({
-			type: "text",
-			text: line == '' ? "Ok" : line,
-		})),
+				type: "text",
+				text: line == '' ? "Ok" : line,
+			})
+		),
+		isError: hasError
 	};
 }
 
@@ -799,7 +807,7 @@ Environment variables:
 
 Examples:
   mcp-openmsx                    # stdio transport
-  mcp-openmsx http              # HTTP transport
+  mcp-openmsx http               # HTTP transport
   MCP_TRANSPORT=http mcp-openmsx # HTTP via environment
 `);
 }
