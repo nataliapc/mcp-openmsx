@@ -1,48 +1,33 @@
 # Makefile for MCP-openMSX project
-.PHONY: all update-mcp-docs
+.PHONY: all npm_install build run_stdio run_http pack publish info clean update-mcp-docs
 
 SERVER_DIR = mcp-server
+MAKE = make -s --no-print-directory -C $(SERVER_DIR)
+
 
 npm_install:
-	@echo "#### Installing npm dependencies..."
-	cd $(SERVER_DIR) && npm install
+	@$(MAKE) npm_install
 
-build: npm_install
-	@echo "#### Building MCP-openMSX project..."
-	cd $(SERVER_DIR) && npm run build
+build:
+	@$(MAKE) build
 
-run_stdio: build
-	@echo "#### Running MCP-openMSX project with stdio..."
-	cd $(SERVER_DIR) && node dist/server.js
+run_stdio:
+	@$(MAKE) run_stdio
 
-run_http: build
-	@echo "#### Running MCP-openMSX project with HTTP server..."
-	cd $(SERVER_DIR) && MCP_TRANSPORT=http node dist/server.js
+run_http:
+	@$(MAKE) run_http
 
-pack: build
-	@echo "#### Packing MCP-openMSX project..."
-	cp README.md $(SERVER_DIR)/
-	cp LICENSE $(SERVER_DIR)/
-	cd $(SERVER_DIR) && npm pack
+pack:
+	@$(MAKE) pack
 
-publish: build pack
-	@echo "#### Publishing MCP-openMSX project..."
-	cd $(SERVER_DIR) && npm pack --dryrun
-	cd $(SERVER_DIR) && npm publish --access public
-	cd $(SERVER_DIR) && npm version patch
+publish:
+	@$(MAKE) publish
 
 info:
-	@echo "#### MCP-openMSX published packet information"
-	cd $(SERVER_DIR) && npm view @nataliapc/mcp-openmsx
+	@$(MAKE) info
 
 clean:
-	@echo "#### Cleaning up build artifacts..."
-	rm -rf $(SERVER_DIR)/node_modules
-	rm -rf $(SERVER_DIR)/dist
-	rm -f $(SERVER_DIR)/package-lock.json
-	rm -f $(SERVER_DIR)/README.md
-	rm -f $(SERVER_DIR)/LICENSE
-	rm -f $(SERVER_DIR)/*.tgz
+	@$(MAKE) clean
 
 #UpdateMCP documentation
 update-mcp-docs:

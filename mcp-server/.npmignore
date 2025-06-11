@@ -1,5 +1,6 @@
 .env
 src/
+Makefile
 *.tgz
 *.ts
 !*.d.ts
