@@ -27,6 +27,10 @@ pack: build
 	cp ../LICENSE .
 	npm pack
 
+inspector: build
+	@echo "$(COL_WHITE)#### Inspecting MCP-openMSX project...$(COL_RESET)"
+	npx @modelcontextprotocol/inspector node dist/server.js
+
 publish: build pack
 	@echo "$(COL_WHITE)#### Publishing MCP-openMSX project...$(COL_RESET)"
 	npm pack --dryrun

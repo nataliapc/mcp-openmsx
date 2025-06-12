@@ -34,16 +34,16 @@ export function decodeHtmlEntities(text: string): string {
         '&gt;': '>',
         '&amp;': '&',
         '&quot;': '"',
+        '&nbsp;': ' ',
         '&#x27;': "'",
         '&#x2F;': '/',
         '&#x60;': '`',
         '&#x3D;': '=',
+        '&apos;': "'",
         '&#39;': "'",
         '&#47;': '/',
         '&#96;': '`',
         '&#61;': '=',
-        '&apos;': "'",
-        '&nbsp;': ' ',
         '&#x0a;': '\n',
         '&#x0A;': '\n',
         '&#10;': '\n',
@@ -52,5 +52,32 @@ export function decodeHtmlEntities(text: string): string {
     };
     return text.replace(/&[#\w]+;/g, (entity) => {
         return htmlEntities[entity] || entity;
+    });
+}
+
+/**
+ * Encode a plain text to HTML entities, also escaping characters with ASCII >= 127
+ * @param text - String to encode
+ * @returns string - String with HTML entities encoded
+ */
+export function encodeHtmlEntities(text: string): string {
+    const htmlEntities: Record<string, string> = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        '"': '&quot;',
+        "'": '&apos;',
+        '=': '&#61;',
+        '/': '&#47;',
+    };
+    return text.replace(/[\u00A0-\uFFFF<>&"'`=\/]/g, (char) => {
+        if (htmlEntities[char]) {
+            return htmlEntities[char];
+        }
+        const code = char.charCodeAt(0);
+        if (code >= 127) {
+            return `&#${code};`;
+        }
+        return char;
     });
 }

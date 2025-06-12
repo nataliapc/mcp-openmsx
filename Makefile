@@ -20,6 +20,9 @@ run_http:
 pack:
 	@$(MAKE) pack
 
+inspector: build
+	@$(MAKE) inspector
+
 publish:
 	@$(MAKE) publish
 

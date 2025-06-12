@@ -5,7 +5,7 @@
  * @license GPL2
  */
 import fs from "fs/promises";
-import { extractDescriptionFromXML, decodeHtmlEntities } from "./utils.js";
+import { extractDescriptionFromXML, decodeHtmlEntities, encodeHtmlEntities } from "./utils.js";
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 
@@ -276,7 +276,6 @@ export class OpenMSX {
         }
     };
 
-
     /**
      * Send a command to the openMSX emulator and return the response
      * @param command - XML command to send to the emulator
@@ -285,7 +284,7 @@ export class OpenMSX {
     async sendCommand(command: string): Promise<string> {
         try {
             // Send command
-            this.writeData(`<command>${command}</command>\n`);
+            this.writeData(`<command>${encodeHtmlEntities(command)}</command>\n`);
             // Read response using readData()
             const output = (await this.readData()).trim();
             // Look for reply tags in the output
