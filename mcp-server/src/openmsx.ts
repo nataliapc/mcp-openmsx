@@ -14,6 +14,7 @@ import path from 'path';
  * OpenMSX class for controlling the openMSX emulator via TCL commands over TCP socket
  */
 export class OpenMSX {
+    private lastMachine: string | null = null;
     private process: ChildProcess | null = null;
     private isConnected: boolean = false;
 
@@ -39,7 +40,7 @@ export class OpenMSX {
             try {
                 // Check if emulator is already running
                 if (this.process && !this.process.killed) {
-                    safeResolve("Error: openMSX emulator is already running. Close it first before launching a new instance.");
+                    safeResolve(`Error: openMSX emulator instance is already running (currrent machine: ${this.lastMachine}). Close it first before launching a new one.`);
                     return;
                 }
 
@@ -47,6 +48,7 @@ export class OpenMSX {
                 const args: string[] = ['-control', 'stdio'];
                 // Add machine parameter if specified
                 if (machine) {
+                    this.lastMachine = machine; // Store last machine for future reference
                     args.push('-machine', machine);
                 }
                 // Add extensions if specified
@@ -164,6 +166,7 @@ export class OpenMSX {
             }
 
             this.process.on('exit', () => {
+                this.lastMachine = null; // Clear last machine on exit
                 this.isConnected = false;
                 this.process = null;
                 resolve("Ok: Emulator process closed successfully");
