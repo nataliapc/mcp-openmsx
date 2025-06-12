@@ -203,10 +203,15 @@ export class OpenMSX {
                 return response;
             }
             // Parse machine_info output into key-value pairs
+            const skipInfo = ['issubslotted', 'input_port', 'slot', 'isexternalslot', 'output_port'];
             const parameters = response.trim().split(' ');
             const machineInfo: Record<string, string> = {};
             for (const param of parameters) {
                 const trimmedLine = param.trim();
+                // Skip certain parameters that are not useful
+                if (skipInfo.includes(trimmedLine)) {
+                    continue;
+                }
                 if (trimmedLine) {
                     const value = await this.sendCommand(`machine_info ${trimmedLine}`);
                     machineInfo[trimmedLine] = value.trim();
