@@ -96,6 +96,8 @@ export class OpenMSX {
                             if (!resolved) {
                                 try {
                                     this.writeData('<openmsx-control>\n');
+                                    // Set save settings on exit off
+                                    this.sendCommand('set save_settings_on_exit off');
                                     // Set renderer to SDL
                                     this.sendCommand('set renderer SDLGL-PP');
                                     // set machine on
