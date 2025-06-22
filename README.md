@@ -43,7 +43,7 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 
 ### Emulator Control Tools
 - `emu_control`: Controls an openMSX emulator: _`launch`, `close`, `powerOn`, `powerOff`, `reset`, `getEmulatorSpeed`, `setEmulatorSpeed`, `machineList`, `extensionList`, `wait`_.
-- `emu_replay`: Controls emulation timeline: _`start`, `strop`, `status`, `goBack`, `absoluteGoto`, `truncate`, `saveReplay`, `loadReplay`_.
+- `emu_replay`: Controls emulation timeline: _`start`, `stop`, `status`, `goBack`, `absoluteGoto`, `truncate`, `saveReplay`, `loadReplay`_.
 - `emu_info`: Obtain informacion about the current emulated machine: _`getStatus`, `getSlotsMap`, `getIOPortsMap`_.
 - `emu_media`: Manage ROM, disk, and tape media: _`tapeInsert`, `tapeRewind`, `tapeEject`, `romInsert`, `romEject`, `diskInsert`, `diskInsertFolder`, `diskEject`_.
 - `emu_vdp`: Manage VDP (Video Display Processor): _`getPalette`, `getRegisters`, `getRegisterValue`, `setRegisterValue`, `screenGetMode`, `screenGetFullText`_.
@@ -59,7 +59,7 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 - `emu_keyboard`: Send text input to emulator: _`sendText`_.
 - `emu_savestates`: Save and restore machine states: _`load`, `save`, `list`_.
 - `screen_shot`: Capture emulator screen: _`as_image`, `to_file`_.
-- `screen_dump`: Export screen data as BASIC BSAVE.
+- `screen_dump`: Export screen data as BASIC BSAVE instruction.
 
 
 ## 🚀 Quick Start

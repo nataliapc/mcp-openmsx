@@ -81,3 +81,31 @@ export function encodeHtmlEntities(text: string): string {
         return char;
     });
 }
+
+/**
+ * Encode a string for BASIC program input, escaping special characters
+ * @param text - String to encode
+ * @returns string - Encoded string with special characters escaped
+ */
+export function encodeTypeText(text: string): string {
+    const replacementMap: Record<string, string> = {
+        '\r': '\\r',
+        '\t': '\\t',
+        '"':  '\\"',
+    };
+    return text.replace(/[\r\t"]/g, (char) => {
+        if (replacementMap[char]) {
+            return replacementMap[char];
+        }
+        return char;
+    });
+}
+
+/**
+ * Check if a response is an error response
+ * @param response - The response string to check
+ * @returns boolean - True if the response indicates an error, false otherwise
+ */
+export function isErrorResponse(response: string): boolean {
+    return response.startsWith('Error:') || response.startsWith('error:');
+}

@@ -20,6 +20,7 @@ import express, { Request, Response } from "express";
 import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
+import { encodeTypeText, isErrorResponse } from "./utils.js";
 
 // Version info for CLI
 const PACKAGE_VERSION = "1.1.4";
@@ -252,7 +253,7 @@ function registerAllTools(server: McpServer)
 					break;
 				case "screenGetFullText":
 					const response = await openMSXInstance.sendCommand('get_screen');
-					return response.startsWith('Error:') ?
+					return isErrorResponse(response) ?
 							getResponseContent([response]) :
 							getResponseContent(["The screen text is:", response]);
 				default:
@@ -352,10 +353,10 @@ function registerAllTools(server: McpServer)
 					tclCommand = "cpuregs";
 					break;
 				case "getRegister":
-					tclCommand = "reg ${register}";
+					tclCommand = `reg ${register}`;
 					break;
 				case "setRegister":
-					tclCommand = "reg ${register} ${value}";
+					tclCommand = `reg ${register} ${value}`;
 					break;
 				case "getStackPile":
 					tclCommand = "stack";
@@ -636,7 +637,7 @@ function registerAllTools(server: McpServer)
 			let tclCommand: string;
 			switch (command) {
 				case "sendText":
-					tclCommand = `type "${text}"`;
+					tclCommand = `type "${encodeTypeText(text)}"`;
 					break;
 				default:
 					return getResponseContent([
@@ -689,7 +690,7 @@ function registerAllTools(server: McpServer)
 					}
 				case "to_file":
 					return getResponseContent([
-						response.startsWith('Error:') ? response : 'Screenshot taken in file: '+response
+						isErrorResponse(response) ? response : 'Screenshot taken in file: '+response
 					]);
 			}
 			return getResponseContent([
@@ -711,7 +712,7 @@ function registerAllTools(server: McpServer)
 			const openmsxCommand = `save_msx_screen "${OPENMSX_SCREENDUMP_DIR + scrbasename}"`;
 			const response = await openMSXInstance.sendCommand(openmsxCommand);
 			return getResponseContent([
-				response.startsWith('Error:') ? 'Fail:' : 'Screendump file saved as:',
+				isErrorResponse(response) ? 'Fail:' : 'Screendump file saved as:',
 				response
 			]);
 		});
@@ -722,7 +723,7 @@ function registerAllTools(server: McpServer)
 function getResponseContent(response: string[], isError: boolean = false): CallToolResult
 {
 	// Check if any response line starts with "Error:" to automatically set isError to true
-	const hasError = isError || response.some(line => line.startsWith("Error:"));
+	const hasError = isError || response.some(line => isErrorResponse(line));
 	return {
 		content: response.map(line => ({
 				type: "text",
