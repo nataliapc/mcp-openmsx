@@ -44,17 +44,19 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_control",
 		// Description of the tool (what it does)
-		"Controls an openMSX emulator. Commands: " +
-		"'launch [machine] [extensions]': opens a powered-on openMSX emulator; you must wait some time waiting the machine is fully booted; machine and extensions parameters can be specified so use 'machineList' and 'extensionList' commands to obtain valid values. " +
-		"'close': closes the openMSX emulator. " +
-		"'powerOn': powers on the openMSX emulator. " +
-		"'powerOff': powers off the openMSX emulator. " +
-		"'reset': resets the current machine. " +
-		"'getEmulatorSpeed': gets the current emulator speed as a percentage, default is 100. " +
-		"'setEmulatorSpeed <emuspeed>': sets the emulator speed as a percentage, valid values are 1-10000, default is 100. " +
-		"'machineList': gets a list of all available MSX machines that can be emulated with openMSX. " +
-		"'extensionList': gets a list of all available MSX extensions that can be used with openMSX. " +
-		"'wait <seconds>': performs a wait for the specified number of seconds, default is 2. ",
+		`Controls an openMSX emulator.
+		Commands:
+			'launch [machine] [extensions]': opens a powered-on openMSX emulator; you must wait some time waiting the machine is fully booted; machine and extensions parameters can be specified so use 'machineList' and 'extensionList' commands to obtain valid values. " +
+			'close': closes the openMSX emulator.
+			'powerOn': powers on the openMSX emulator.
+			'powerOff': powers off the openMSX emulator.
+			'reset': resets the current machine.
+			'getEmulatorSpeed': gets the current emulator speed as a percentage, default is 100.
+			'setEmulatorSpeed <emuspeed>': sets the emulator speed as a percentage, valid values are 1-10000, default is 100.
+			'machineList': gets a list of all available MSX machines that can be emulated with openMSX.
+			'extensionList': gets a list of all available MSX extensions that can be used with openMSX.
+			'wait <seconds>': performs a wait for the specified number of seconds, default is 2.
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed", "machineList", "extensionList", "wait"]),
@@ -121,15 +123,17 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_media",
 		// Description of the tool (what it does)
-		"Manage tapes, rom cartridges, and floppy disks. Commands: " +
-		"'tapeInsert <tapefile>': insert a valid tape file (*.cas, *.wav, *.tsx). " +
-		"'tapeRewind': rewind the current tape. " +
-		"'tapeEject': remove tape from virtual cassette player. " +
-		"'romInsert <romfile>': insert a valid ROM cartridge file (*.rom) at cartridge slot A. " +
-		"'romEject': remove the current ROM cartridge from cartridge slot A. " +
-		"'diskInsert <diskfile>': insert a valid disk file (*.dsk) in floppy disk A. " +
-		"'diskInsertFolder <diskfolder>': use a host folder as a floppy disk A root directory. " +
-		"'diskEject': remove the current disk from floppy disk A. ",
+		`Manage tapes, rom cartridges, and floppy disks.
+		Commands:
+			'tapeInsert <tapefile>': insert a valid tape file (*.cas, *.wav, *.tsx).
+			'tapeRewind': rewind the current tape.
+			'tapeEject': remove tape from virtual cassette player.
+			'romInsert <romfile>': insert a valid ROM cartridge file (*.rom) at cartridge slot A.
+			'romEject': remove the current ROM cartridge from cartridge slot A.
+			'diskInsert <diskfile>': insert a valid disk file (*.dsk) in floppy disk A.
+			'diskInsertFolder <diskfolder>': use a host folder as a floppy disk A root directory.
+			'diskEject': remove the current disk from floppy disk A.
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["tapeInsert", "tapeRewind", "tapeEject", "romInsert", "romEject", "diskInsert", "diskInsertFolder", "diskEject"]),
@@ -182,10 +186,12 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_info",
 		// Description of the tool (what it does)
-		"Obtain informacion about the current emulated machine. Commands: " +
-		"'getStatus': returns the status of the openMSX emulator. " +
-		"'getSlotsMap': shows what devices/ROM/RAM are inserted into which slots. " +
-		"'getIOPortsMap': shows an overview about the I/O mapped devices. ",
+		`Obtain informacion about the current emulated machine.
+		Commands:
+			'getStatus': returns the status of the openMSX emulator.
+			'getSlotsMap': shows what devices/ROM/RAM are inserted into which slots.
+			'getIOPortsMap': shows an overview about the I/O mapped devices.
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["getStatus", "getSlotsMap", "getIOPortsMap"]),
@@ -219,13 +225,15 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_vdp",
 		// Description of the tool (what it does)
-		"Manage the VDP (Video Display Processor). Commands: " +
-		"'getPalette': returns the current V9938/V9958 color palette in RGB333 format. " +
-		"'getRegisters': returns all VDP register values. " +
-		"'getRegisterValue <register>': returns the value of a specific VDP register (0-31) in decimal format. " +
-		"'setRegisterValue <register> <value>': sets a hexadecimal value to a specific VDP register (0-31). " +
-		"'screenGetMode': returns the current screen mode (0-12) as a number, which matches the BASIC SCREEN command. " +
-		"'screenGetFullText': returns the full content of an MSX text screen (screen 0 or 1) as a string; PRIORITIZE this command to view screen content in text modes. ",
+		`Manage the VDP (Video Display Processor).
+		Commands:
+			'getPalette': returns the current V9938/V9958 color palette in RGB333 format.
+			'getRegisters': returns all VDP register values.
+			'getRegisterValue <register>': returns the value of a specific VDP register (0-31) in decimal format.
+			'setRegisterValue <register> <value>': sets a hexadecimal value to a specific VDP register (0-31).
+			'screenGetMode': returns the current screen mode (0-12) as a number, which matches the BASIC SCREEN command.
+			'screenGetFullText': returns the full content of an MSX text screen (screen 0 or 1) as a string; PRIORITIZE this command to view screen content in text modes.
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["getPalette", "getRegisters", "getRegisterValue", "setRegisterValue", "screenGetMode", "screenGetFullText"]),
@@ -271,16 +279,18 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"debug_run",
 		// Description of the tool (what it does)
-		"Control execution (break, continue, step). Commands: " +
-		"'break': to break CPU at current execution position. " +
-		"'isBreaked': to check if the CPU is currently in break state (1) or not (0). " +
-		"'continue': to continue execution after break. " +
-		"'stepIn': to execute one CPU instruction, go into subroutines. " +
-		"'stepOver': to execute one CPU instruction, but don't go into subroutines. " +
-		"'stepOut': to step out of the current subroutine. " +
-		"'stepBack': to step one instruction back in time. " +
-		"'runTo <address>': to run the CPU until it reaches the specified address. " +
-		"Note: Addresses and values are in hexadecimal format (e.g. 0x0000).",
+		`Control execution (break, continue, step).
+		Commands:
+			'break': to break CPU at current execution position.
+			'isBreaked': to check if the CPU is currently in break state (1) or not (0).
+			'continue': to continue execution after break.
+			'stepIn': to execute one CPU instruction, go into subroutines.
+			'stepOver': to execute one CPU instruction, but don't go into subroutines.
+			'stepOut': to step out of the current subroutine.
+			'stepBack': to step one instruction back in time.
+			'runTo <address>': to run the CPU until it reaches the specified address.
+		**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["break", "isBreaked", "continue", "stepIn", "stepOut", "stepOver", "stepBack", "runTo"]),
@@ -329,14 +339,16 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"debug_cpu",
 		// Description of the tool (what it does)
-		"Read/write CPU registers, CPU info, Stack pile, and Disassemble code from memory. Commands: " +
-		"'getCpuRegisters': to get an overview of all the CPU registers. " +
-		"'getRegister <register>': to get the decimal value of a specific CPU register (pc, sp, ix, iy, af, bc, de, hl, ixh, ixl, iyh, iyl, a, f, b, c, d, e, h, l, i, r, im, iff). " +
-		"'setRegister <register> <value>': to set the value of a specific CPU register (pc, sp, ix, iy, af, bc, de, hl, ixh, ixl, iyh, iyl, a, f, b, c, d, e, h, l, i, r, im, iff). " +
-		"'getStackPile': to get an overview of the CPU stack. " +
-		"'disassemble [address] [size]': to print disassembled instructions at the address parameter location or PC register if empty. " +
-		"'getActiveCpu': to return the active cpu: z80 or r800." +
-		"Note: Addresses and values are in hexadecimal format (e.g. 0x0000).",
+		`Read/write CPU registers, CPU info, Stack pile, and Disassemble code from memory.
+		Commands:
+			'getCpuRegisters': to get an overview of all the CPU registers.
+			'getRegister <register>': to get the decimal value of a specific CPU register (pc, sp, ix, iy, af, bc, de, hl, ixh, ixl, iyh, iyl, a, f, b, c, d, e, h, l, i, r, im, iff).
+			'setRegister <register> <value>': to set the value of a specific CPU register (pc, sp, ix, iy, af, bc, de, hl, ixh, ixl, iyh, iyl, a, f, b, c, d, e, h, l, i, r, im, iff).
+			'getStackPile': to get an overview of the CPU stack.
+			'disassemble [address] [size]': to print disassembled instructions at the address parameter location or PC register if empty.
+			'getActiveCpu': to return the active cpu: z80 or r800.
+		"**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000)."
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["getCpuRegisters", "getRegister", "setRegister", "getStackPile", "disassemble", "getActiveCpu"]),
@@ -382,15 +394,16 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"debug_memory",
 		// Description of the tool (what it does)
-		"Slots info, and Read/write from/to memory in the openMSX emulator. Commands: " +
-		"'selectedSlots': to get a list of the currently selected memory slots. " +
-		"'getBlock <address> [lines]': to read a block of memory from the specified address. " +
-		"'readByte <address>': to read a BYTE from the specified address. " +
-		"'readWord <address>': to read a WORD from the specified address. " +
-		"'writeByte <address> <value8>': to write a BYTE to the specified address. " +
-		"'writeWord <address> <value16>': to write a WORD to the specified address. " +
-		"'advanced_basic_listing': to list the current BASIC program, with the ram address of each line listed. " +
-		"Note: Addresses and values are in hexadecimal format (e.g. 0x0000).",
+		`Slots info, and Read/write from/to memory in the openMSX emulator.
+		Commands:
+			'selectedSlots': to get a list of the currently selected memory slots.
+			'getBlock <address> [lines]': to read a block of memory from the specified address.
+			'readByte <address>': to read a BYTE from the specified address.
+			'readWord <address>': to read a WORD from the specified address.
+			'writeByte <address> <value8>': to write a BYTE to the specified address.
+			'writeWord <address> <value16>': to write a WORD to the specified address.
+		**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord", "advanced_basic_listing"]),
@@ -439,11 +452,13 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"debug_vram",
 		// Description of the tool (what it does)
-		"Read or write from/to VRAM video memory in the openMSX emulator. Commands: " +
-		"'getBlock <address> [lines]': to read a block of VRAM memory from the specified address. " +
-		"'readByte <address>': to read a BYTE from the specified VRAM address. " +
-		"'writeByte <address> <value8>': to write a BYTE to the specified VRAM address. " +
-		"Note: Addresses and values are in hexadecimal format (e.g. 0x0000).",
+		`Read or write from/to VRAM video memory in the openMSX emulator.
+		Commands:
+			'getBlock <address> [lines]': to read a block of VRAM memory from the specified address.
+			'readByte <address>': to read a BYTE from the specified VRAM address.
+			'writeByte <address> <value8>': to write a BYTE to the specified VRAM address.
+		**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["getBlock", "readByte", "writeByte"]),
@@ -479,12 +494,14 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"debug_breakpoints",
 		// Description of the tool (what it does)
-		"Create, remove, and list breakpoints. Commands: " +
-		"'create <address>': create a breakpoint at a specified address, and returns its name. " +
-		"'remove <bpname>': remove a breakpoint by name (e.g. bp#1). " +
-		"'list': enumerate the active breakpoints. " +
-		"Note: Addresses and values are in hexadecimal format (e.g. 0x0000). " +
-		"Note: The memory addresses of functions and variables can be previously obtained from *.sym or *.map files.",
+		`Create, remove, and list breakpoints.
+		Commands:
+			'create <address>': create a breakpoint at a specified address, and returns its name.
+			'remove <bpname>': remove a breakpoint by name (e.g. bp#1).
+			'list': enumerate the active breakpoints.
+		"**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
+		"**Important Note**: The memory addresses of functions and variables can be previously obtained from *.sym or *.map files.
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["create", "remove", "list"]),
@@ -519,11 +536,13 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_savestates",
 		// Description of the tool (what it does)
-		"Load, save, and list savestates. Commands: " +
-		"'load <name>': restores a previously created savestate. " +
-		"'save <name>': creates a snapshot of the currently emulated MSX machine specifying a name for the savestate. " +
-		"'list': returns the names of all previously created savestates, separated by spaces. " +
-		"Note: names with spaces are enclosed in {}.",
+		`Load, save, and list savestates.
+		Commands:
+			'load <name>': restores a previously created savestate.
+			'save <name>': creates a snapshot of the currently emulated MSX machine specifying a name for the savestate.
+			'list': returns the names of all previously created savestates, separated by spaces.
+		**Important Note**: names with spaces are enclosed in {}.
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["load", "save", "list"]),
@@ -562,15 +581,19 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_replay",
 		// Description of the tool (what it does)
-		"When replay is enabled (the default) the emulator collect data while emulating, which enables you to go back and forward in MSX time; consider do a 'pause' to maintain the the timeline before a 'goBack' or 'absoluteGoto'. Commands: " +
-		"'start': starts the replay mode (enabled by default when emulator is launched). " +
-		"'stop': stops the replay mode. " +
-		"'status': gives information about the replay feature and the data that is collected. " +
-		"'goBack <seconds>': go back specified seconds (1-60) in the timeline, you cannot go back to a time before the time the replay started. " +
-		"'absoluteGoto <time>': go to the indicated absolute time in seconds in the MSX timeline, if time is before replay started it will jump to the time when is started. " +
-		"'truncate': stop replaying and wipe all the future replay data after now. " +
-		"'saveReplay [filename]': saves the current replay data to a file (extension .omr), filename is returned in the response. " +
-		"'loadReplay <filename>': loads a previously saved replay file (extension .omr), starts replaying from the begin, and starts replay mode.",
+		`When replay is enabled (the default) the emulator collect data while emulating,
+		which enables you to go back and forward in MSX time.
+		Commands:
+			'start': starts the replay mode (enabled by default when emulator is launched).
+			'stop': stops the replay mode.
+			'status': gives information about the replay feature and the data that is collected.
+			'goBack <seconds>': go back specified seconds (1-60) in the timeline, you cannot go back to a time before the time the replay started.
+			'absoluteGoto <time>': go to the indicated absolute time in seconds in the MSX timeline, if time is before replay started it will jump to the time when is started.
+			'truncate': stop replaying and wipe all the future replay data after now.
+			'saveReplay [filename]': saves the current replay data to a file (extension .omr), filename is returned in the response.
+			'loadReplay <filename>': loads a previously saved replay file (extension .omr), starts replaying from the begin, and starts replay mode.
+		**Important Note**: consider do a #debug_run 'break' to maintain the timeline before a 'goBack' or 'absoluteGoto'.
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["start", "stop", "status", "goBack", "absoluteGoto", "truncate", "saveReplay", "loadReplay"]),
@@ -623,10 +646,12 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"emu_keyboard",
 		// Description of the tool (what it does)
-		"Send a text to the openMSX emulator. Commands: " +
-		"'sendText <text>': type a string in the emulated MSX, this command automatically press and release keys in the MSX keyboard matrix, is useful for automating tasks in BASIC. " +
-		"Note: each 'text' sent is limited to 200 characters, and the 'text' is sent as if it was typed in the MSX keyboard. " +
-		"Note: escape keys that needs it as Return key (use \\r), double quotes (use \\\"), etc...",
+		`Send a text to the openMSX emulator.
+		Commands:
+			'sendText <text>': type a string in the emulated MSX, this command automatically press and release keys in the MSX keyboard matrix.
+		**Important Note**: each 'text' sent is limited to 200 characters, and the 'text' is sent as if it was typed in the MSX keyboard.
+		**Important Note**: escape keys that needs it as Return key (use \\r), double quotes (use \\\"), etc...
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["sendText"]),
@@ -654,9 +679,11 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"screen_shot",
 		// Description of the tool (what it does)
-		"Take a screenshot of the openMSX emulator screen. Commands: " +
-		"'as_image': take a screenshot and the image is returned in the response. " +
-		"'to_file': take a screenshot and save it to a file, the file name is returned in the response.",
+		`Take a screenshot of the openMSX emulator screen.
+		Commands:
+			'as_image': take a screenshot and the image is returned in the response.
+			'to_file': take a screenshot and save it to a file, the file name is returned in the response.
+		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["as_image", "to_file"]),
@@ -702,7 +729,9 @@ function registerAllTools(server: McpServer)
 		// Name of the tool (used to call it)
 		"screen_dump",
 		// Description of the tool (what it does)
-		"Take a screendump of the openMSX emulator screen as SC?. The parameter scrbasename is the name of the filename (without path) to save the screendump, default is 'screendump'. ",
+		`Take a screendump of the openMSX emulator screen as SC?.
+		The parameter scrbasename is the name of the filename (without path) to save the screendump, default is 'screendump'.
+		`,
 		// Schema for the tool (input validation)
 		{
 			scrbasename: z.string().min(1).max(100).default("screendump"),
