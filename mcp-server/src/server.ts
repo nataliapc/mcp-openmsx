@@ -28,6 +28,7 @@ const PACKAGE_VERSION = "1.1.4";
 // Defaults for openMSX paths
 var OPENMSX_EXECUTABLE = 'openmsx';
 var OPENMSX_SHARE_DIR = '/usr/share/openmsx';
+var OPENMSX_REPLAYS_DIR = '';
 var OPENMSX_SCREENSHOT_DIR = '';
 var OPENMSX_SCREENDUMP_DIR = '';
 var MACHINES_DIR = `${OPENMSX_SHARE_DIR}/machines`;
@@ -624,11 +625,11 @@ function registerAllTools(server: McpServer)
 					tclCommand = "reverse truncatereplay";
 					break;
 				case "saveReplay":
-					if (filename) filename = `"${filename}"`;
+					if (filename) filename = `"${OPENMSX_REPLAYS_DIR}${filename}"`;
 					tclCommand = `reverse savereplay ${filename || ''}`;
 					break;
 				case "loadReplay":
-					if (filename) filename = `"${filename}"`;
+					if (filename) filename = `"${OPENMSX_REPLAYS_DIR}${filename}"`;
 					tclCommand = `reverse loadreplay ${filename}`;
 					break;
 				default:
@@ -947,6 +948,9 @@ async function main()
 	}
 	if (process.env.OPENMSX_SCREENDUMP_DIR && process.env.OPENMSX_SCREENDUMP_DIR !== '') {
 		OPENMSX_SCREENDUMP_DIR = process.env.OPENMSX_SCREENDUMP_DIR + path.sep;
+	}
+	if (process.env.OPENMSX_REPLAYS_DIR && process.env.OPENMSX_REPLAYS_DIR !== '') {
+		OPENMSX_REPLAYS_DIR = process.env.OPENMSX_REPLAYS_DIR + path.sep;
 	}
 	if (process.env.OPENMSX_SHARE_DIR) {
 		OPENMSX_SHARE_DIR = process.env.OPENMSX_SHARE_DIR + path.sep;
