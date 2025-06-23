@@ -29,7 +29,7 @@ pack: build
 
 inspector: build
 	@echo "$(COL_WHITE)#### Inspecting MCP-openMSX project...$(COL_RESET)"
-	npx @modelcontextprotocol/inspector node dist/server.js
+	DANGEROUSLY_OMIT_AUTH=true npx @modelcontextprotocol/inspector node dist/server.js
 
 publish: build pack
 	@echo "$(COL_WHITE)#### Publishing MCP-openMSX project...$(COL_RESET)"
