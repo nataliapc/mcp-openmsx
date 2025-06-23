@@ -696,8 +696,16 @@ function registerAllTools(server: McpServer)
 			switch (command) {
 				case "as_image":
 					try {
+						// Check if the response is a file path using fstat
+						if (!response || !response.startsWith(OPENMSX_SCREENSHOT_DIR) || !response.endsWith('.png')) {
+							throw new Error(`Invalid screenshot "${response}"`);
+						}
+						// Read the screenshot file
 						const imageBuffer = await fs.readFile(response);
 						const base64image = imageBuffer.toString('base64');
+						// Remove the file after reading it
+						await fs.unlink(response);
+						// Return the image in the response
 						return {
 							content: [{
 								type: "text",
