@@ -21,6 +21,8 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { encodeTypeText, isErrorResponse } from "./utils.js";
+import { th } from "zod/v4/locales";
+import { fstat } from "node:fs";
 
 // Version info for CLI
 const PACKAGE_VERSION = "1.1.4";
@@ -407,7 +409,7 @@ function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord", "advanced_basic_listing"]),
+			command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord"]),
 			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional(),	// 4 hex digits for MSX memory address
 			lines: z.number().min(1).max(50).optional().default(8),		// Number of lines for getBlock command
 			value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional(),	// 2 hex digits for byte value for writeByte command
@@ -434,9 +436,6 @@ function registerAllTools(server: McpServer)
 					break;
 				case "writeWord":
 					tclCommand = `poke16 ${address} ${value16}`;
-					break;
-				case "advanced_basic_listing":
-					tclCommand = "listing";
 					break;
 				default:
 					return getResponseContent([
@@ -754,6 +753,100 @@ function registerAllTools(server: McpServer)
 				response
 			]);
 		});
+
+	server.tool(
+		// Name of the tool (used to call it)
+		"basic_programming",
+		// Description of the tool (what it does)
+		`Tool helper to develop BASIC programs.
+		Commands:
+			'newProgram': clears the current BASIC program.
+			'setProgram <program>': sets/updates the current BASIC program to the specified string.
+			'runProgram': runs the current BASIC program.
+			'getFullProgram': returns the current BASIC program as a plain text string.
+			'getFullProgramAdvanced': returns the current BASIC program with the ram address where each line is coded.
+			'listProgramLines <startLine> [endLine]': lists at the emulator screen the selected range lines of the current BASIC program.
+			'deleteProgramLines <startLine> [endline]': deletes a specific line range from the current BASIC program, if endline is not specified, only the startLine is deleted.
+		**Important Note**: priorize this tools to develop BASIC programs, it's more efficient than using the 'sendText' tool.
+		**Important Note**: all the program lines must be ended with a carriage return (\\r) to be correctly processed, even the last one.
+		`,
+		// Schema for the tool (input validation)
+		{
+			command: z.enum(["newProgram", "runProgram", "setProgram", "getFullProgram", "getFullProgramAdvanced", "listProgramLines", "deleteProgramLines"]),
+			program: z.string().min(1).max(10000).optional(),	// BASIC program to set
+			startLine: z.number().min(0).max(9999).optional(),
+			endLine: z.number().min(0).max(9999).optional(),
+		},
+		// Handler for the tool (function to be executed when the tool is called)
+		async ({ command, program, startLine, endLine }: { command: string; program?: string; startLine?: number, endLine?: number }) => {
+			const CTRL_L_TEMPLATE = 'keymatrixdown 6 2 ; keymatrixdown 4 2 ; after time 0.1 { keymatrixup 6 2 ; keymatrixup 4 2 ; type_via_keybuf "%s" }';
+			let tclCommand: string | undefined = undefined;
+			let response: string | undefined = undefined;
+			switch (command) {
+				case "newProgram":
+					response = await openMSXInstance.sendCommand(CTRL_L_TEMPLATE.replace('%s', encodeTypeText('new\r')));
+					if (response.startsWith('after#')) response = '';
+					break;
+				case "runProgram":
+					response = await openMSXInstance.sendCommand(CTRL_L_TEMPLATE.replace('%s', encodeTypeText('run\r')));
+					if (response.startsWith('after#')) response = '';
+					break;
+				case "deleteProgramLines":
+					if (startLine === undefined) {
+						response = 'Error: No startLine number provided to delete BASIC program lines.';
+						break;
+					}
+					response = await openMSXInstance.sendCommand(CTRL_L_TEMPLATE.replace('%s', encodeTypeText(`delete ${startLine}-${endLine || startLine}\r`)));
+					break;
+				case "setProgram":
+					if (!program) {
+						response = 'Error: No BASIC program provided to set.'
+						break;
+					}
+					// Get current speed to restore it later
+					let speed = '100';
+					if (isErrorResponse(speed = await openMSXInstance.sendCommand('set speed'))) {
+						response = speed;
+						break;
+					}
+					// Set speed to fast for program input
+					if (isErrorResponse(response = await openMSXInstance.sendCommand('set speed 10000')))
+						break;
+					// Clear the screen and type the program
+					if (isErrorResponse(response = await openMSXInstance.sendCommand(`type_via_keybuf "${encodeTypeText(program)}"`)))
+						break;
+					// Restore the original speed
+					if (isErrorResponse(response = await openMSXInstance.sendCommand(`set speed ${speed}`)))
+						break;
+					// Success response
+					response = '';
+					break;
+				case "getFullProgram":
+					// Source: https://www.msx.org/forum/msx-talk/openmsx/export-basic-listing#comment-407392
+					tclCommand = 'regsub -all -line {^[0-9a-f]x[0-9a-f]{4} > } [ listing ] ""';
+					break;
+				case "getFullProgramAdvanced":
+					tclCommand = "listing";
+					break;
+				case "listProgramLines":
+					if (startLine === undefined) {
+						response = 'Error: No start line provided to list BASIC program lines.';
+						break;
+					}
+					tclCommand = `type_via_keybuf \"${encodeTypeText(`list ${startLine}-${endLine || startLine}\r`)}\"`;
+					break;
+				default:
+					response = `Error: Unknown command "${command}".`;
+					break;
+			}
+			if (response === undefined && tclCommand) {
+				response = await openMSXInstance.sendCommand(tclCommand);
+			}
+			return getResponseContent([
+				response !== undefined ? response : `Error: No response for command "${command}".`
+			]);
+		}
+	);
 
 }
 

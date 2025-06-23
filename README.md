@@ -12,6 +12,7 @@ This project creates a bridge between modern AI-assisted development (e.g. GitHu
 
 - **Emulator Control**: Launch, configure, manage openMSX instances, and replay timelines.
 - **Media Management**: Handle ROM cartridges, floppy disks, and cassette tapes.
+- **BASIC Programming Support**: Tools to facilitate BASIC language programming and development.
 - **Debugging Tools**: Full CPU debugging with breakpoints, memory inspection, and step execution.
 - **Video Control**: VDP register manipulation and screen capture.
 - **Memory Operations**: Read/write RAM, VRAM, and I/O port access.
@@ -47,6 +48,9 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 - `emu_info`: Obtain informacion about the current emulated machine: _`getStatus`, `getSlotsMap`, `getIOPortsMap`_.
 - `emu_media`: Manage ROM, disk, and tape media: _`tapeInsert`, `tapeRewind`, `tapeEject`, `romInsert`, `romEject`, `diskInsert`, `diskInsertFolder`, `diskEject`_.
 - `emu_vdp`: Manage VDP (Video Display Processor): _`getPalette`, `getRegisters`, `getRegisterValue`, `setRegisterValue`, `screenGetMode`, `screenGetFullText`_.
+
+### Programming Tools
+- `basic_programming`: BASIC tools: _`newProgram`, `runProgram`, `setProgram`, `getFullProgram`, `getFullProgramAdvanced`, `listProgramLines`, `deleteProgramLines`_.
 
 ### Debugging Tools
 - `debug_run`: Control execution: _`break`, `isBreaked`, `continue`, `stepIn`, `stepOut`, `stepOver`, `stepBack`, `runTo`_.
@@ -131,6 +135,7 @@ Add to your `claude_desktop_config.json`:
 | `OPENMSX_SHARE_DIR` | Directory containing openMSX data files (machines, extensions, etc.) | System dependent | `/home/myuser/.openmsx/share` |
 | `OPENMSX_SCREENSHOT_DIR` | Directory where screenshots will be saved | Default for openmsx | `/myproject/screenshots` |
 | `OPENMSX_SCREENDUMP_DIR` | Directory where screen dumps will be saved | Default for openmsx | `/myproject/screendumps` |
+| `OPENMSX_REPLAYS_DIR` | Directory where replay files will be saved | Default for openmsx | `/myproject/replays` |
 | `MCP_TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` | `http` |
 | `MCP_HTTP_PORT` | Port number for HTTP transport mode | `3000` | `8080` |
 
@@ -154,6 +159,7 @@ export OPENMSX_EXECUTABLE="openmsx"
 export OPENMSX_SHARE_DIR="/usr/share/openmsx"
 export OPENMSX_SCREENSHOT_DIR="/my_project/screenshots"
 export OPENMSX_SCREENDUMP_DIR="/my_project/screendumps"
+export OPENMSX_REPLAYS_DIR="/my_project/replays"
 export MCP_HTTP_PORT=3000
 ```
 
