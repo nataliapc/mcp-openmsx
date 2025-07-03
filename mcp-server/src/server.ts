@@ -6,7 +6,7 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.1.6
+ * @version 1.1.8
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
@@ -26,7 +26,7 @@ import { file } from "zod/v4";
 
 
 // Version info for CLI
-const PACKAGE_VERSION = "1.1.6";
+const PACKAGE_VERSION = "1.1.8";
 
 const resourcesDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../resources");
 

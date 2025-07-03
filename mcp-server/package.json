@@ -1,6 +1,6 @@
 {
   "name": "@nataliapc/mcp-openmsx",
-  "version": "1.1.6",
+  "version": "1.1.8",
   "description": "Model context protocol server for openMSX automation and control",
   "main": "dist/server.js",
   "type": "module",
@@ -53,6 +53,7 @@
   },
   "files": [
     "dist/**/*",
+    "resources/**/*",
     "README.md",
     "LICENSE"
   ],

@@ -65,6 +65,44 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 - `screen_shot`: Capture emulator screen: _`as_image`, `to_file`_.
 - `screen_dump`: Export screen data as BASIC BSAVE instruction.
 
+## 📚 Available MCP Resources
+
+### What are MCP Resources?
+
+MCP resources are structured data sets, documentation, and helper files that extend the capabilities of the MCP server. They provide essential information such as machine definitions, extension lists, media templates, and programming examples, enabling more powerful automation, testing, and development workflows for MSX software within the MCP-openMSX environment.
+
+### Available Resources
+
+There are more than 60 resources available, some included directly in the MCP and others accessible via download when queried. They are organized into the following categories:
+
+- `Processors` (Z80, R800)
+- `Bios` (Bios ROM, DOS ROM, SUBROM, ...)
+- `System`
+- `Audio`
+- `Video`
+- `Programming` (ASM, BASIC, ...)
+- `MSX-DOS`
+- `MSX-UNAPI`
+
+And two books:
+
+- `MSX2 Technical Handbook`
+- `The MSX Red Book`
+
+### Resources from:
+
+- [Grauw MSX Assembly Page](https://map.grauw.nl/)
+- [Z80 Heaven Wiki](http://z80-heaven.wikidot.com/)
+- [The MSX Red Book](https://github.com/gseidler/The-MSX-Red-Book)
+- [MSX2 Technical Handbook](https://github.com/Konamiman/MSX2-Technical-Handbook)
+- [Konamiman MSX-UNAPI-specification](https://github.com/Konamiman/MSX-UNAPI-specification)
+- [BiFi MSX Net](http://bifi.msxnet.org/msxnet/)
+- [MSX Wiki](https://www.msx.org/wiki/Main_Page)
+- [MSX Banzai!](http://msxbanzai.tni.nl/)
+
+Thanks to the authors of these resources, who have made them available under various licenses. This MCP server includes some of these resources to enhance the development experience.
+
+The rights to these resources belong to their respective authors and are distributed under the licenses they have defined.
 
 ## 🚀 Quick Start
 
