@@ -1,6 +1,6 @@
 {
-    "title": "More MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
-    "description": "MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
+    "title": "MSX System Technical Info",
+    "description": "MSX System Technical Info including I/O ports, system variables, and hardware interfacing.",
     "toc": [
         {
             "title": "MSX I/O ports overview",

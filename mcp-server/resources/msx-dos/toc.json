@@ -1,6 +1,6 @@
 {
-    "title": "More MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
-    "description": "MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
+    "title": "MSX-DOS Technical Info",
+    "description": "MSX-DOS Technical Info including MSX-DOS 2 Program Interface Specification and MSX-DOS 2 Function Specifications.",
     "toc": [
         {
             "title": "MSX-DOS 2 Program Interface Specification",

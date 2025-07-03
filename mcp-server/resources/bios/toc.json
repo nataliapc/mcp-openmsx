@@ -1,6 +1,6 @@
 {
-    "title": "More MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
-    "description": "MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
+    "title": "MSX Technical about BIOS",
+    "description": "MSX Technical Info about BIOS calls, including references for MSX BIOS, MSX2 SUBROM BIOS, and how to call BIOS from MSX-DOS.",
     "toc": [
         {
             "title": "MSX BIOS calls reference",

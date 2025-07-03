@@ -1,6 +1,6 @@
 {
-    "title": "More MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
-    "description": "MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
+    "title": "CPU Technical Info",
+    "description": "Technical Info about the Z80, R800, and others processors, including detailed instruction sets, undocumented instructions, and timing information.",
     "toc": [
         {
             "title": "Z80 Detailed Instruction Set (Z80 Heaven)",
