@@ -1,0 +1,11 @@
+{
+    "title": "More MSX Technical Info",
+    "description": "More MSX Technical Info",
+    "toc": [
+        {
+            "title": "MemMan v2.32 TSR Development Kit",
+            "uri": "https://map.grauw.nl/resources/tsrdev_en.php",
+            "description": "Development kit documentation for MemMan 2.32 TSR (Terminate and Stay Resident) programs on MSX2 systems. Covers new XTsrCall function (61), improved memory allocation with DOS2 RAMdisk support, enhanced Info function (50) for direct entry addresses, enlarged internal stack (240 bytes), and direct function calling methods to improve TSR program performance by bypassing EXTBIO hook overhead."
+        }
+    ]
+}

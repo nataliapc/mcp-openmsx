@@ -1,0 +1,121 @@
+{
+    "title": "MSX Technical Info for MSX programming",
+    "description": "MSX Technical Info for MSX programming (ASM, C, BASIC, etc.)",
+    "toc": [
+       {
+            "title": "[ASM] Execute a VDP command",
+            "uri": "https://map.grauw.nl/sources/docopy.php",
+            "description": "This page provides a detailed explanation of how to execute a VDP command in MSX assembly language, including the necessary registers and instructions."
+        },
+        {
+            "title": "[ASM] Detecting VDP version",
+            "uri": "https://map.grauw.nl/sources/vdp_detection.php",
+            "description": "A guide on how to detect the version of the VDP (Video Display Processor) in MSX systems using assembly language. It includes code examples and explanations of the relevant registers."
+        },
+        {
+            "title": "[ASM] A whole shitload of VDP routines",
+            "uri": "https://map.grauw.nl/sources/vdp_rout.php",
+            "description": "A comprehensive collection of MSX VDP (Video Display Processor) assembly routines including fast DoCopy, VDP register management, screen mode selection, sprite control, palette setting, and VRAM access functions. These optimized routines are designed for DOS environment and provide essential building blocks for MSX graphics programming."
+        },
+        {
+            "title": "[ASM] Load graphic data into the VRAM",
+            "uri": "https://map.grauw.nl/sources/load_screen.php",
+            "description": "Assembly routines for loading graphic data files directly into MSX VRAM memory. Includes optimized file loading, palette handling, and VRAM writing functions designed for MSX-DOS 2 environment. Features efficient buffer management and fast loops for screen data transfer."
+        },
+        {
+            "title": "[ASM] Multiplications, divisions and shifts",
+            "uri": "https://map.grauw.nl/articles/mult_div_shifts.php",
+            "description": "Comprehensive guide to optimized mathematical operations in Z80 assembly for MSX. Covers fast multiplication and division techniques using bit shifts, generic multiplication routines, division algorithms, and square root calculations. Essential for performance-critical MSX programming where the Z80 lacks built-in multiplication instructions."
+        },
+        {
+            "title": "[ASM] Get slot ID of any page",
+            "uri": "https://map.grauw.nl/sources/getslot.php",
+            "description": "Assembly routine to determine the slot ID of any memory page in MSX systems. Essential for ROM cartridges and programs that need to identify which slot/subslot is currently selected in a specific memory page. Includes detailed explanation of MSX slot selection system and BIOS slot ID format."
+        },
+        {
+            "title": "[ASM] How to switch RAM/ROM in page 1",
+            "uri": "https://map.grauw.nl/sources/raminpage1.php",
+            "description": "Techniques for switching between RAM and ROM in memory page 1 (4000H-7FFFH) to gain additional 16KB of RAM space in MSX BASIC environment. Includes methods using RAMAD1 system variable and alternative approaches for systems without DiskROM."
+        },
+        {
+            "title": "[ASM] Calling the BIOS from MSX-DOS",
+            "uri": "https://map.grauw.nl/sources/callbios.php",
+            "description": "Methods for calling MSX BIOS routines from MSX-DOS environment using interslot calls. Includes special procedures for calling SUBROM routines and the official ASCII-provided routine for safe SUBROM access from MSX-DOS."
+        },
+        {
+            "title": "[ASM] Z80 routines collection",
+            "uri": "https://map.grauw.nl/sources/external/z80bits.html",
+            "description": "Comprehensive collection of optimized Z80 assembly routines including integer multiplication/division algorithms, square roots, random number generators, number-to-string conversions, and CRC calculations. Features highly optimized code for performance-critical applications."
+        },
+        {
+            "title": "[ASM] Fast loops",
+            "uri": "https://map.grauw.nl/articles/fast_loops.php",
+            "description": "Advanced Z80 assembly techniques for optimizing loop performance. Covers fast 16-bit loops using DJNZ that can achieve the same speed as 8-bit loops, and loop unrolling methods like making LDIR 21% faster. Essential for performance-critical MSX programming where every clock cycle counts."
+        },
+        {
+            "title": "[ASM] VDP programming tutorial",
+            "uri": "https://map.grauw.nl/articles/vdp_tut.php",
+            "description": "Comprehensive tutorial for beginning assembly programmers on MSX VDP programming. Covers VDP basics (VRAM, registers, command unit), register access methods, VRAM operations, VDP commands execution, palette settings, and includes practical programming examples. Essential guide for MSX graphics programming."
+        },
+        {
+            "title": "[ASM] VDP programming FAQ",
+            "uri": "https://map.grauw.nl/articles/vdp_guide.php",
+            "description": "Collection of VDP programming tips and solutions to common problems. Addresses issues like r#18 register corruption with VDP commands, screensplit problems, interrupt handling, missing screen modes (screen 9), register gaps (r#24), and screen 8 color composition. Essential troubleshooting guide for VDP development."
+        },
+        {
+            "title": "[ASM] Z80 Advanced Maths",
+            "uri": "http://z80-heaven.wikidot.com/advanced-math",
+            "description": "Comprehensive guide covering advanced mathematical routines for Z80 processors including integer arithmetic, BCD arithmetic, fixed point arithmetic, and floating point arithmetic. Features algorithms for multiplication (schoolbook, Karatsuba, Toom-Cook), division methods, square root calculations, exponential functions, and trigonometric operations optimized for Z80 assembly programming."
+        },
+        {
+            "title": "[VDP] Screensplit programming guide",
+            "uri": "https://map.grauw.nl/articles/split_guide.php",
+            "description": "Detailed guide for programming screensplits on MSX systems covering timing accuracy, HBLANK/VBLANK concepts, VDP line interrupts, seamless splits, and compatibility across different MSX computer types and CPU speeds. Includes Q&A sections on split timing, MSX1 screensplits, spritesplits, and scrollsplits using register 23."
+        },
+        {
+            "title": "[VDP] VDP commands & speed measurements",
+            "uri": "https://map.grauw.nl/articles/vdp_commands_speed.php",
+            "description": "Comprehensive analysis of VDP command execution speed with detailed measurement tables showing bytes processed per interrupt under different circumstances. Covers speedup methods, performance differences between copy and fill operations, 50/60 Hz timing variations, and programming optimization tips for VDP command efficiency."
+        },
+        {
+            "title": "[VDP] A guide to scrolling game engines on MSX",
+            "uri": "https://map.grauw.nl/articles/scrolling.php",
+            "description": "Comprehensive guide to implementing scrolling in MSX games covering hardware limitations and solutions for different VDP versions (TMS9918, v9938, v9958, v9990). Explains tile-based systems, hardware scrolling capabilities, software scrolling optimization, and combining hardware/software approaches for efficient scrolling game engines."
+        },
+        {
+            "title": "[VDP] V9938 VRAM timings",
+            "uri": "https://map.grauw.nl/articles/vdp-vram-timing/vdp-timing.html",
+            "description": "Detailed technical analysis of V9938 VRAM access timings in bitmap screen modes (screen 5-8) covering VRAM access for bitmap rendering, sprite rendering, VDP command execution, and CPU VRAM operations. Includes measurement data and analysis to improve MSX emulator accuracy for VDP command engine timing and LINE command speed variations."
+        },
+        {
+            "title": "[VDP] V9938 VRAM timings, part II",
+            "uri": "https://map.grauw.nl/articles/vdp-vram-timing/vdp-timing-2.html",
+            "description": "Follow-up document to V9938 VRAM timings covering logic analyzer measurements of V9938-VRAM communication. Details CPU (Z80) VRAM access timing constraints, what constitutes 'too fast' access, and accurate VDP command engine timing implementation. Focuses on bitmap screen modes with measurement data for improved MSX emulation accuracy."
+        },
+        {
+            "title": "[VDP] The YJK screen modes",
+            "uri": "https://map.grauw.nl/articles/yjk/",
+            "description": "Comprehensive guide to the YJK high-color screen modes of the MSX2+ and turbo R (V9958 VDP). Covers YJK encoding, conversion between YJK and RGB color spaces, SCREEN 10/11/12 modes supporting up to 19268 colors, color attribute clash in 4x1 pixel groups, and drawing techniques for photographic images and games with enhanced sprite palette capabilities."
+        },
+        {
+            "title": "[DOS] Low-level disk storage",
+            "uri": "https://map.grauw.nl/articles/low-level-disk/",
+            "description": "Technical explanation of low-level floppy disk storage from MSX perspective covering magnetic storage principles, track and sector organization, header and data blocks, inter-block gaps, and how bits are stored as magnetic patterns on disk surface. Explains the physical structure of 80-track, 9-sector-per-track floppy disk layout without covering high-level filesystem concepts."
+        },
+        {
+            "title": "[DOS] Disk I/O error handling in MSX-DOS 1",
+            "uri": "https://map.grauw.nl/articles/dos-error-handling.php",
+            "description": "Guide to implementing custom disk I/O error handling in MSX-DOS 1 programs. Covers redirecting error handlers to prevent default DOS error messages, setting up custom error handling routines using addresses F323 and F1E6, managing abort handlers, and dealing with stack problems. Includes comparison with improved MSX-DOS 2 error handling methods."
+        },
+        {
+            "title": "Keyboard matrices",
+            "uri": "https://map.grauw.nl/articles/keymatrix.php",
+            "description": "Comprehensive guide to MSX keyboard matrix layouts covering the 11x8 bit key matrix structure, keyboard version detection from BIOS address #002C, differences between Japanese, International, French, German, and Spanish keyboard layouts. Discusses keyboard matrix reading techniques and compatibility issues across different MSX computer models, with special focus on rows 6-10 standardization."
+        },
+        {
+            "title": "Interrupts",
+            "uri": "https://map.grauw.nl/articles/interrupts.php",
+            "description": "Detailed explanation of MSX interrupt programming covering H.KEYI and H.TIMI interrupt hooks, interrupt routine setup requirements, register preservation, slot register management, and memory mapper considerations. Explains differences between hooks called every interrupt versus regular intervals (50/60 Hz), with practical examples for background music and device communication interrupt handlers."
+        }
+    ]
+}

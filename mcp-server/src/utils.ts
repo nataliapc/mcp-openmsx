@@ -5,6 +5,8 @@
  * @license GPL2
  */
 import fs from 'fs/promises';
+import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+
 
 /**
  * Extract description from XML file
@@ -108,4 +110,24 @@ export function encodeTypeText(text: string): string {
  */
 export function isErrorResponse(response: string): boolean {
     return response.startsWith('Error:') || response.startsWith('error:');
+}
+
+/**
+ * Get the content of a response, formatting it as a CallToolResult
+ * @param response - Array of strings representing the response lines
+ * @param isError - Optional boolean indicating if the response is an error
+ * @returns CallToolResult - Formatted response content
+ */
+export function getResponseContent(response: string[], isError: boolean = false): CallToolResult
+{
+	// Check if any response line starts with "Error:" to automatically set isError to true
+	const hasError = isError || response.some(line => isErrorResponse(line));
+	return {
+		content: response.map(line => ({
+				type: "text",
+				text: line == '' ? "Ok" : line,
+			})
+		),
+		isError: hasError
+	};
 }

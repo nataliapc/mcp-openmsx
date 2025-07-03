@@ -1,8 +1,12 @@
 **/.env
 .github
 .vscode
+.amazonq
+package*.json
 *.tgz
-test-scripts/
+assets
+node_modules
+test-scripts
 mcp-server/dist
 mcp-server/node_modules
 mcp-output.log

@@ -1,0 +1,12 @@
+{
+    "title": "The MSX Red Book",
+    "description": "The MSX Red Book provides a detailed technical overview of MSX computers, focusing on hardware and software components. It is designed for advanced users, particularly machine code programmers, offering insights into the MSX standard and its programmable components.",
+    "external_url": "https://github.com/gseidler/The-MSX-Red-Book",
+    "toc": [
+        {
+            "title": "The MSX Red Book (full book)",
+            "uri": "msxdocs://book--the-msx-red-book/the_msx_red_book",
+            "description": "The MSX Red Book provides a detailed technical overview of MSX computers, focusing on hardware and software components. It is designed for advanced users, particularly machine code programmers, offering insights into the MSX standard and its programmable components."
+        }
+    ]
+}

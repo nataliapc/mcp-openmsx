@@ -1,0 +1,27 @@
+{
+    "title": "The MSX UNAPI specification",
+    "description": "MSX-UNAPI is a standard procedure for defining, discovering and using new APIs (Application Program Interfaces) for MSX computers, intended primarly (but not exclusively) to allow hardware manufacturers to provide consistent and standarized APIs. UNAPI is short for 'UNified API definition and discovery procedure'.",
+    "external_url": "https://github.com/Konamiman/MSX-UNAPI-specification",
+    "toc": [
+        {
+            "title": "Introduction to MSX-UNAPI",
+            "uri": "msxdocs://msx-unapi/Introduction_to_MSX-UNAPI",
+            "description": "This document introduces MSX-UNAPI, a standard procedure for defining, discovering and using new APIs (Application Program Interfaces) for MSX computers."
+        },
+        {
+            "title": "MSX-UNAPI specification 1.1",
+            "uri": "msxdocs://msx-unapi/MSX_UNAPI_specification_1.1",
+            "description": "The full core specification document, covering all the details on how to design an API, how to implement it, and how to discover and consume it from a client application."
+        },
+        {
+            "title": "Ethernet UNAPI specification",
+            "uri": "msxdocs://msx-unapi/Ethernet_UNAPI_specification_1.1",
+            "description": "The specification of an API for Ethernet cards. This describes an UNAPI compliant API specification for Ethernet hardware for MSX computers."
+        },
+        {
+            "title": "TCP/IP UNAPI specification",
+            "uri": "msxdocs://msx-unapi/TCP-IP_UNAPI_specification",
+            "description": "This document describes an UNAPI compliant API intended for software that implements a TCP/IP stack, that is, software that provides networking capabilities by using the IP family of protocols. The functionality provided by this API is focused mainly on communicating with other computers by using the TCP and UDP protocols, but there are also some additional routines that allow for example performing domain name resolution by querying DNS servers."
+        }
+    ]
+}

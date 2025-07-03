@@ -1,0 +1,24 @@
+{
+    "title": "More MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
+    "description": "MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
+    "toc": [
+        {
+            "title": "MSX BIOS calls reference",
+            "uri": "msxdocs://bios/MSX_BIOS_calls",
+            "external_url": "https://map.grauw.nl/resources/msxbios.php",
+            "description": "This document provides a comprehensive reference guide for all MSX generations BIOS (Basic Input/Output System) calls, compiled by Grauw. It serves as an essential reference for MSX assembly language programming and low-level system interaction."
+        },
+        {
+            "title": "MSX2 SUBROM BIOS calls reference",
+            "uri": "msxdocs://bios/MSX2_SUBROM_BIOS_calls",
+            "external_url": "https://map.grauw.nl/resources/subrom.php",
+            "description": "This document provides a comprehensive reference guide for MSX2 SUBROM BIOS entries, compiled by Grauw. It covers the extended BIOS functions specific to MSX2 systems that are located in the SUBROM, complementing the main BIOS functionality with advanced features."
+        },
+        {
+            "title": "Calling BIOS from MSX-DOS",
+            "uri": "msxdocs://bios/Calling_BIOS_from_MSX-DOS",
+            "external_url": "https://map.grauw.nl/sources/callbios.php",
+            "description": "This document provides essential technical guidance for calling MSX BIOS and SUBROM functions from within the MSX-DOS environment. It addresses the specific challenges and solutions needed when MSX-DOS programs need to access low-level BIOS functionality."
+        }
+    ]
+}

@@ -6,26 +6,29 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.1.4
+ * @version 1.1.6
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
-import { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { CallToolResult, isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import express, { Request, Response } from "express";
 import fs from "fs/promises";
+import mime from "mime-types";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
-import { encodeTypeText, isErrorResponse } from "./utils.js";
-import { th } from "zod/v4/locales";
-import { fstat } from "node:fs";
+import { encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
+import { file } from "zod/v4";
+
 
 // Version info for CLI
-const PACKAGE_VERSION = "1.1.4";
+const PACKAGE_VERSION = "1.1.6";
+
+const resourcesDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../resources");
 
 // Defaults for openMSX paths
 var OPENMSX_EXECUTABLE = 'openmsx';
@@ -41,7 +44,7 @@ var EXTENSIONS_DIR = `${OPENMSX_SHARE_DIR}/extensions`;
 // Tools available in the MCP server
 // https://modelcontextprotocol.io/docs/concepts/tools#tool-definition-structure
 //
-function registerAllTools(server: McpServer)
+async function registerAllTools(server: McpServer)
 {
 	server.tool(
 		// Name of the tool (used to call it)
@@ -350,15 +353,15 @@ function registerAllTools(server: McpServer)
 			'getStackPile': to get an overview of the CPU stack.
 			'disassemble [address] [size]': to print disassembled instructions at the address parameter location or PC register if empty.
 			'getActiveCpu': to return the active cpu: z80 or r800.
-		"**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000)."
+		"**Important Note**: Addresses and values are in hexadecimal format (e.g. 0xd2 0x3af2)."
 		`,
 		// Schema for the tool (input validation)
 		{
 			command: z.enum(["getCpuRegisters", "getRegister", "setRegister", "getStackPile", "disassemble", "getActiveCpu"]),
 			register: z.enum(["pc", "sp", "ix", "iy", "af", "bc", "de", "hl", "ixh", "ixl", "iyh", "iyl", "a", "f", "b", "c", "d", "e", "h", "l", "i", "r", "im", "iff"]).optional(),
-			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/),			// 4 hex digits for MSX memory address
-			value: z.string().regex(/^0x[0-9a-fA-F]{2-4}$/).optional(),	// 2-4 hex digits for byte value for writeByte command
-			size: z.number().min(1).max(50).optional().default(8),		// Number of bytes for disassemble command
+			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional(),	// 4 hex digits for MSX memory address
+			value: z.string().regex(/^0x[0-9a-fA-F]{2,4}$/).optional(),	// 2-4 hex digits for byte value for writeByte command
+			size: z.number().min(8).max(50).optional(),					// Number of bytes for disassemble command
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, register, value, size }: { command: string; address?: string; register?: string; value?: string; size?: number }) => {
@@ -695,7 +698,7 @@ function registerAllTools(server: McpServer)
 			switch (command) {
 				case "as_image":
 					try {
-						// Check if the response is a file path using fstat
+						// Check if the response is a file path
 						if (!response || !response.startsWith(OPENMSX_SCREENSHOT_DIR) || !response.endsWith('.png')) {
 							throw new Error(`Invalid screenshot "${response}"`);
 						}
@@ -769,6 +772,7 @@ function registerAllTools(server: McpServer)
 			'deleteProgramLines <startLine> [endline]': deletes a specific line range from the current BASIC program, if endline is not specified, only the startLine is deleted.
 		**Important Note**: priorize this tools to develop BASIC programs, it's more efficient than using the 'sendText' tool.
 		**Important Note**: all the program lines must be ended with a carriage return (\\r) to be correctly processed, even the last one.
+		**Important Note**: if you have doubts about MSX BASIC, use the resources provided by this MCP.
 		`,
 		// Schema for the tool (input validation)
 		{
@@ -848,22 +852,107 @@ function registerAllTools(server: McpServer)
 		}
 	);
 
-}
+	// ============================================================================
+	// MSX Documentation resources
 
+	const resdocs: string[] = (await listResourcesDirectory()).sort();
 
-function getResponseContent(response: string[], isError: boolean = false): CallToolResult
-{
-	// Check if any response line starts with "Error:" to automatically set isError to true
-	const hasError = isError || response.some(line => isErrorResponse(line));
-	return {
-		content: response.map(line => ({
-				type: "text",
-				text: line == '' ? "Ok" : line,
-			})
-		),
-		isError: hasError
+	for (let index = 0; index < resdocs.length; index++) {
+		const sectionName = resdocs[index];
+		const tocFile = path.join(resourcesDir, `${sectionName}/toc.json`);
+		const tocContent = JSON.parse(await fs.readFile(tocFile, 'utf8'));
+		tocContent.toc.forEach((item: any, itemIndex: number) => {
+			const itemName = item.uri.split('/').pop() || '';
+			server.resource(
+				// Name of the resource (used to call it)
+				`msxdocs_${sectionName}_${itemName}`,
+				// Resource URI template
+				item.uri,
+				// Metadata for the resource
+				{
+					title: item.title || `MSX Documentation '${sectionName}' - ${itemName}`,
+					description: item.description || `Documentation for MSX resource '${sectionName}' - ${itemName}`,
+					mimeType: item.mimeType || 'text/markdown',
+				},
+				// Handler for the resource (function to be executed when the resource is called)
+				async (uri: URL) => {
+					let resourceContent: string;
+					let mimeType: string | undefined;
+					if (uri.href.startsWith('http://') || uri.href.startsWith('https://')) {
+						// Fetch the resource from the URL
+						try {
+							resourceContent = await fetch(uri.href).then(response => {
+								mimeType = response.headers.get('content-type') || 'text/plain';
+								return response.text();
+							}) || 'Error downloading resource content';
+						} catch (error) {
+							// Throw exception (MCP protocol requirement)
+							throw new Error(`Error fetching resource from ${uri.href}: ${error instanceof Error ? error.message : String(error)}`);
+						}
+					} else {
+						// Read the resource from the local MCP server resources directory
+						try {
+							let resourceFile: string | undefined;
+							[mimeType, resourceFile] = await addFileExtension(path.join(resourcesDir, `${sectionName}/${itemName}`));
+							resourceContent = await fs.readFile(resourceFile, 'utf8');
+						} catch (error) {
+							// Throw exception (MCP protocol requirement)
+							throw new Error(`Error reading resource ${sectionName}/${item.uri}: ${error instanceof Error ? error.message : String(error)}`);
+						}
+					}
+					return {
+						contents: [{
+							uri: uri.href,
+							text: resourceContent,
+							mimeType: mimeType || 'text/plain',
+						}],
+					};
+				}
+			);
+		});
 	};
 }
+
+async function addFileExtension(filePath: string): Promise<string[]>
+{
+	// Get directory and filename
+	const directory = path.dirname(filePath);
+	const filename = path.basename(filePath);
+	
+	try {
+		// Get all files in directory that start with our filename
+		const files = await fs.readdir(directory);
+		const matchingFiles = files.filter(file => file.startsWith(filename));
+		
+		if (matchingFiles.length > 0) {
+			const fileFound = path.join(directory, matchingFiles[0]);
+			return [
+				mime.lookup(fileFound) || 'text/plain',
+				fileFound
+			];
+		}
+	} catch (error) {
+		console.error('Error reading directory:', error);
+	}
+	
+	// Return original if no matches found
+	return [ 'text/plain', filePath ];
+}
+
+async function listResourcesDirectory(): Promise<string[]>
+{
+	try {
+		const directories = await fs.readdir(resourcesDir, { withFileTypes: true });
+		const folderNames = directories
+			.filter(dirent => dirent.isDirectory())
+			.map(dirent => dirent.name);
+		return folderNames;
+	} catch (error) {
+		console.error("Error reading resources directory:", error);
+		return [];
+	}
+}
+
 
 // ============================================================================
 // Cleanup handlers for graceful shutdown of MCP server
@@ -977,7 +1066,7 @@ async function startHttpServer()
 			};
 			
 			// Create a new server instance for this session
-			const httpServer = createServerInstance();
+			const httpServer = await createServerInstance();
 			await httpServer.connect(transport);
 		} else {
 			res.status(400).json({
@@ -1009,7 +1098,7 @@ async function startHttpServer()
 	});
 }
 
-function createServerInstance()
+async function createServerInstance()
 {
 	// Create a new server instance (you might want to extract server creation logic)
 	const newServer = new McpServer({
@@ -1018,7 +1107,7 @@ function createServerInstance()
 	});
 	
 	// Re-register all tools (you might want to extract this to a separate function)
-	registerAllTools(newServer);
+	await registerAllTools(newServer);
 	
 	return newServer;
 }
@@ -1068,7 +1157,7 @@ async function main()
 	} else {
 		// Default to stdio
 		const transport = new StdioServerTransport();
-		await createServerInstance().connect(transport);
+		(await createServerInstance()).connect(transport);
 	}
 }
 

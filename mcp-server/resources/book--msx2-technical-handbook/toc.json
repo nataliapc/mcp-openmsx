@@ -1,0 +1,82 @@
+{
+    "title": "MSX2 Technical Handbook",
+    "description": "The MSX2 Technical Handbook is the (almost) full reference of the MSX2 system as published by ASCII Corporation in 1987. It includes detailed information about the MSX system, BASIC, MSX-DOS, VDP and display screen, BIOS access to peripherals, and more.",
+    "external_url": "https://github.com/Konamiman/MSX2-Technical-Handbook",
+    "toc": [
+        {
+            "title": "Chapter 1: MSX system overview",
+            "uri": "msxdocs://book--msx2-technical-handbook/Chapter1__MSX_System_Overview",
+            "description": "Provides a detailed comparison between MSX1 and MSX2, highlighting enhanced features such as improved graphics, higher resolution, expanded memory (RAM and VRAM), and new hardware components like the V9938 VDP and battery-powered clock. It explains the MSX2's compatibility with MSX1 software and peripherals, its standardized interfaces, and its dual software environments: BASIC mode and DOS mode. The chapter includes technical tables, diagrams, and memory maps to describe the system's architecture, addressing, and hardware/software integration."
+        },
+        {
+            "title": "Chapter 2: BASIC",
+            "uri": "msxdocs://book--msx2-technical-handbook/Chapter2__BASIC",
+            "description": "Details the enhancements in MSX BASIC version 2.0, including new instructions, modifications to screen modes, color specifications, graphics, VDP access, sprites, RAM disk operations, and timer features. It explains the internal structure of BASIC, linking with assembly language programs, and advanced features like creating new commands and handling interrupts. The chapter provides technical tables, examples, and diagrams to describe the syntax, functionality, and memory management of BASIC programs. It also includes notes on software development, error codes, and compatibility considerations for MSX systems."
+        },
+        {
+            "title": "Chapter 3: MSX-DOS",
+            "uri": "msxdocs://book--msx2-technical-handbook/Chapter3__MSX-DOS",
+            "description": "Describes MSX-DOS, a disk operating system for MSX computers, derived from MS-DOS and compatible with CP/M applications. It covers MSX-DOS features, such as file-level compatibility with MS-DOS, support for up to eight disk drives, and flexible file management. The chapter explains basic operations, internal and external commands, batch file usage, and system calls for disk and file access. It includes technical details on disk structure, file control blocks (FCB), logical sectors, and random/sequential file access methods. This information is essential for developing software that interacts with MSX-DOS."
+        },
+        {
+            "title": "Chapter 4: VDP and display screen (sections 1 to 5)",
+            "uri": "msxdocs://book--msx2-technical-handbook/Chapter4a__VDP_and_Display_Screen",
+            "description": "Provides detailed information about the V9938 video display processor (VDP) used in MSX2 machines, including its registers, VRAM, I/O ports, and advanced graphics capabilities. It describes various screen modes (TEXT, GRAPHIC, MULTI-COLOR), their configurations, memory structures, and methods for accessing VRAM and registers. The chapter also covers sprite functionality, including two modes (Mode 1 and Mode 2), sprite attributes, collision detection, and advanced features like interlaced mode, vertical scrolling, and hardware commands for graphics manipulation. This information is essential for programming MSX2 graphics and optimizing VDP usage."
+        },
+        {
+            "title": "Chapter 4: VDP and display screen (section 6)",
+            "uri": "msxdocs://book--msx2-technical-handbook/Chapter4b__VDP_and_Display_Screen",
+            "description": "Details the advanced graphical operations supported by the V9938 video display processor (VDP) in MSX2 machines. The chapter explains 12 VDP commands, including high-speed transfers (HMMC, HMMM, YMMM), logical operations (LMMC, LMCM, LMMM, LMMV), and drawing commands (LINE, PSET, POINT). It covers their coordinate systems, register configurations, logical operations, and execution flow. Examples of usage are provided for each command, along with techniques to optimize execution speed. This section is essential for developers working with MSX2 graphics programming and VDP command integration."
+        },
+        {
+            "title": "Chapter 5: Access to peripherals through BIOS (sections 1 to 6)",
+            "uri": "msxdocs://book--msx2-technical-handbook/Chapter5a__Access_to_Peripherals_through_BIOS",
+            "description": "Explains how MSX2 provides a standardized BIOS interface for accessing peripherals, ensuring compatibility across machines and versions. The chapter covers sound generation using the PSG (Programmable Sound Generator) and 1-bit sound port, cassette interface operations, keyboard input and scanning, printer communication, universal I/O interface for devices like joysticks and paddles, and advanced peripherals such as touch panels, light pens, mice, and trackballs. It also details the CLOCK-IC functions, including timekeeping, alarm settings, and battery-powered memory for storing system configurations. BIOS routines for interacting with these peripherals are described, along with examples of assembly language programs."
+        },
+        {
+            "title": "Chapter 5: Access to peripherals through BIOS (section 7)",
+            "uri": "msxdocs://book--msx2-technical-handbook/Chapter5b__Access_to_Peripherals_through_BIOS",
+            "description": "Titled 'Slots and Cartridges', it explains how MSX computers expand their 64K address space to 1MB using slots, including basic and expansion slots. It covers slot selection, inter-slot calls for accessing BIOS routines across slots, and work areas for managing slot status. The chapter also provides guidelines for developing cartridge software, including header configuration, BASIC program auto-start, and device expansion routines. It includes technical details on slot management, memory allocation, and interrupt handling, essential for integrating hardware and software with MSX systems."
+        },
+        {
+            "title": "Appendix 1: BIOS listing",
+            "uri": "msxdocs://book--msx2-technical-handbook/Appendix1__BIOS_Listing",
+            "description": "Provides a comprehensive list of 126 BIOS routines available in MSX systems, categorized by functionality: RSTs, I/O initialization, VDP access, PSG sound, keyboard/printer/game I/O, cassette operations, and miscellaneous routines. It includes entries specific to MSX2, such as SUB-ROM routines for advanced screen modes, palette management, and mouse/light pen support. Each routine is described with its function, input/output parameters, affected registers, and calling sequence. This appendix is essential for developers working with MSX BIOS to interact with hardware and system-level features programmatically."
+        },
+        {
+            "title": "Appendix 2: MATH-PACK",
+            "uri": "msxdocs://book--msx2-technical-handbook/Appendix2__Math-Pack",
+            "description": "Describes the mathematical routines available in MSX-BASIC, which can also be accessed from assembly language programs. The Math-Pack supports floating-point operations, trigonometric functions, type conversions, integer arithmetic, and power calculations. It uses BCD (Binary Coded Decimal) format for real numbers, with single precision (4 bytes) and double precision (8 bytes). The appendix details the memory structure, DAC (Decimal Accumulator), and ARG areas for calculations, along with entry points for operations like addition, subtraction, multiplication, division, and normalization. It also explains routines for input/output of floating-point numbers, type conversion, and comparison. This resource is essential for developers requiring advanced mathematical functionality in MSX software."
+        },
+        {
+            "title": "Appendix 3: Bit block transfer",
+            "uri": "msxdocs://book--msx2-technical-handbook/Appendix3__Bit_Block_Transfer",
+            "description": "Describes routines for transferring data between VRAM, RAM, and disk using assembly language. These routines, located in the expansion ROM, include operations like BLTVV (VRAM-to-VRAM transfer), BLTVM (RAM-to-VRAM transfer), BLTMV (VRAM-to-RAM transfer), BLTVD (disk-to-VRAM transfer), and BLTDV (VRAM-to-disk transfer). Each routine specifies input parameters, such as coordinates, memory addresses, and logical operations, and outputs flags for error handling. The appendix also explains data formatting, memory allocation for screen modes, and hooks for error handling in BASIC or MSX-DOS. This resource is essential for developers working with MSX graphics and storage operations."
+        },
+        {
+            "title": "Appendix 4: Work area listing",
+            "uri": "msxdocs://book--msx2-technical-handbook/Appendix4__Work_Area_Listing",
+            "description": "Provides a detailed map of the MSX2 system work area, describing memory regions used for various functions, including BASIC interpreter operations, VDP register storage, cassette parameters, key input handling, Math-Pack calculations, and RS-232C communication. It also lists hooks for interrupt handling, device connections, and system expansions. Each entry specifies the address, length, initial values, and purpose of the memory area. This appendix is essential for developers working with MSX2 system-level programming, offering insights into memory management and hardware integration."
+        },
+        {
+            "title": "Appendix 5: VRAM map",
+            "uri": "msxdocs://book--msx2-technical-handbook/Appendix5__VRAM_Map",
+            "description": "Provides detailed memory mappings for various MSX2 screen modes, including TEXT (SCREEN 0), GRAPHIC (SCREEN 1-8), and MULTI-COLOR modes. Each screen mode's VRAM usage is outlined, specifying address ranges for pattern name tables, palette tables, pattern generator tables, sprite attributes, color tables, and sprite generators. The appendix highlights differences in VRAM allocation based on resolution and line modes (e.g., 192 vs. 212 lines). This resource is essential for developers working with MSX2 graphics programming, offering precise VRAM layout information for optimizing screen rendering and memory management."
+        },
+        {
+            "title": "Appendix 6: I/O map",
+            "uri": "msxdocs://book--msx2-technical-handbook/Appendix6__IO_Map",
+            "description": "Provides a detailed mapping of MSX2 input/output ports, specifying address ranges and their associated hardware functions. Key sections include ports for RS-232C communication, VDP (Video Display Processor) access, printer control, sound generation (AY-3-8910), parallel port operations, CLOCK-IC for timekeeping, lightpen control, floppy disk controller (FDC), kanji ROM access, and MSX-Audio. Reserved and user-defined ranges are also noted. This resource is essential for developers working with MSX hardware, offering precise port-level details for programming and device integration."
+        },
+        {
+            "title": "Appendices 8 and 10: Control codes and escape sequences",
+            "uri": "msxdocs://book--msx2-technical-handbook/Appendix8_10__Control_Codes_and_Escape_Sequences",
+            "description": "Provides a comprehensive list of control codes (e.g., cursor movement, text editing, and screen clearing) and their corresponding key combinations (e.g., CTRL + A, CTRL + C). Additionally, it details escape sequences for advanced operations, such as cursor positioning (<ESC> Y), screen editing (<ESC> K), and cursor visibility (<ESC> x5). These codes and sequences are essential for interacting with MSX systems programmatically, enabling precise control over text and screen manipulation."
+        },
+        {
+            "title": "MSX Kun Basic compiler",
+            "uri": "msxdocs://book--msx2-technical-handbook/MSX_Kun_BASIC_compiler.md",
+            "description": "The document describes MSX-BASIC-KUN, a BASIC compiler for MSX computers that significantly accelerates program execution (15 to 100 times faster). It compiles most MSX-BASIC statements, supports strings and floating-point numbers, and introduces turbo blocks (_TURBO ON/OFF) for selective compilation. The compiler has limitations, such as unsupported commands (e.g., BLOAD, PRINT#) and restrictions on variable handling within turbo blocks. It adds new features like inline assembly (#I), clipping control (#C), and overflow checks (#N). The compiler operates within RAM and cannot save compiled programs independently. It is ideal for creating high-performance MSX applications without requiring Z80 assembly language expertise."
+        }
+    ]
+}

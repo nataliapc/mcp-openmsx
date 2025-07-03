@@ -1,0 +1,18 @@
+{
+    "title": "More MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
+    "description": "MSX Technical Info from http://bifi.msxnet.org/msxnet/tech/",
+    "toc": [
+        {
+            "title": "MSX I/O ports overview",
+            "uri": "msxdocs://system/MSX_IO_ports_overview",
+            "external_url": "https://map.grauw.nl/resources/msx_io_ports.php",
+            "description": "This comprehensive reference document provides a complete mapping of MSX computer I/O ports (#00-#FF) and memory-mapped I/O areas, detailing hardware interfaces for audio (PSG, MSX-AUDIO, MIDI), video (VDP, Graphics9000), storage (FDC, cartridges, tapes), communication (RS232, modems, Ethernet), input devices (keyboard, joysticks), system control (PPI, memory mappers, slot selection), and various peripherals across different MSX generations (MSX1, MSX2, MSX2+, turboR). It includes specific register descriptions, bit mappings, programming examples, and compatibility notes for both built-in and expansion devices, making it an essential reference for MSX programming, debugging, hardware interfacing, and emulation development."
+        },
+        {
+            "title": "MSX System Variables",
+            "uri": "https://map.grauw.nl/resources/msxsystemvars.php",
+            "external_url": "https://map.grauw.nl/resources/msxsystemvars.php",
+            "description": "This webpage provides an official and detailed overview of MSX system variables, including their memory addresses, lengths, and descriptions. It lists variables such as the base address of the MSX character set, VDP data ports, ROM version information, and MSX version number, among others. This resource is essential for developers and emulator authors who need to understand or manipulate the internal state and hardware configuration of MSX computers, supporting accurate software development and system emulation."
+        }
+    ]
+}

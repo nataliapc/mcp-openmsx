@@ -1,6 +1,6 @@
 {
   "name": "@nataliapc/mcp-openmsx",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Model context protocol server for openMSX automation and control",
   "main": "dist/server.js",
   "type": "module",
@@ -45,6 +45,8 @@
     "zod": "^3.24.4"
   },
   "devDependencies": {
+    "@modelcontextprotocol/inspector": "^0.15.0",
+    "@types/mime-types": "^3.0.1",
     "@types/node": "^22.15.27",
     "shx": "^0.4.0",
     "typescript": "^5.8.3"

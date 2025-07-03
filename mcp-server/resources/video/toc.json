@@ -1,0 +1,28 @@
+{
+    "title": "",
+    "description": "",
+    "toc": [
+        {
+            "title": "VDP TMS9918A",
+            "uri": "msxdocs://video/VDP_TMS9918A",
+            "external_url": "http://bifi.msxnet.org/msxnet/tech/tms9918a.txt",
+            "description": "This document is a comprehensive technical specification of the TMS9918A Video Display Processor used in MSX1, Coleco, and TI99/4A systems, providing detailed documentation on a fundamental 8-bit era graphics chip with 16KB or 4KB video memory and fixed 256x192 pixel resolution. The manual exhaustively covers the chip's four official display modes (Mode 0/SCREEN 1 character-based graphics, Mode 1/SCREEN 0 text mode with 40x24 characters, Mode 2/SCREEN 2 advanced graphics with three independent pattern tables, and Mode 3/SCREEN 3 multicolor mode with 4x4 pixel blocks) plus undocumented hybrid modes, along with complete specifications for the 32-sprite system supporting 8x8 or 16x16 sprites with collision detection and early clock positioning. The documentation includes precise I/O port operations through ports #0 and #1 for memory and register access, detailed register functions for the 8 control registers and status register, interrupt handling mechanisms, color palette definitions for both NTSC and PAL variants, sprite attribute tables, pattern generator and color tables, VRAM addressing schemes including 4K/16K mode differences, and hardware pin-out diagrams, making it essential for emulator developers, homebrew programmers, and anyone requiring low-level understanding of classic MSX video hardware implementation."
+        },
+        {
+            "title": "V9938 Technical Data Book. Programmers Guide",
+            "uri": "msxdocs://video/V9938_Technical_Data_Book",
+            "description": "This document is a comprehensive programmer's guide for the MSX2 video display processor (VDP), detailing its architecture, control and status registers, screen modes, sprite capabilities, and hardware-accelerated commands. It explains how to access and configure the V9938's VRAM, palette, and registers, and describes the various text and graphics modes, including bitmapped and tiled displays. The manual covers both sprite modes, logical and high-speed memory operations, and special features such as interlaced display and page flipping. Designed for developers, it provides in-depth technical information, register maps, and usage examples, making it an essential reference for programming graphics and video functions on MSX2 systems and compatible hardware."
+        },
+        {
+            "title": "V9958 Technical Data Book",
+            "uri": "msxdocs://video/V9958_Technical_Data_Book",
+            "description": "The V9958 Technical Data Book provides a detailed reference for the Yamaha V9958 video display processor, highlighting its enhancements over the V9938, such as support for up to 19,268 simultaneous colors using YJK encoding, expanded horizontal and vertical scroll functions, and new or modified registers for advanced graphics operations. The document covers hardware compatibility, register descriptions, electrical characteristics, and deleted or modified features, making it an essential resource for developers aiming to leverage the V9958's advanced video capabilities in MSX2+, Turbo-R, and related systems."
+        },
+        {
+            "title": "V9990 Programmers Manual (Banzai)",
+            "uri": "msxdocs://video/V9990_Programmers_Manual_Banzai",
+            "external_url": "http://msxbanzai.tni.nl/v9990/manual.html",
+            "description": "This document is a comprehensive technical specification of the V9990 video chip specifically targeted at developers of Gfx9000 and Video9000 cartridges for MSX, providing exhaustive documentation on an advanced video processor with high-speed capabilities for drawing and animation. The manual details multiple display modes including two pattern modes (P1: 256x212 with 2 layers, P2: 512x212) optimized for games with advanced sprite functions and independent omnidirectional scrolling, six bitmap modes (B1-B6) with resolutions from 256x212 to 640x480 capable of displaying up to 32,768 colors per pixel with built-in palettes, and complete specifications for register access, VRAM, palettes, and high-performance hardware commands. The documentation includes detailed tables of I/O ports (P#0 to P#F), memory access methods, data transfer commands (LMMC, LMMV, LMCM, LMMM, etc.), sprite and cursor functions, timing configurations, and complete register specifications, making it essential for programmers developing advanced graphics software on MSX systems with this specialized video chip."
+        }
+    ]
+}
