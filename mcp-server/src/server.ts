@@ -61,15 +61,15 @@ async function registerAllTools(server: McpServer)
 			'setEmulatorSpeed <emuspeed>': sets the emulator speed as a percentage, valid values are 1-10000, default is 100.
 			'machineList': gets a list of all available MSX machines that can be emulated with openMSX.
 			'extensionList': gets a list of all available MSX extensions that can be used with openMSX.
-			'wait <seconds>': performs a wait for the specified number of seconds, default is 2.
+			'wait <seconds>': performs a wait for the specified number of seconds, default is 3.
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed", "machineList", "extensionList", "wait"]),
-			machine: z.string().min(1).max(100).optional(),
-			extensions: z.array(z.string().min(1).max(100)).optional(),
-			emuspeed: z.number().min(1).max(10000).optional().default(100),
-			seconds: z.number().min(1).max(10).optional().default(2),	// Seconds to wait
+			command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed", "machineList", "extensionList", "wait"]).describe("Command to execute"),
+			machine: z.string().min(1).max(100).optional().describe("Machine name to launch; valid names can be obtained using [machineList]. Used by [launch]."),
+			extensions: z.array(z.string().min(1).max(100)).optional().describe("List of extensions to use; valid extensions can be obtained using [extensionList]. Used by [launch]."),
+			emuspeed: z.number().min(1).max(10000).optional().default(100).describe("Emulator speed as a percentage (1-10000); default is 100. Used by [setEmulatorSpeed]."),
+			seconds: z.number().min(1).max(10).optional().default(3).describe("Number of seconds to wait; default is 3. Used by [wait]."),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, machine, extensions, emuspeed, seconds }: { command: string, machine?: string; extensions?: string[]; emuspeed?: number, seconds?: number }) => {
@@ -142,11 +142,11 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["tapeInsert", "tapeRewind", "tapeEject", "romInsert", "romEject", "diskInsert", "diskInsertFolder", "diskEject"]),
-			tapefile: z.string().min(1).max(200).optional(),	// Tape file to insert
-			romfile: z.string().min(1).max(200).optional(),	// ROM file to insert
-			diskfile: z.string().min(1).max(200).optional(),	// Disk file to insert
-			diskfolder: z.string().min(1).max(200).optional(),	// Disk folder to insert
+			command: z.enum(["tapeInsert", "tapeRewind", "tapeEject", "romInsert", "romEject", "diskInsert", "diskInsertFolder", "diskEject"]).describe("Command to execute"),
+			tapefile: z.string().min(1).max(200).optional().describe("Absolute Tape filename to insert. Used by [tapeInsert]"),
+			romfile: z.string().min(1).max(200).optional().describe("Absolute ROM filename to insert. Used by [romInsert]"),
+			diskfile: z.string().min(1).max(200).optional().describe("Absolute Disk filename to insert. Used by [diskInsert]"),
+			diskfolder: z.string().min(1).max(200).optional().describe("Absolute Disk folder filename to insert. Used by [diskInsertFolder]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, tapefile, romfile, diskfile, diskfolder }: { command: string; tapefile?: string; romfile?: string; diskfile?: string; diskfolder?: string }) => {
@@ -200,7 +200,7 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["getStatus", "getSlotsMap", "getIOPortsMap"]),
+			command: z.enum(["getStatus", "getSlotsMap", "getIOPortsMap"]).describe("Command to execute"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command }: { command: string }) => {
@@ -242,9 +242,9 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["getPalette", "getRegisters", "getRegisterValue", "setRegisterValue", "screenGetMode", "screenGetFullText"]),
-			register: z.number().min(0).max(31).optional(),	// Register to read/write
-			value: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional(),
+			command: z.enum(["getPalette", "getRegisters", "getRegisterValue", "setRegisterValue", "screenGetMode", "screenGetFullText"]).describe("Command to execute"),
+			register: z.number().min(0).max(31).optional().describe("VDP register number (0-31) to read/write. Used by [getRegisterValue, setRegisterValue]"),
+			value: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a VDP register value (e.g. 0x1f). Used by [setRegisterValue]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, register, value }: { command: string; register?: number; value?: string }) => {
@@ -299,8 +299,8 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["break", "isBreaked", "continue", "stepIn", "stepOut", "stepOver", "stepBack", "runTo"]),
-			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional()
+			command: z.enum(["break", "isBreaked", "continue", "stepIn", "stepOut", "stepOver", "stepBack", "runTo"]).describe("Command to execute"),
+			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [runTo]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address }: { command: string; address?: string }) => {
@@ -357,11 +357,12 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["getCpuRegisters", "getRegister", "setRegister", "getStackPile", "disassemble", "getActiveCpu"]),
-			register: z.enum(["pc", "sp", "ix", "iy", "af", "bc", "de", "hl", "ixh", "ixl", "iyh", "iyl", "a", "f", "b", "c", "d", "e", "h", "l", "i", "r", "im", "iff"]).optional(),
-			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional(),	// 4 hex digits for MSX memory address
-			value: z.string().regex(/^0x[0-9a-fA-F]{2,4}$/).optional(),	// 2-4 hex digits for byte value for writeByte command
-			size: z.number().min(8).max(50).optional(),					// Number of bytes for disassemble command
+			command: z.enum(["getCpuRegisters", "getRegister", "setRegister", "getStackPile", "disassemble", "getActiveCpu"]).describe("Command to execute"),
+			register: z.enum(["pc", "sp", "ix", "iy", "af", "bc", "de", "hl", "ixh", "ixl", "iyh", "iyl", "a", "f", "b", "c", "d", "e", "h", "l", "i", "r", "im", "iff"]).optional()
+				.describe("CPU register to read/write. Used by [getRegister, setRegister]"),
+			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [disassemble]"),
+			value: z.string().regex(/^0x[0-9a-fA-F]{2,4}$/).optional().describe("2-4 hexadecimal digits for a byte value (e.g. 0xa5 or 0xa5b1). Used by [setRegister]"),
+			size: z.number().min(8).max(50).optional().describe("Number of bytes to disassemble. Used by [disassemble]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, register, value, size }: { command: string; address?: string; register?: string; value?: string; size?: number }) => {
@@ -412,11 +413,11 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord"]),
-			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional(),	// 4 hex digits for MSX memory address
-			lines: z.number().min(1).max(50).optional().default(8),		// Number of lines for getBlock command
-			value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional(),	// 2 hex digits for byte value for writeByte command
-			value16: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional(),	// 4 hex digits for byte value for writeByte command
+			command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord"]).describe("Command to execute"),
+			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [getBlock, readByte, writeByte, readWord, writeWord]"),
+			lines: z.number().min(1).max(50).optional().default(8).describe("Number of lines to obtain. Used by [getBlock]"),
+			value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a byte value (e.g. 0xa5). Used by [writeByte]"),
+			value16: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a word value (e.g. 0xa5b1). Used by [writeWord]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, lines, value8, value16 }: { command: string; address?: string; lines?: number; value8?: string; value16?: string }) => {
@@ -464,10 +465,10 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["getBlock", "readByte", "writeByte"]),
-			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional(),	// 4 hex digits for MSX memory address
-			lines: z.number().min(1).max(50).optional().default(8),		// Number of lines for getBlock command
-			value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional(),	// 2 hex digits for byte value for writeByte command
+			command: z.enum(["getBlock", "readByte", "writeByte"]).describe("Command to execute"),
+			address: z.string().regex(/^0x[0-9a-fA-F]{5}$/).optional().describe("5 hexadecimal digits for a VRAM address (e.g. 0x04af3). Used by [getBlock, readByte, writeByte]"),
+			lines: z.number().min(1).max(50).optional().default(8).describe("Number of lines to obtain. Used by [getBlock]"),
+			value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a byte value (e.g. 0xa5). Used by [writeByte]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, lines, value8 }: { command: string; address?: string; lines?: number; value8?: string }) => {
@@ -502,14 +503,14 @@ async function registerAllTools(server: McpServer)
 			'create <address>': create a breakpoint at a specified address, and returns its name.
 			'remove <bpname>': remove a breakpoint by name (e.g. bp#1).
 			'list': enumerate the active breakpoints.
-		"**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
+		"**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x4af3).
 		"**Important Note**: The memory addresses of functions and variables can be previously obtained from *.sym or *.map files.
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["create", "remove", "list"]),
-			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional(),	// 4 hex digits for MSX memory address
-			bpname: z.string().min(3).max(10).optional(),				// breakpoint name (e.g. bp#1)
+			command: z.enum(["create", "remove", "list"]).describe("Command to execute"),
+			address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [create]"),
+			bpname: z.string().min(3).max(10).optional().describe("Breakpoint name (e.g. bp#1). Used by [remove]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, bpname }: { command: string; address?: string; bpname?: string }) => {
@@ -548,8 +549,8 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["load", "save", "list"]),
-			name: z.string().min(1).max(20).optional(),				// breakpoint name (e.g. bp#1)
+			command: z.enum(["load", "save", "list"]).describe("Command to execute"),
+			name: z.string().min(1).max(20).optional().describe("Name of the savestate to load/save. Used by [load, save]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, name }: { command: string; name?: string }) => {
@@ -599,10 +600,10 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["start", "stop", "status", "goBack", "absoluteGoto", "truncate", "saveReplay", "loadReplay"]),
-			seconds: z.number().min(1).max(60).optional(),			// Seconds to go back
-			time: z.string().regex(/^\d+$/).optional(),				// Time in seconds to go to
-			filename: z.string().min(1).max(200).optional(),		// Filename to save/load replay
+			command: z.enum(["start", "stop", "status", "goBack", "absoluteGoto", "truncate", "saveReplay", "loadReplay"]).describe("Command to execute"),
+			seconds: z.number().min(1).max(60).optional().describe("Seconds to go back. Used by [goBack]"),
+			time: z.string().regex(/^\d+$/).optional().describe("Absolute time in seconds to go to. Used by [absoluteGoto]"),
+			filename: z.string().min(1).max(200).optional().describe("Filename to save/load replay. Used by [saveReplay, loadReplay]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, seconds, time, filename }: { command: string; seconds?: number; time?: string; filename?: string }) => {
@@ -657,8 +658,8 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["sendText"]),
-			text: z.string().min(1).max(200).optional().default(''),	// Key to send to the emulator
+			command: z.enum(["sendText"]).describe("Command to execute"),
+			text: z.string().min(1).max(200).optional().default('').describe("Text to send to the emulator via emulated keyboard"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, text }: { command: string; text: string }) => {
@@ -689,7 +690,7 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["as_image", "to_file"]),
+			command: z.enum(["as_image", "to_file"]).describe("Command to execute"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command }: { command: string }) => {
@@ -776,10 +777,10 @@ async function registerAllTools(server: McpServer)
 		`,
 		// Schema for the tool (input validation)
 		{
-			command: z.enum(["newProgram", "runProgram", "setProgram", "getFullProgram", "getFullProgramAdvanced", "listProgramLines", "deleteProgramLines"]),
-			program: z.string().min(1).max(10000).optional(),	// BASIC program to set
-			startLine: z.number().min(0).max(9999).optional(),
-			endLine: z.number().min(0).max(9999).optional(),
+			command: z.enum(["newProgram", "runProgram", "setProgram", "getFullProgram", "getFullProgramAdvanced", "listProgramLines", "deleteProgramLines"]).describe("Command to execute"),
+			program: z.string().min(1).max(10000).optional().describe("Basic program to set; every line must be ended with \\r, even the last one. Used by [setProgram]"),
+			startLine: z.number().min(0).max(9999).optional().describe("Start line number to list/delete BASIC program lines. Used by [listProgramLines, deleteProgramLines]"),
+			endLine: z.number().min(0).max(9999).optional().describe("End line number to list/delete BASIC program lines. Used by [listProgramLines, deleteProgramLines]"),
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, program, startLine, endLine }: { command: string; program?: string; startLine?: number, endLine?: number }) => {
