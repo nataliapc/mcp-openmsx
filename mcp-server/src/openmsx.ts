@@ -228,6 +228,15 @@ export class OpenMSX {
         }
     }
 
+    async emu_isInBasic(): Promise<boolean> {
+        try {
+            const response = await this.sendCommand('slotselect');
+            return response.includes('0000: slot 0') && response.includes('4000: slot 0')
+        } catch (error) {
+            return false;
+        }
+    }
+
     /**
      * Get the list of machines available in the openMSX emulator
      * @returns Promise<object> - object with machine names and descriptions or error message

@@ -830,23 +830,25 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			title: "BASIC programming tools",
 			// Description of the tool (what it does)
 			description:
-`Tool helper to develop BASIC programs.
+`Helper tool for developing BASIC programs.
 Commands:
+	'isBasicAvailable': checks if the current machine is ready to manage BASIC programs (true), or not (false).
 	'newProgram': clears the current BASIC program.
-	'setProgram <program>': sets/updates the current BASIC program to the specified string.
+	'setProgram <program>': sets a full BASIC program or updates part of the current BASIC program with the specified string.
 	'runProgram': runs the current BASIC program.
-	'getFullProgram': returns the current BASIC program as a plain text string.
-	'getFullProgramAdvanced': returns the current BASIC program with the ram address where each line is coded.
-	'listProgramLines <startLine> [endLine]': lists at the emulator screen the selected range lines of the current BASIC program.
-	'deleteProgramLines <startLine> [endline]': deletes a specific line range from the current BASIC program, if endline is not specified, only the startLine is deleted.
-**Important Note**: priorize this tools to develop BASIC programs, it's more efficient than using the 'sendText' tool.
-**Important Note**: all the program lines must be ended with a carriage return (\\r) to be correctly processed, even the last one.
-**Important Note**: if you have doubts about MSX BASIC, use the resources provided by this MCP.
+	'getFullProgram': retrieves the current BASIC program as plain text; very useful in text screen modes.
+	'getFullProgramAdvanced': retrieves the current BASIC program along with the RAM address where each line is stored.
+	'listProgramLines <startLine> [endLine]': lists the selected range of lines from the current BASIC program on the emulator screen.
+	'deleteProgramLines <startLine> [endLine]': deletes a specific range of lines from the current BASIC program; if endLine is not specified, only the startLine is deleted.
+**Important Note**: if error 'not in BASIC mode' then use the command 'isBasicAvailable' to wait for a ready state.
+**Important Note**: prioritize these tools for developing BASIC programs, as they are more efficient than using the 'sendText' tool.
+**Important Note**: all program lines must end with a carriage return (\\r) to be processed correctly, including the last line.
+**Important Note**: if you have questions about MSX BASIC, use the resources provided by this MCP server.
 `,
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["newProgram", "runProgram", "setProgram", "getFullProgram", "getFullProgramAdvanced", "listProgramLines", "deleteProgramLines"]).describe("Command to execute"),
-				program: z.string().min(1).max(10000).optional().describe("Basic program to set; every line must be ended with \\r, even the last one. Used by [setProgram]"),
+				command: z.enum(["isBasicAvailable", "newProgram", "runProgram", "setProgram", "getFullProgram", "getFullProgramAdvanced", "listProgramLines", "deleteProgramLines"]).describe("Command to execute"),
+				program: z.string().min(1).max(10000).optional().describe("Basic program to set; use only \\r for line endings, even the last one. Used by [setProgram]"),
 				startLine: z.number().min(0).max(9999).optional().describe("Start line number to list/delete BASIC program lines. Used by [listProgramLines, deleteProgramLines]"),
 				endLine: z.number().min(0).max(9999).optional().describe("End line number to list/delete BASIC program lines. Used by [listProgramLines, deleteProgramLines]"),
 			},
@@ -856,7 +858,15 @@ Commands:
 			const CTRL_L_TEMPLATE = 'keymatrixdown 6 2 ; keymatrixdown 4 2 ; after time 0.1 { keymatrixup 6 2 ; keymatrixup 4 2 ; type_via_keybuf "%s" }';
 			let tclCommand: string | undefined = undefined;
 			let response: string | undefined = undefined;
+
+			const inBasic = await openMSXInstance.emu_isInBasic();
+			if (command !== "isBasicAvailable" && !inBasic) {
+				response = 'Error: The current MSX machine is not in BASIC mode.'
+			} else
 			switch (command) {
+				case "isBasicAvailable":
+					response = inBasic.toString();
+					break;
 				case "newProgram":
 					response = await openMSXInstance.sendCommand(CTRL_L_TEMPLATE.replace('%s', encodeTypeText('new\r')));
 					if (response.startsWith('after#')) response = '';
@@ -874,24 +884,25 @@ Commands:
 					break;
 				case "setProgram":
 					if (!program) {
-						response = 'Error: No BASIC program provided to set.'
+						response = 'Error: no BASIC program provided to set.'
 						break;
 					}
+					if (program.includes('\n') || program.includes('\\n')) {
+						response = 'Error: you cannot use \\n for line endings, use only \\r instead.';
+						break;
+					}
+					// Escape '$' characters if '(' is the next character and is not escaped yet (openMSX variable substitutions)
+					program = program.replace(/([^\\])(\$\()/g, '$1\\$2');
 					// Get current speed to restore it later
 					let speed = '100';
 					if (isErrorResponse(speed = await openMSXInstance.sendCommand('set speed'))) {
 						response = speed;
 						break;
 					}
-					// Set speed to fast for program input
-					if (isErrorResponse(response = await openMSXInstance.sendCommand('set speed 10000')))
-						break;
-					// Clear the screen and type the program
-					if (isErrorResponse(response = await openMSXInstance.sendCommand(`type_via_keybuf "${encodeTypeText(program)}"`)))
-						break;
-					// Restore the original speed
-					if (isErrorResponse(response = await openMSXInstance.sendCommand(`set speed ${speed}`)))
-						break;
+					// Set speed to fast, type de program, wait to end, and restore speed
+					if (isErrorResponse(response = await openMSXInstance.sendCommand(
+						`set speed 10000 ; type_via_keybuf "${encodeTypeText(program)}" ; after idle 20 { set speed ${speed} }`
+					))) break;
 					// Success response
 					response = '';
 					break;
@@ -921,6 +932,7 @@ Commands:
 			]);
 		}
 	);
+
 
 	// ============================================================================
 	// MSX Documentation resources
