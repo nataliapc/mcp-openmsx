@@ -52,23 +52,21 @@ async function registerAllTools(server: McpServer)
 		{
 			title: "Emulator control tools",
 			// Description of the tool (what it does)
-			description:
-`Controls an openMSX emulator.
-Commands:
-	'launch [machine] [extensions]': opens a powered-on openMSX emulator; you must wait some time waiting the machine is fully booted; machine and extensions parameters can be specified so use 'machineList' and 'extensionList' commands to obtain valid values. " +
-	'close': closes the openMSX emulator.
-	'powerOn': powers on the openMSX emulator.
-	'powerOff': powers off the openMSX emulator.
-	'reset': resets the current machine.
-	'getEmulatorSpeed': gets the current emulator speed as a percentage, default is 100.
-	'setEmulatorSpeed <emuspeed>': sets the emulator speed as a percentage, valid values are 1-10000, default is 100.
-	'machineList': gets a list of all available MSX machines that can be emulated with openMSX.
-	'extensionList': gets a list of all available MSX extensions that can be used with openMSX.
-	'wait <seconds>': performs a wait for the specified number of seconds, default is 3.
-`,
+			description: "Tools to control an openMSX emulator.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed", "machineList", "extensionList", "wait"]).describe("Command to execute"),
+				command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed", "machineList", "extensionList", "wait"]).describe(`Available commands:
+'launch [machine] [extensions]': opens a powered-on openMSX emulator; you must wait some time waiting the machine is fully booted; machine and extensions parameters can be specified so use 'machineList' and 'extensionList' commands to obtain valid values. " +
+'close': closes the openMSX emulator.
+'powerOn': powers on the openMSX emulator.
+'powerOff': powers off the openMSX emulator.
+'reset': resets the current machine.
+'getEmulatorSpeed': gets the current emulator speed as a percentage, default is 100.
+'setEmulatorSpeed <emuspeed>': sets the emulator speed as a percentage, valid values are 1-10000, default is 100.
+'machineList': gets a list of all available MSX machines that can be emulated with openMSX.
+'extensionList': gets a list of all available MSX extensions that can be used with openMSX.
+'wait <seconds>': performs a wait for the specified number of seconds, default is 3.
+`),
 				machine: z.string().min(1).max(100).optional().describe("Machine name to launch; valid names can be obtained using [machineList]. Used by [launch]."),
 				extensions: z.array(z.string().min(1).max(100)).optional().describe("List of extensions to use; valid extensions can be obtained using [extensionList]. Used by [launch]."),
 				emuspeed: z.number().min(1).max(10000).optional().default(100).describe("Emulator speed as a percentage (1-10000); default is 100. Used by [setEmulatorSpeed]."),
@@ -135,9 +133,10 @@ Commands:
 		{
 			title: "Emulator media tools",
 			// Description of the tool (what it does)
-			description:
-`Manage tapes, rom cartridges, and floppy disks.
-Commands:
+			description: "Manage tapes, rom cartridges, and floppy disks.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["tapeInsert", "tapeRewind", "tapeEject", "romInsert", "romEject", "diskInsert", "diskInsertFolder", "diskEject"]).describe(`Available commands:
 	'tapeInsert <tapefile>': insert a valid tape file (*.cas, *.wav, *.tsx).
 	'tapeRewind': rewind the current tape.
 	'tapeEject': remove tape from virtual cassette player.
@@ -146,10 +145,7 @@ Commands:
 	'diskInsert <diskfile>': insert a valid disk file (*.dsk) in floppy disk A.
 	'diskInsertFolder <diskfolder>': use a host folder as a floppy disk A root directory.
 	'diskEject': remove the current disk from floppy disk A.
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["tapeInsert", "tapeRewind", "tapeEject", "romInsert", "romEject", "diskInsert", "diskInsertFolder", "diskEject"]).describe("Command to execute"),
+`),
 				tapefile: z.string().min(1).max(200).optional().describe("Absolute Tape filename to insert. Used by [tapeInsert]"),
 				romfile: z.string().min(1).max(200).optional().describe("Absolute ROM filename to insert. Used by [romInsert]"),
 				diskfile: z.string().min(1).max(200).optional().describe("Absolute Disk filename to insert. Used by [diskInsert]"),
@@ -202,16 +198,14 @@ Commands:
 		{
 			title: "Emulator info tools",
 			// Description of the tool (what it does)
-			description:
-`Obtain informacion about the current emulated machine.
-Commands:
+			description: "Obtain informacion about the current emulated machine.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["getStatus", "getSlotsMap", "getIOPortsMap"]).describe(`Available commands:
 	'getStatus': returns the status of the openMSX emulator.
 	'getSlotsMap': shows what devices/ROM/RAM are inserted into which slots.
 	'getIOPortsMap': shows an overview about the I/O mapped devices.
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["getStatus", "getSlotsMap", "getIOPortsMap"]).describe("Command to execute"),
+`),
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
@@ -245,19 +239,17 @@ Commands:
 		{
 			title: "VDP tools",
 			// Description of the tool (what it does)
-			description:
-`Manage the VDP (Video Display Processor).
-Commands:
+			description: "Manage the VDP (Video Display Processor).",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["getPalette", "getRegisters", "getRegisterValue", "setRegisterValue", "screenGetMode", "screenGetFullText"]).describe(`Available commands:
 	'getPalette': returns the current V9938/V9958 color palette in RGB333 format.
 	'getRegisters': returns all VDP register values.
 	'getRegisterValue <register>': returns the value of a specific VDP register (0-31) in decimal format.
 	'setRegisterValue <register> <value>': sets a hexadecimal value to a specific VDP register (0-31).
 	'screenGetMode': returns the current screen mode (0-12) as a number, which matches the BASIC SCREEN command.
 	'screenGetFullText': returns the full content of an MSX text screen (screen 0 or 1) as a string; PRIORITIZE this command to view screen content in text modes.
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["getPalette", "getRegisters", "getRegisterValue", "setRegisterValue", "screenGetMode", "screenGetFullText"]).describe("Command to execute"),
+`),
 				register: z.number().min(0).max(31).optional().describe("VDP register number (0-31) to read/write. Used by [getRegisterValue, setRegisterValue]"),
 				value: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a VDP register value (e.g. 0x1f). Used by [setRegisterValue]"),
 			},
@@ -303,9 +295,10 @@ Commands:
 		{
 			title: "CPU Runtime Debugger tools",
 			// Description of the tool (what it does)
-			description:
-`Control execution (break, continue, step).
-Commands:
+			description: "Control execution (break, continue, step).",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["break", "isBreaked", "continue", "stepIn", "stepOut", "stepOver", "stepBack", "runTo"]).describe(`Available commands:
 	'break': to break CPU (pause emulation) at current execution position.
 	'isBreaked': to check if the CPU is currently in break state (1) or not (0).
 	'continue': to continue execution after break.
@@ -315,10 +308,7 @@ Commands:
 	'stepBack': to step one instruction back in time.
 	'runTo <address>': to run the CPU until it reaches the specified address.
 **Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["break", "isBreaked", "continue", "stepIn", "stepOut", "stepOver", "stepBack", "runTo"]).describe("Command to execute"),
+`),
 				address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [runTo]"),
 			},
 		},
@@ -367,9 +357,10 @@ Commands:
 		{
 			title: "CPU tools",
 			// Description of the tool (what it does)
-			description:
-`Read/write CPU registers, CPU info, Stack pile, and Disassemble code from memory.
-Commands:
+			description: "Read/write CPU registers, CPU info, Stack pile, and Disassemble code from memory.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["getCpuRegisters", "getRegister", "setRegister", "getStackPile", "disassemble", "getActiveCpu"]).describe(`Available commands:
 	'getCpuRegisters': to get an overview of all the CPU registers.
 	'getRegister <register>': to get the decimal value of a specific CPU register (pc, sp, ix, iy, af, bc, de, hl, ixh, ixl, iyh, iyl, a, f, b, c, d, e, h, l, i, r, im, iff).
 	'setRegister <register> <value>': to set the value of a specific CPU register (pc, sp, ix, iy, af, bc, de, hl, ixh, ixl, iyh, iyl, a, f, b, c, d, e, h, l, i, r, im, iff).
@@ -377,10 +368,7 @@ Commands:
 	'disassemble [address] [size]': to print disassembled instructions at the address parameter location or PC register if empty.
 	'getActiveCpu': to return the active cpu: z80 or r800.
 "**Important Note**: Addresses and values are in hexadecimal format (e.g. 0xd2 0x3af2)."
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["getCpuRegisters", "getRegister", "setRegister", "getStackPile", "disassemble", "getActiveCpu"]).describe("Command to execute"),
+`),
 				register: z.enum(["pc", "sp", "ix", "iy", "af", "bc", "de", "hl", "ixh", "ixl", "iyh", "iyl", "a", "f", "b", "c", "d", "e", "h", "l", "i", "r", "im", "iff"]).optional()
 					.describe("CPU register to read/write. Used by [getRegister, setRegister]"),
 				address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [disassemble]"),
@@ -427,9 +415,10 @@ Commands:
 		{
 			title: "Memory tools",
 			// Description of the tool (what it does)
-			description:
-`Slots info, and Read/write from/to memory in the openMSX emulator.
-Commands:
+			description: "Slots info, and Read/write from/to memory in the openMSX emulator.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord"]).describe(`Available commands:
 	'selectedSlots': to get a list of the currently selected memory slots.
 	'getBlock <address> [lines]': to read a block of memory from the specified address.
 	'readByte <address>': to read a BYTE from the specified address.
@@ -437,10 +426,7 @@ Commands:
 	'writeByte <address> <value8>': to write a BYTE to the specified address.
 	'writeWord <address> <value16>': to write a WORD to the specified address.
 **Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord"]).describe("Command to execute"),
+`),
 				address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [getBlock, readByte, writeByte, readWord, writeWord]"),
 				lines: z.number().min(1).max(50).optional().default(8).describe("Number of lines to obtain. Used by [getBlock]"),
 				value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a byte value (e.g. 0xa5). Used by [writeByte]"),
@@ -486,17 +472,15 @@ Commands:
 		{
 			title: "VRAM tools",
 			// Description of the tool (what it does)
-			description:
-`Read or write from/to VRAM video memory in the openMSX emulator.
-Commands:
+			description: "Read or write from/to VRAM video memory from the openMSX emulator.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["getBlock", "readByte", "writeByte"]).describe(`Available commands:
 	'getBlock <address> [lines]': to read a block of VRAM memory from the specified address.
 	'readByte <address>': to read a BYTE from the specified VRAM address.
 	'writeByte <address> <value8>': to write a BYTE to the specified VRAM address.
 **Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["getBlock", "readByte", "writeByte"]).describe("Command to execute"),
+`),
 				address: z.string().regex(/^0x[0-9a-fA-F]{5}$/).optional().describe("5 hexadecimal digits for a VRAM address (e.g. 0x04af3). Used by [getBlock, readByte, writeByte]"),
 				lines: z.number().min(1).max(50).optional().default(8).describe("Number of lines to obtain. Used by [getBlock]"),
 				value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a byte value (e.g. 0xa5). Used by [writeByte]"),
@@ -532,18 +516,16 @@ Commands:
 		{
 			title: "Breakpoints tools",
 			// Description of the tool (what it does)
-			description:
-`Create, remove, and list breakpoints.
-Commands:
+			description: "Create, remove, and list breakpoints.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["create", "remove", "list"]).describe(`Available commands:
 	'create <address>': create a breakpoint at a specified address, and returns its name.
 	'remove <bpname>': remove a breakpoint by name (e.g. bp#1).
 	'list': enumerate the active breakpoints.
 "**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x4af3).
 "**Important Note**: The memory addresses of functions and variables can be previously obtained from *.sym or *.map files.
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["create", "remove", "list"]).describe("Command to execute"),
+`),
 				address: z.string().regex(/^0x[0-9a-fA-F]{4}$/).optional().describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [create]"),
 				bpname: z.string().min(3).max(10).optional().describe("Breakpoint name (e.g. bp#1). Used by [remove]"),
 			},
@@ -578,17 +560,15 @@ Commands:
 		{
 			title: "Save states tools",
 			// Description of the tool (what it does)
-			description:
-`Load, save, and list savestates.
-Commands:
+			description: "Load, save, and list savestates.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["load", "save", "list"]).describe(`Available commands:
 	'load <name>': restores a previously created savestate.
 	'save <name>': creates a snapshot of the currently emulated MSX machine specifying a name for the savestate.
 	'list': returns the names of all previously created savestates, separated by spaces.
 **Important Note**: names with spaces are enclosed in {}.
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["load", "save", "list"]).describe("Command to execute"),
+`),
 				name: z.string().min(1).max(20).optional().describe("Name of the savestate to load/save. Used by [load, save]"),
 			},
 		},
@@ -627,10 +607,10 @@ Commands:
 		{
 			title: "Replay tools",
 			// Description of the tool (what it does)
-			description:
-`When replay is enabled (the default) the emulator collect data while emulating,
-which enables you to go back and forward in the emulated MSX time.
-Commands:
+			description: "When replay is enabled (the default) the emulator collect data while emulating, which enables you to go back and forward in the emulated MSX time.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["start", "stop", "status", "goBack", "absoluteGoto", "truncate", "advanceFrame", "reverseFrame", "saveReplay", "loadReplay"]).describe(`Available commands:
 	'start': starts the replay mode (enabled by default when emulator is launched).
 	'stop': stops the replay mode.
 	'status': gives information about the replay feature and the data that is collected.
@@ -642,10 +622,7 @@ Commands:
 	'saveReplay [filename]': saves the current replay data to a file (extension .omr), filename is returned in the response.
 	'loadReplay <filename>': loads a previously saved replay file (extension .omr), starts replaying from the begin, and starts replay mode.
 **Important Note**: consider do a #debug_run 'break' to maintain the timeline before a 'goBack' or 'absoluteGoto'.
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["start", "stop", "status", "goBack", "absoluteGoto", "truncate", "advanceFrame", "reverseFrame", "saveReplay", "loadReplay"]).describe("Command to execute"),
+`),
 				seconds: z.number().min(1).max(60).optional().describe("Seconds to go back. Used by [goBack]"),
 				time: z.string().regex(/^\d+$/).optional().describe("Absolute time in seconds to go to. Used by [absoluteGoto]"),
 				frames: z.number().min(1).max(1000).optional().default(1).describe("Number of frames to advance/reverse. Used by [advanceFrame, reverseFrame]"),
@@ -705,16 +682,14 @@ Commands:
 		{
 			title: "Keyboard tools",
 			// Description of the tool (what it does)
-			description:
-`Send a text to the openMSX emulator.
-Commands:
+			description: "Send a text to the openMSX emulator.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["sendText"]).describe(`Available commands:
 	'sendText <text>': type a string in the emulated MSX, this command automatically press and release keys in the MSX keyboard matrix.
 **Important Note**: each 'text' sent is limited to 200 characters, and the 'text' is sent as if it was typed in the MSX keyboard.
 **Important Note**: escape keys that needs it as Return key (use \\r), double quotes (use \\\"), etc...
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["sendText"]).describe("Command to execute"),
+`),
 				text: z.string().min(1).max(200).optional().default('').describe("Text to send to the emulator via emulated keyboard"),
 			},
 		},
@@ -742,15 +717,13 @@ Commands:
 		{
 			title: "Screenshot tools",
 			// Description of the tool (what it does)
-			description:
-`Take a screenshot of the openMSX emulator screen.
-Commands:
-	'as_image': take a screenshot and the image is returned in the response.
-	'to_file': take a screenshot and save it to a file, the file name is returned in the response.
-`,
+			description: "Take a screenshot of the openMSX emulator screen.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["as_image", "to_file"]).describe("Command to execute"),
+				command: z.enum(["as_image", "to_file"]).describe(`Available commands:
+	'as_image': take a screenshot and the image is returned in the response.
+	'to_file': take a screenshot and save it to a file, the file name is returned in the response.
+`),
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
@@ -804,8 +777,7 @@ Commands:
 		{
 			title: "Screen dump tools",
 			// Description of the tool (what it does)
-			description:
-`Take a screendump of the openMSX emulator screen as SC?.
+			description: `Take a screendump of the openMSX emulator screen as SC?.
 The parameter scrbasename is the name of the filename (without path) to save the screendump, default is 'screendump'.
 `,
 			// Schema for the tool (input validation)
@@ -829,9 +801,10 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		{
 			title: "BASIC programming tools",
 			// Description of the tool (what it does)
-			description:
-`Helper tool for developing BASIC programs.
-Commands:
+			description: "Helper tool for developing BASIC programs.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["isBasicAvailable", "newProgram", "runProgram", "setProgram", "getFullProgram", "getFullProgramAdvanced", "listProgramLines", "deleteProgramLines"]).describe(`Available commands:
 	'isBasicAvailable': checks if the current machine is ready to manage BASIC programs (true), or not (false).
 	'newProgram': clears the current BASIC program.
 	'setProgram <program>': sets a full BASIC program or updates part of the current BASIC program with the specified string.
@@ -844,10 +817,7 @@ Commands:
 **Important Note**: prioritize these tools for developing BASIC programs, as they are more efficient than using the 'sendText' tool.
 **Important Note**: all program lines must end with a carriage return (\\r) to be processed correctly, including the last line.
 **Important Note**: if you have questions about MSX BASIC, use the resources provided by this MCP server.
-`,
-			// Schema for the tool (input validation)
-			inputSchema: {
-				command: z.enum(["isBasicAvailable", "newProgram", "runProgram", "setProgram", "getFullProgram", "getFullProgramAdvanced", "listProgramLines", "deleteProgramLines"]).describe("Command to execute"),
+`),
 				program: z.string().min(1).max(10000).optional().describe("Basic program to set; use only \\r for line endings, even the last one. Used by [setProgram]"),
 				startLine: z.number().min(0).max(9999).optional().describe("Start line number to list/delete BASIC program lines. Used by [listProgramLines, deleteProgramLines]"),
 				endLine: z.number().min(0).max(9999).optional().describe("End line number to list/delete BASIC program lines. Used by [listProgramLines, deleteProgramLines]"),
