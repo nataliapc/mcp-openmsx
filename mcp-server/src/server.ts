@@ -6,7 +6,7 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.1.9
+ * @version 1.1.13
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
@@ -22,11 +22,10 @@ import mime from "mime-types";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
-import { file } from "zod/v4";
 
 
 // Version info for CLI
-const PACKAGE_VERSION = "1.1.9";
+const PACKAGE_VERSION = "1.1.13";
 
 const resourcesDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../resources");
 
@@ -993,7 +992,7 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			description: "Documentation about all the standard MSX-BASIC instructions.",
 			mimeType: "text/html",
 		},
-		async (uri: URL, variables) => {
+		async (uri: URL, variables: any) => {
 			const section = (variables.section as string).replace(/ /g, '_').replace(/\?/g, '%3F').replace(/=/g, '%3D');
 			const url = `https://www.msx.org/wiki/${section}`;
 			let resourceContent: string;
@@ -1214,7 +1213,12 @@ async function createServerInstance()
 	});
 	
 	// Re-register all tools (you might want to extract this to a separate function)
-	await registerAllTools(newServer);
+	try {
+		await registerAllTools(newServer);
+	} catch (error) {
+		console.error("Error registering tools/resources:", error);
+		throw error;
+	}
 	
 	return newServer;
 }

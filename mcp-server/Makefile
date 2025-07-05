@@ -11,6 +11,7 @@ npm_install:
 
 build: npm_install
 	@echo "$(COL_WHITE)#### Building MCP-openMSX project...$(COL_RESET)"
+	npm ci
 	npm run build
 
 run_stdio: build
