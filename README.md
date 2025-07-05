@@ -50,7 +50,7 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 - `emu_vdp`: Manage VDP (Video Display Processor): _`getPalette`, `getRegisters`, `getRegisterValue`, `setRegisterValue`, `screenGetMode`, `screenGetFullText`_.
 
 ### Programming Tools
-- `basic_programming`: BASIC tools: _`newProgram`, `runProgram`, `setProgram`, `getFullProgram`, `getFullProgramAdvanced`, `listProgramLines`, `deleteProgramLines`_.
+- `basic_programming`: BASIC tools: _`isBasicAvailable`, `newProgram`, `runProgram`, `setProgram`, `getFullProgram`, `getFullProgramAdvanced`, `listProgramLines`, `deleteProgramLines`_.
 
 ### Debugging Tools
 - `debug_run`: Control execution: _`break`, `isBreaked`, `continue`, `stepIn`, `stepOut`, `stepOver`, `stepBack`, `runTo`_.
@@ -83,6 +83,7 @@ There are more than 60 resources available, some included directly in the MCP an
 - `Programming` (ASM, BASIC, ...)
 - `MSX-DOS`
 - `MSX-UNAPI`
+- `MSX BASIC`
 
 And two books:
 

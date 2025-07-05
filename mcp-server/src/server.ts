@@ -993,6 +993,61 @@ Commands:
 			);
 		});
 	};
+
+	server.resource(
+		"msxdocs_msxorg_wiki",
+		new ResourceTemplate(
+			"msxdocs://msxorg_wiki/{section}",
+			{
+				list: undefined,
+				complete: {
+					section: (value: string) => [
+						"ABS()", "AND", "ASC()", "ATN()", "AUTO", "BASE()", "BEEP", "BIN$()", "BLOAD", "BSAVE", "CALL", "CALL ADJUST", "CALL PAUSE", "CALL PCMPLAY", "CALL PCMREC",
+						"CDBL()", "CHR$()", "CINT()", "CIRCLE", "CLEAR", "CLOAD", "CLOAD?", "CLOSE", "CLS","COLOR","COLOR=","COLOR","COLOR","CONT","COPY","COPY","COS()","CSAVE",
+						"CSNG()","CSRLIN","DATA","DEFDBL","DEF FN","DEFINT","DEFSNG","DEFSTR","DEF USR","DELETE","DIM","DRAW","ELSE","END", "EOF()", "EQV", "ERASE", "ERL", "ERR",
+						"ERROR", "EXP()", "FIX()", "FN	MSX1", "FOR...NEXT", "FRE()", "GET DATE", "GET TIME", "GOSUB", "GOTO", "HEX$()", "IF...GOTO...ELSE", "IF...THEN...ELSE",
+						"IMP", "INKEY$", "INP()", "INPUT", "INPUT$()", "INSTR()", "INT()", "INTERVAL", "KEY", "KEY()", "LEFT$()", "LEN()", "LET", "LINE", "LINE INPUT", "LIST",
+						"LLIST", "LOAD", "LOCATE", "LOG()", "LPOS()", "LPRINT", "MAXFILES", "MERGE", "MID$()", "MOD", "MOTOR", "NEW", "NOT", "OCT$()", "ON...GOSUB", "ON...GOTO",
+						"ON ERROR GOTO", "ON INTERVAL GOSUB", "ON KEY GOSUB", "ON SPRITE GOSUB", "ON STOP GOSUB", "ON STRIG GOSUB", "OPEN", "OR", "OUT", "PAD()", "PAINT", "PDL()",
+						"PEEK()", "PLAY", "PLAY()", "POINT", "POKE", "POS()", "PRESET", "PRINT", "PSET", "PUT KANJI", "PUT SPRITE", "READ", "REM", "RENUM", "RESTORE", "RESUME",
+						"RETURN", "RIGHT$()", "RND()", "RUN", "SAVE", "SCREEN", "SET ADJUST", "SET BEEP", "SET DATE", "SET PAGE", "SET PASSWORD", "SET PROMPT", "SET SCREEN",
+						"SET SCROLL", "SET TIME", "SET TITLE", "SET VIDEO", "SGN()", "SIN()", "SOUND", "SPACE$()", "SPC()", "SPRITE", "SPRITE$()", "SQR()", "STICK()", "STOP",
+						"STR$()", "STRIG()", "STRING$()", "SWAP", "TAB()", "TAN()", "TIME", "TROFF", "TRON", "USR()", "VAL()", "VARPTR()", "VDP()", "VPEEK()", "VPOKE", "WAIT",
+						"WIDTH", "XOR"
+					],
+				},
+			}
+		),
+		{
+			title: "BASIC MSX Documentation",
+			description: "Documentation about all the standard MSX-BASIC instructions.",
+			mimeType: "text/html",
+		},
+		async (uri: URL, variables) => {
+			const section = (variables.section as string).replace(/ /g, '_').replace(/\?/g, '%3F').replace(/=/g, '%3D');
+			const url = `https://www.msx.org/wiki/${section}`;
+			let resourceContent: string;
+			let mimeType: string | undefined;
+			try {
+				resourceContent = await fetch(url).then(response => {
+					mimeType = response.headers.get('content-type') || 'text/plain';
+					return response.text();
+				}) || 'Error downloading resource content';
+				// Remove script, style, and link tags from the content
+				resourceContent = resourceContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>|<link\b[^>]*\/?>/gi, '');
+			} catch (error) {
+				// Throw exception (MCP protocol requirement)
+				throw new Error(`Error fetching resource "${uri}" from "${url}": ${error instanceof Error ? error.message : String(error)}`);
+			}
+			return {
+				contents: [{
+					uri: uri.href,
+					text: resourceContent,
+					mimeType: mimeType || 'text/plain',
+				}],
+			};
+		}
+	);
 }
 
 async function addFileExtension(filePath: string): Promise<string[]>
