@@ -36,6 +36,6 @@ clean:
 update-mcp-docs:
 	@echo "Updating MCP documentation..."
 	# Assuming the documentation is in a specific directory
-	curl -o .github/instructions/mcp_specification.instructions.md https://modelcontextprotocol.io/specification/2025-03-26.md
+	curl -o .github/instructions/mcp_specification.instructions.md https://modelcontextprotocol.io/specification/2025-06-18.md
 	curl -o .github/instructions/mcp_introduction.instructions.md https://modelcontextprotocol.io/introduction.md
 	curl -o .github/instructions/mcp_typescript.instructions.md https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/refs/heads/main/README.md
