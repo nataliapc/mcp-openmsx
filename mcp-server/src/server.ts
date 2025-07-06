@@ -21,7 +21,7 @@ import fs from "fs/promises";
 import mime from "mime-types";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
-import { encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
+import { fetchCleanWebpage, addFileExtension, listResourcesDirectory, encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
 
 
 // Version info for CLI
@@ -906,7 +906,7 @@ The parameter scrbasename is the name of the filename (without path) to save the
 	// ============================================================================
 	// MSX Documentation resources
 
-	const resdocs: string[] = (await listResourcesDirectory()).sort();
+	const resdocs: string[] = (await listResourcesDirectory(resourcesDir)).sort();
 
 	for (let index = 0; index < resdocs.length; index++) {
 		const sectionName = resdocs[index];
@@ -932,13 +932,10 @@ The parameter scrbasename is the name of the filename (without path) to save the
 					if (uri.href.startsWith('http://') || uri.href.startsWith('https://')) {
 						// Fetch the resource from the URL
 						try {
-							resourceContent = await fetch(uri.href).then(response => {
-								mimeType = response.headers.get('content-type') || 'text/plain';
-								return response.text();
-							}) || 'Error downloading resource content';
+							[resourceContent, mimeType] = await fetchCleanWebpage(uri.href);
 						} catch (error) {
 							// Throw exception (MCP protocol requirement)
-							throw new Error(`Error fetching resource from ${uri.href}: ${error instanceof Error ? error.message : String(error)}`);
+							throw error;
 						}
 					} else {
 						// Read the resource from the local MCP server resources directory
@@ -988,8 +985,8 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			}
 		),
 		{
-			title: "BASIC MSX Documentation",
-			description: "Documentation about all the standard MSX-BASIC instructions.",
+			title: "MSX BASIC Documentation",
+			description: "Documentation about all the standard MSX BASIC instructions.",
 			mimeType: "text/html",
 		},
 		async (uri: URL, variables: any) => {
@@ -998,15 +995,10 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			let resourceContent: string;
 			let mimeType: string | undefined;
 			try {
-				resourceContent = await fetch(url).then(response => {
-					mimeType = response.headers.get('content-type') || 'text/plain';
-					return response.text();
-				}) || 'Error downloading resource content';
-				// Remove script, style, and link tags from the content
-				resourceContent = resourceContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>|<link\b[^>]*\/?>/gi, '');
+				[resourceContent, mimeType] = await fetchCleanWebpage(url);
 			} catch (error) {
 				// Throw exception (MCP protocol requirement)
-				throw new Error(`Error fetching resource "${uri}" from "${url}": ${error instanceof Error ? error.message : String(error)}`);
+				throw error;
 			}
 			return {
 				contents: [{
@@ -1017,46 +1009,6 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			};
 		}
 	);
-}
-
-async function addFileExtension(filePath: string): Promise<string[]>
-{
-	// Get directory and filename
-	const directory = path.dirname(filePath);
-	const filename = path.basename(filePath);
-	
-	try {
-		// Get all files in directory that start with our filename
-		const files = await fs.readdir(directory);
-		const matchingFiles = files.filter(file => file.startsWith(filename));
-		
-		if (matchingFiles.length > 0) {
-			const fileFound = path.join(directory, matchingFiles[0]);
-			return [
-				mime.lookup(fileFound) || 'text/plain',
-				fileFound
-			];
-		}
-	} catch (error) {
-		console.error('Error reading directory:', error);
-	}
-	
-	// Return original if no matches found
-	return [ 'text/plain', filePath ];
-}
-
-async function listResourcesDirectory(): Promise<string[]>
-{
-	try {
-		const directories = await fs.readdir(resourcesDir, { withFileTypes: true });
-		const folderNames = directories
-			.filter(dirent => dirent.isDirectory())
-			.map(dirent => dirent.name);
-		return folderNames;
-	} catch (error) {
-		console.error("Error reading resources directory:", error);
-		return [];
-	}
 }
 
 

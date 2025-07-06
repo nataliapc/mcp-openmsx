@@ -5,6 +5,8 @@
  * @license GPL2
  */
 import fs from 'fs/promises';
+import path from 'path';
+import mime from 'mime-types';
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 
 
@@ -23,6 +25,80 @@ export async function extractDescriptionFromXML(filePath: string): Promise<strin
     } catch (error) {
         return 'Error reading description';
     }
+}
+
+/**
+ * Add file extension to a file path if it exists in the same directory and determine its MIME type
+ * @param filePath - Full path to the file excluding extension
+ * @returns Promise<string[]> - An array containing the MIME type and the full file path with extension
+ */
+export async function addFileExtension(filePath: string): Promise<string[]>
+{
+    // Get directory and filename
+    const directory = path.dirname(filePath);
+    const filename = path.basename(filePath);
+    
+    try {
+        // Get all files in directory that start with our filename
+        const files = await fs.readdir(directory);
+        const matchingFiles = files.filter(file => file.startsWith(filename));
+        
+        if (matchingFiles.length > 0) {
+            const fileFound = path.join(directory, matchingFiles[0]);
+            return [
+                mime.lookup(fileFound) || 'text/plain',
+                fileFound
+            ];
+        }
+    } catch (error) {
+        console.error('Error reading directory:', error);
+    }
+    
+    // Return original if no matches found
+    return [ 'text/plain', filePath ];
+}
+
+/**
+ * List all folders in the resources directory
+ * @param resourcesDir - Path to the resources directory
+ * @returns Promise<string[]> - List of folder names in the resources directory
+ */
+export async function listResourcesDirectory(resourcesDir: string): Promise<string[]>
+{
+    try {
+        const directories = await fs.readdir(resourcesDir, { withFileTypes: true });
+        const folderNames = directories
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+        return folderNames;
+    } catch (error) {
+        console.error("Error reading resources directory:", error);
+        return [];
+    }
+}
+
+/**
+ * Fetch a webpage and return its content (without scripts, styles, or links) and its MIME type
+ * @param url - URL of the webpage to fetch
+ * @returns Promise<[string, string]> - A tuple containing the webpage content and its MIME type
+ */
+export async function fetchCleanWebpage(url: string): Promise<[string, string]> {
+    let resourceContent: string;
+    let mimeType = 'text/plain';
+
+    try {
+        resourceContent = await fetch(url).then(response => {
+            mimeType = response.headers.get('content-type') || 'text/plain';
+            return response.text();
+        }) || 'Error downloading content';
+        // Remove script, style, and link tags from the content
+        resourceContent = resourceContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>|<link\b[^>]*\/?>/gi, '');
+    } catch (error) {
+        // Throw exception (MCP protocol requirement)
+        throw new Error(`Error fetching resource from ${url}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    return [resourceContent, mimeType];
 }
 
 /**
