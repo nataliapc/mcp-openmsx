@@ -18,7 +18,6 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import express, { Request, Response } from "express";
 import fs from "fs/promises";
-import mime from "mime-types";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { fetchCleanWebpage, addFileExtension, listResourcesDirectory, encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";

@@ -88,8 +88,12 @@ export async function fetchCleanWebpage(url: string): Promise<[string, string]> 
 
     try {
         resourceContent = await fetch(url).then(response => {
-            mimeType = response.headers.get('content-type') || 'text/plain';
-            return response.text();
+            if (response.status == 200) {
+                mimeType = response.headers.get('content-type') || 'text/plain';
+                return response.text();
+            } else {
+                return '';
+            }
         }) || 'Error downloading content';
         // Remove script, style, and link tags from the content
         resourceContent = resourceContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>|<link\b[^>]*\/?>/gi, '');
