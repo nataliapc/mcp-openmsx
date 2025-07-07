@@ -1136,19 +1136,21 @@ async function startHttpServer()
 		
 		await transport.handleRequest(req, res, req.body);
 	});
-	
-	// Handle GET requests for server-to-client notifications via SSE
-	app.get('/mcp', async (req: Request, res: Response) => {
+
+	// Reusable handle GET / DELETE requests
+	const handleSessionRequest = async (req: express.Request, res: express.Response) => {
 		const sessionId = req.headers['mcp-session-id'] as string | undefined;
 		if (!sessionId || !transports[sessionId]) {
 			res.status(400).send('Invalid or missing session ID');
 			return;
 		}
-		
 		const transport = transports[sessionId];
 		await transport.handleRequest(req, res);
-	});
-	
+	};
+
+	app.get('/mcp', handleSessionRequest);
+	app.delete('/mcp', handleSessionRequest);
+
 	const port = process.env.MCP_HTTP_PORT || 3000;
 	app.listen(port, () => {
 		console.log(`MCP Server listening on port ${port}`);
@@ -1162,7 +1164,7 @@ async function createServerInstance()
 		name: "mcp-openmsx",
 		version: PACKAGE_VERSION,
 	});
-	
+
 	// Re-register all tools (you might want to extract this to a separate function)
 	try {
 		await registerAllTools(newServer);
@@ -1170,7 +1172,7 @@ async function createServerInstance()
 		console.error("Error registering tools/resources:", error);
 		throw error;
 	}
-	
+
 	return newServer;
 }
 
