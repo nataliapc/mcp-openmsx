@@ -2,7 +2,20 @@
 
 Source: [Z80 Heaven](http://z80-heaven.wikidot.com/instructions-set)
 
+Instructions index:
+
+|||||||||||
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| [ADC](#adc) | [ADD](#add) | [AND](#and) | [BIT](#bit) | [CALL](#call) | [CCF](#ccf) | [CP](#cp) | [CPD](#cpd) | [CPDR](#cpdr) | [CPI](#cpi) |
+| [CPIR](#cpir) | [CPL](#cpl) | [DAA](#daa) | [DEC](#dec) | [DI](#di) | [DJNZ](#djnz) | [EI](#ei) | [EX](#ex) | [EXX](#exx) | [HALT](#halt) |
+| [IM](#im) | [IN](#in) | [INC](#inc) | [IND](#ind) | [INDR](#indr) | [INI](#ini) | [INIR](#inir) | [JP](#jp) | [JR](#jr) | [LD](#ld) |
+| [LDD](#ldd) | [LDDR](#lddr) | [LDI](#ldi) | [LDIR](#ldir) | [NEG](#neg) | [NOP](#nop) | [OR](#or) | [OTDR](#otdr) | [OTIR](#otir) | [OUT](#out) |
+| [OUTD](#outd) | [OUTI](#outi) | [POP](#pop) | [PUSH](#push) | [RES](#res) | [RET](#ret) | [RETI](#reti) | [RETN](#retn) | [RL](#rl) | [RLA](#rla) |
+| [RLC](#rlc) | [RLCA](#rlca) | [RLD](#rld) | [RR](#rr) | [RRA](#rra) | [RRC](#rrc) | [RRCA](#rrca) | [RRD](#rrd) | [RST](#rst) | [SBC](#sbc) |
+| [SCF](#scf) | [SET](#set) | [SLA](#sla) | [SLL/SL1](#sllsl1) | [SRA](#sra) | [SRL](#srl) | [SUB](#sub) | [XOR](#xor) |||
+
 ---
+
 ## ADC
 The sum of the two operands plus the carry flag (0 or 1) is calculated, and the result is written back into the first operand.
 
@@ -52,7 +65,7 @@ Multiple precision adding
 ### See also
 [ADD](#add), [DAA](#daa), [DEC](#dec), [INC](#inc), [SBC](#sbc), [SUB](#sub)
 
----
+
 ## ADD
 The values of the two operands are added together, and the result is written back to the first one.
 
@@ -120,7 +133,7 @@ Obviously used to add two numbers together. However, you can add 16-bit numbers 
 ### See Also
 [ADC](#adc), [DAA](#daa), [DEC](#dec), [INC](#inc), [SBC](#sbc), [SUB](#sub)
 
----
+
 ## AND
 `AND` is an instruction that takes an 8-bit input an compares it with the accumulator. It checks to see if both are set. If either one is reset, the resulting bit in the accumulator is zero.
 
@@ -167,7 +180,7 @@ The most important use of `AND` is in bit-masking. For more information on bit-m
 ### See Also
 [BIT](#bit), [CCF](#ccf), [CPL](#cpl), [OR](#or), [RES](#res), [SCF](#scf), [SET](#set) ,[XOR](#xor)
 
----
+
 ## BIT
 Tests if the specified bit is set.
 
@@ -206,7 +219,7 @@ Opposite of the n<sup>th</sup> bit is written into the `Z` flag. `C` is preserve
 ### See Also
 [AND](#and), [CCF](#ccf), [CP](#cp), [CPD](#cpd), [CPDR](#cpdr), [CPI](#cpi), [CPIR](#cpir), [CPL](#cpl), [OR](#or), [RES](#res), [SCF](#scf), [SET](#set), [XOR](#xor)
 
----
+
 ## CALL
 Pushes the address after the `CALL` instruction (`PC`+3) onto the stack and jumps to the label. Can also take conditions.
 
@@ -245,7 +258,7 @@ The most common use of `CALL` is to create routines that can be used multiple ti
 ### See Also
 [BIT](#bit), [CP](#cp), [CPD](#cpd), [CPDR](#cpdr), [CPI](#cpi), [CPIR](#cpir), [DJNZ](#djnz), [JP](#jp), [JR](#jr), [RET](#ret)
 
----
+
 ## CCF
 Inverts the carry flag.
 
@@ -261,7 +274,7 @@ Carry flag inverted. Also inverts `H` and clears `N`. Rest of the flags are pres
 ### See Also
 [SCF](#scf)
 
----
+
 ## CP
 CP is a subtraction from A that doesn't update A, only the flags it would have set/reset if it really was subtracted.
 
@@ -318,7 +331,7 @@ If A >= N, then `S` and `P/V` are the same.
 ### See also
 [BIT](#bit), [CALL](#call), [CPD](#cpd), [CPDR](#cpdr), [CPI](#cpi), [CPIR](#cpir), [JP](#jp), [JR](#jr), [RET](#ret)
 
----
+
 ## CPD
 Multiple instructions combined into one. `CPD` does these things in this order:
 
@@ -340,7 +353,7 @@ See [`CPDR`](#cpdr) for potential uses.
 ### See Also
 [BIT](#bit), [CALL](#call), [CP](#cp), [CPDR](#cpdr), [CPI](#cpi), [CPIR](#cpir), [JP](#jp), [JR](#jr)
 
----
+
 ## CPDR
 Repeats `CPD` until either:
 
@@ -372,7 +385,7 @@ _Note: if you used CPIR it would find the first occurrence of 124 in the valid m
 ### See Also
 [BIT](#bit), [CALL](#call), [CP](#cp), [CPD](#cpd), [CPI](#cpi), [CPIR](#cpir), [JP](#jp), [JR](#jr)
 
----
+
 ## CPI
 Multiple instructions combined into one. `CPI` does these things in this order:
 
@@ -397,7 +410,7 @@ See [`CPIR`](#cpir) for one example use.
 ### See Also
 [BIT](#bit), [CALL](#call), [CP](#cp), [CPD](#cpd), [CPDR](#cpdr), [CPIR](#cpir), [JP](#jp), [JR](#jr)
 
----
+
 ## CPIR
 Repeats `CPI` until either:
 
@@ -429,7 +442,7 @@ _Note: if you used CPDR it would find the last occurrence of 124 in the valid me
 ### See Also
 [BIT](#bit), [CALL](#call), [CP](#cp), [CPD](#cpd), [CPDR](#cpdr), [CPI](#cpi), [JP](#jp), [JR](#jr)
 
----
+
 ## CPL
 CPL inverts all bits of A.
 
@@ -449,7 +462,7 @@ Also, `CPL` \ `INC A` returns the same value that `NEG` does.
 ### See Also
 [NEG](#neg), [XOR](#xor)
 
----
+
 ## DAA
 When this instruction is executed, the `A` register is BCD corrected using the contents of the flags. The exact process is the following: if the least significant four bits of `A` contain a non-BCD digit (i. e. it is greater than 9) or the `H` flag is set, then $06 is added to the register. Then the four most significant bits are checked. If this more significant digit also happens to be greater than 9 or the `C` flag is set, then $60 is added.
 
@@ -465,7 +478,7 @@ If the second addition was needed, the `C` flag is set after execution, otherwis
 ### See Also
 [ADC](#adc), [ADD](#add), [DEC](#dec), [INC](#inc), [SBC](#sbc), [SUB](#sub)
 
----
+
 ## DEC
 Decreases operand by one.
 
@@ -518,7 +531,7 @@ No flags altered.
 ### See Also
 [ADC](#adc), [ADD](#add), [DAA](#daa), [INC](#inc), [SBC](#sbc), [SUB](#sub)
 
----
+
 ## DI
 Disables the interrupts (both mode 1 and mode 2).
 
@@ -539,7 +552,7 @@ Useful if you want to use the `IY` register or shadow registers, which are modif
 ### See Also
 [EI](#ei), [HALT](#halt), [IM](#im), [RETI](#reti), [RETN](#retn), [RST](#rst)
 
----
+
 ## DJNZ
 Decreases `B` and jumps to a label if not zero. Note that `DJNZ` does a relative jump, so it can only jump between 128 bytes back/ahead.
 
@@ -559,7 +572,7 @@ Preserves all flags.
 ### See Also
 [CALL](#call), [JP](#jp), [JR](#jr)
 
----
+
 ## EI
 Enables the interrupts.
 
@@ -578,8 +591,7 @@ Can either be set to interrupt mode 1 (OS interrupts) or interrupt mode 2 using 
 ### See Also
 [DI](#di), [HALT](#halt), [IM](#im), [RETI](#reti), [RETN](#retn), [RST](#rst)
 
----
-## EX
+
 ## EX
 Exchanges two 16-bit values.
 
@@ -611,7 +623,7 @@ Flags are preserved.
 ### See Also
 [EXX](#exx)
 
----
+
 ## EXX
 Exchanges `BC`, `DE`, and `HL` with shadow registers `BC'`, `DE'`, and `HL'`.
 
@@ -630,7 +642,7 @@ Most useful in interrupts as an alternative to saving those registers on the sta
 ### See Also
 [DI](#di), [EI](#ei), [EX](#ex), [HALT](#halt), [IM](#im), [RETI](#reti), [RETN](#retn)
 
----
+
 ## HALT
 Suspends all actions until the next interrupt.
 
@@ -651,7 +663,7 @@ Exactly what it says: if you need a delay, halt will provide a split second dela
 ### See Also
 [DI](#di), [EI](#ei), [NOP](#nop)
 
----
+
 ## IM
 Sets the interrupt mode.
 
@@ -682,7 +694,7 @@ The most important use of `IM` is to allow for the programmer to create their ow
 ### See Also
 [DI](#di), [EI](#ei), [RETI](#reti), [RETN](#retn), [RST](#rst)
 
----
+
 ## IN
 Reads a value from a hardware port.
 
@@ -720,7 +732,7 @@ The undocumented command `IN (C)` reads from the port and affects flags, but doe
 ### See Also
 [IND](#ind), [INDR](#indr), [INI](#ini), [INIR](#inir), [OUT](#out), [OUTD](#outd), [OTDR](#otdr), [OUTI](#outi), [OTIR](#otir)
 
----
+
 ## INC
 Increases operand by 1.
 
@@ -773,7 +785,7 @@ No flags altered.
 ### See Also
 [ADC](#adc), [ADD](#add), [DAA](#daa), [DEC](#dec), [SBC](#sbc), [SUB](#sub)
 
----
+
 ## IND
 Reads the `(C)` port and writes the result to `(HL)`, then decrements `HL` and decrements `B`.
 
@@ -789,7 +801,7 @@ Reads the `(C)` port and writes the result to `(HL)`, then decrements `HL` and d
 ### See Also
 [IN](#in), [INI](#ini), [INDR](#indr), [INIR](#inir), [OTDR](#otdr), [OTIR](#otir), [OUT](#out), [OUTD](#outd), [OUTI](#outi)
 
----
+
 ## INDR
 Reads the `(C)` port and writes the result to `(HL)`. `HL` and `B` are decremented. Repeats until `B` = 0.
 
@@ -808,7 +820,7 @@ Reads the `(C)` port and writes the result to `(HL)`. `HL` and `B` are decrement
 ### See Also
 [IN](#in), [IND](#ind), [INI](#ini), [INIR](#inir), [OUT](#out), [OUTD](#outd), [OTDR](#otdr), [OUTI](#outi), [OTIR](#otir)
 
----
+
 ## INI
 Reads the `(C)` port and writes the result to `(HL)`, then increments `HL` and decrements `B`.
 
@@ -824,7 +836,7 @@ Reads the `(C)` port and writes the result to `(HL)`, then increments `HL` and d
 ### See Also
 [IN](#in), [IND](#ind), [INDR](#indr), [INIR](#inir), [OTDR](#otdr), [OTIR](#otir), [OUT](#out), [OUTD](#outd), [OUTI](#outi)
 
----
+
 ## INIR
 Reads from the `(C)` port, then writes to `(HL)`. `HL` is incremented and `B` is decremented. Repeats until `B` = 0.
 
@@ -841,7 +853,7 @@ Reads from the `(C)` port, then writes to `(HL)`. `HL` is incremented and `B` is
 ### See Also
 [IN](#in), [IND](#ind), [INDR](#indr), [INI](#ini), [OUT](#out), [OUTD](#outd), [OTDR](#otdr), [OUTI](#outi), [OTIR](#otir)
 
----
+
 ## JP
 Absolute jumps to the address. Can be conditional or unconditional. `JP` takes one more byte than `JR`, but is also slightly faster, so decide whether speed or size is more important before choosing `JP` or `JR`. `JP (HL)`, `JP (IX)`, and `JP (IY)` are unconditional and are the fastest jumps, and do not take more bytes than other jumps.
 
@@ -886,7 +898,7 @@ All flags preserved.
 ### See Also
 [BIT](#bit), [CALL](#call), [CP](#cp), [CPD](#cpd), [CPDR](#cpdr), [CPI](#cpi), [CPIR](#cpir), [DJNZ](#djnz), [JR](#jr)
 
----
+
 ## JR
 Relative jumps to the address. This means that it can only jump between 128 bytes ahead or behind. Can be conditional or unconditional. `JR` takes up one less byte than `JP`, but is also slower. Weigh the needs of the code at the time before choosing one over the other (speed vs. size).
 
@@ -915,7 +927,7 @@ All flags preserved.
 ### See Also
 [BIT](#bit), [CALL](#call), [CP](#cp), [CPD](#cpd), [CPDR](#cpdr), [CPI](#cpi), [CPIR](#cpir), [DJNZ](#djnz), [JP](#jp)
 
----
+
 ## LD
 The `LD` instruction is used to put the value from one place into another place.
 
@@ -930,7 +942,7 @@ puts `M` into `N`.
 If x, it means allowed. If empty, it means not allowed.
 
 |       | A | B | C | D | E | H | L | I | R | IXH | IXL | IYH | IYL | BC | DE | HL | SP | IX | IY | (BC) | (DE) | (HL) | (IX+N) | (IY+N) | N | NN | (NN) |
-|-------|---|---|---|---|---|---|---|---|---|-----|-----|-----|-----|----|----|----|----|----|----|------|------|------|--------|--------|---|----|----- |
+|-||||||||||--|--|--|--|-|-|-|-|-|-||||--|--||-|-- |
 | A     | x | x | x | x | x | x | x | x | x | x   | x   | x   | x   |    |    |    |    |    |    | x    | x    | x    | x      | x      | x |    | x    |
 | B     | x | x | x | x | x | x | x |   |   | x   | x   | x   | x   |    |    |    |    |    |    |      |      | x    | x      | x      | x |    |      |
 | C     | x | x | x | x | x | x | x |   |   | x   | x   | x   | x   |    |    |    |    |    |    |      |      | x    | x      | x      | x |    |      |
@@ -1008,7 +1020,7 @@ Use to load numbers into operands. They can either be numbers used in the code (
 ### See Also
 [LDD](#ldd), [LDDR](#lddr), [LDI](#ldi), [LDIR](#ldir)
 
----
+
 ## LDD
 Does a sort of `LD (DE),(HL)`, then decrements `DE`, `HL`, and `BC`.
 
@@ -1046,7 +1058,7 @@ Copying over sections of data.
 ### See Also
 [LD](#ld), [LDD](#ldd), [LDI](#ldi), [LDIR](#ldir)
 
----
+
 ## LDI
 Performs a `LD (DE),(HL)`, then increments `DE` and `HL`, and decrements `BC`.
 
@@ -1065,7 +1077,7 @@ Copying data.
 ### See Also
 [LD](#ld), [LDD](#ldd), [LDDR](#lddr), [LDIR](#ldir)
 
----
+
 ## LDIR
 Repeats `LDI` (`LD (DE),(HL)`, then increments `DE`, `HL`, and decrements `BC`) until `BC`=0. Note that if `BC`=0 before this instruction is called, it will loop around until `BC`=0 again.
 
@@ -1085,7 +1097,7 @@ Copying sections of data.
 ### See Also
 [LD](#ld), [LDD](#ldd), [LDDR](#lddr), [LDI](#ldi)
 
----
+
 ## NEG
 `NEG` negates the accumulator.
 
@@ -1104,7 +1116,7 @@ This command literally subtracts `A` from 0. This explains what "modified by def
 ### See Also
 [CPL](#cpl), [SUB](#sub)
 
----
+
 ## NOP
 `NOP` does nothing for 4 clock cycles.
 
@@ -1123,7 +1135,7 @@ Useful for a short time waster (for example, it's common to put clock cycles bet
 ### See Also
 [HALT](#halt)
 
----
+
 ## OR
 `OR` is an instruction that takes an 8-bit input an compare sit with the accumulator. It checks to see if anything is set, and if neither are set, it results in a zero.
 
@@ -1170,7 +1182,7 @@ Used in bit-masking. For more information see here.
 ### See Also
 [AND](#and), [BIT](#bit), [CCF](#ccf), [CPL](#cpl), [RES](#res), [SCF](#scf), [SET](#set), [XOR](#xor)
 
----
+
 ## OTDR
 Reads from `(HL)` and writes to the `(C)` port. `HL` and `B` are then decremented. Repeats until `B` = 0.
 
@@ -1187,7 +1199,7 @@ Reads from `(HL)` and writes to the `(C)` port. `HL` and `B` are then decremente
 ### See Also
 [IN](#in), [IND](#ind), [INDR](#indr), [INI](#ini), [INIR](#inir), [OUT](#out), [OUTD](#outd), [OUTI](#outi), [OTIR](#otir)
 
----
+
 ## OTIR
 Reads from `(HL)` and writes to the `(C)` port. `HL` is incremented and `B` is decremented. Repeats until `B` = 0.
 
@@ -1204,7 +1216,7 @@ Reads from `(HL)` and writes to the `(C)` port. `HL` is incremented and `B` is d
 ### See Also
 [IN](#in), [IND](#ind), [INDR](#indr), [INI](#ini), [INIR](#inir), [OUT](#out), [OUTD](#outd), [OTDR](#otdr), [OUTI](#outi)
 
----
+
 ## OUT
 Writes the value of the second operand into the port given by the first operand.
 
@@ -1236,7 +1248,7 @@ All flags preserved
 ### See Also
 [IN](#in), [IND](#ind), [INDR](#indr), [INI](#ini), [INIR](#inir), [OUTD](#outd), [OTDR](#otdr), [OUTI](#outi), [OTIR](#otir)
 
----
+
 ## OUTD
 Writes the value from `(HL)` to the `(C)` port, then decrements `B` and `HL`.
 
@@ -1252,7 +1264,7 @@ Writes the value from `(HL)` to the `(C)` port, then decrements `B` and `HL`.
 ### See Also
 [IN](#in), [IND](#ind), [INDR](#indr), [INI](#ini), [INIR](#inir), [OUT](#out), [OTDR](#otdr), [OUTI](#outi), [OTIR](#otir)
 
----
+
 ## OUTI
 Reads from `(HL)` and writes to the `(C)` port. `HL` is then incremented, and `B` is decremented.
 
@@ -1270,7 +1282,7 @@ Reads from `(HL)` and writes to the `(C)` port. `HL` is then incremented, and `B
 ### See Also
 [IN](#in), [IND](#ind), [INDR](#indr), [INI](#ini), [INIR](#inir), [OUT](#out), [OUTD](#outd), [OTDR](#otdr), [OTIR](#otir)
 
----
+
 ## POP
 Copies the two bytes from `(SP)` into the operand, then increases `SP` by 2.
 
@@ -1301,7 +1313,7 @@ Used for retrieving values saved on the stack. Also used when you want to load a
 ### See Also
 [PUSH](#push)
 
----
+
 ## PUSH
 Copies the operand into `(SP)`, then decrements `SP` by 2.
 
@@ -1332,7 +1344,7 @@ Used for saving register values onto the stack. Also used when you want to load 
 ### See Also
 [POP](#pop)
 
----
+
 ## RES
 Resets the specified bit to zero.
 
@@ -1367,7 +1379,7 @@ Flags are preserved.
 ### See Also
 [AND](#and), [BIT](#bit), [CCF](#ccf), [CPL](#cpl), [OR](#or), [SCF](#scf), [SET](#set), [XOR](#xor)
 
----
+
 ## RET
 Pops the top of the stack into the program counter. Note that `RET` can be either conditional or unconditional.
 
@@ -1401,7 +1413,7 @@ Preserves all flags.
 ### See Also
 [BIT](#bit), [CALL](#call), [CP](#cp), [CPD](#cpd), [CPDR](#cpdr), [CPI](#cpi), [CPIR](#cpir), [RETI](#reti), [RETN](#retn)
 
----
+
 ## RETI
 Returns from an interrupt routine. Note: `RETI` cannot use return conditions.
 
@@ -1417,7 +1429,7 @@ All flags unaffected.
 ### See Also
 [DI](#di), [EI](#ei), [IM](#im), [RET](#ret), [RETN](#retn), [RST](#rst)
 
----
+
 ## RETN
 Returns from the non-maskable interrupt (NMI). Cannot take return conditions.
 
@@ -1433,7 +1445,7 @@ All flags unaffected.
 ### See Also
 [DI](#di), [EI](#ei), [IM](#im), [RET](#ret), [RETI](#reti), [RST](#rst)
 
----
+
 ## RL
 9-bit rotation to the left. The register's bits are shifted left. The carry value is put into 0<sup>th</sup> bit of the register, and the leaving 7th bit is put into the carry.
 
@@ -1466,7 +1478,7 @@ All flags unaffected.
 ### See Also
 [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RLA
 Performs an `RL A`, but is much faster and `S`, `Z`, and `P/V` flags are preserved.
 
@@ -1482,7 +1494,7 @@ Performs an `RL A`, but is much faster and `S`, `Z`, and `P/V` flags are preserv
 ### See Also
 [RL](#rl), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RLC
 8-bit rotation to the left. The bit leaving on the left is copied into the carry, and to bit 0.
 
@@ -1515,7 +1527,7 @@ Performs an `RL A`, but is much faster and `S`, `Z`, and `P/V` flags are preserv
 ### See Also
 [RL](#rl), [RLA](#rla), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RLCA
 Performs `RLC A` much quicker, and modifies the flags differently.
 
@@ -1531,7 +1543,7 @@ Performs `RLC A` much quicker, and modifies the flags differently.
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RLD
 Performs a 4-bit leftward rotation of the 12-bit number whose 4 most significant bits are the 4 least significant bits of A, and its 8 least significant bits are in (HL).
 
@@ -1554,7 +1566,7 @@ The `H` and `N` flags are reset, `P/V` is parity, `C` is preserved, and `S` and 
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RR
 9-bit rotation to the right. The carry is copied into bit 7, and the bit leaving on the right is copied into the carry.
 
@@ -1587,7 +1599,7 @@ Carry becomes the bit leaving on the right, `H` and `N` flags are reset, `P/V` i
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RRA
 Performs an `RR A`, but is much faster and `P/V`, `S`, and `Z` flags are preserved.
 
@@ -1603,7 +1615,7 @@ The carry becomes the bit leaving on the right, `H` and `N` flags are reset, `P/
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RRC
 8-bit rotation to the right. The bit leaving on the right is copied into the carry, and into bit 7.
 
@@ -1653,7 +1665,7 @@ The carry becomes the value leaving on the right, `H` and `N` are reset, `P/V`, 
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RRD
 Performs a 4-bit rightward rotation of the 12-bit number whose 4 most significant bits are the 4 least significant bits of `A`, and its 8 least significant bits are in `(HL)`.
 
@@ -1676,7 +1688,7 @@ The `H` and `N` flags are reset, `P/V` is parity, `C` is preserved, and `S` and 
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## RST
 The current `PC` value plus three is pushed onto the stack. The MSB is loaded with $00 and the LSB is loaded with `imm8`.
 
@@ -1702,7 +1714,7 @@ All flags unaffected.
 ### See Also
 [DI](#di), [EI](#ei), [IM](#im), [RET](#ret), [RETI](#reti), [RETN](#retn)
 
----
+
 ## SBC
 Sum of second operand and carry flag is subtracted from the first operand. Results are written into the first operand.
 
@@ -1753,7 +1765,7 @@ Multiple precision subtraction
 ### See Also
 [ADC](#adc), [ADD](#add), [DAA](#daa), [DEC](#dec), [INC](#inc), [SUB](#sub)
 
----
+
 ## SCF
 Sets carry flag.
 
@@ -1769,7 +1781,7 @@ Carry flag set, `H` and `N` cleared, rest are preserved.
 ### See Also
 [CCF](#ccf)
 
----
+
 ## SET
 Sets the specified bit.
 
@@ -1804,7 +1816,7 @@ All flags preserved.
 ### See Also
 [AND](#and), [BIT](#bit), [CCF](#ccf), [CPL](#cpl), [OR](#or), [RES](#res), [SCF](#scf), [XOR](#xor)
 
----
+
 ## SLA
 An arithmetic shift left 1 bit position is performed on the contents of register `r`. The contents of bit 7 are copied to the carry flag. Bit 0 is the least-significant bit.
 
@@ -1837,7 +1849,7 @@ An arithmetic shift left 1 bit position is performed on the contents of register
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLL/SL1](#sllsl1), [SRA](#sra), [SRL](#srl)
 
----
+
 ## SLL/SL1
 An "undocumented" instruction. Functions like `SLA`, except a 1 is inserted into the low bit.
 
@@ -1870,7 +1882,7 @@ An "undocumented" instruction. Functions like `SLA`, except a 1 is inserted into
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SRA](#sra), [SRL](#srl)
 
----
+
 ## SRA
 Arithmetic shift right 1 bit, bit 0 goes to carry flag, bit 7 remains unchanged.
 
@@ -1903,7 +1915,7 @@ Arithmetic shift right 1 bit, bit 0 goes to carry flag, bit 7 remains unchanged.
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRL](#srl)
 
----
+
 ## SRL
 Like `SRA`, except a 0 is put into bit 7. The bits are all shifted right, with bit 0 put into the carry flag.
 
@@ -1936,7 +1948,7 @@ Like `SRA`, except a 0 is put into bit 7. The bits are all shifted right, with b
 ### See Also
 [RL](#rl), [RLA](#rla), [RLC](#rlc), [RLCA](#rlca), [RLD](#rld), [RR](#rr), [RRA](#rra), [RRC](#rrc), [RRCA](#rrca), [RRD](#rrd), [SLA](#sla), [SLL/SL1](#sllsl1), [SRA](#sra)
 
----
+
 ## SUB
 `SUB` stands for subtract but only takes one input. It subtracts the input from the accumulator and writes back to it.
 
@@ -1975,7 +1987,7 @@ Allows you to subtract two 8 bit integers. Useful in if you have an offset and w
 ### See Also
 [ADC](#adc), [ADD](#add), [DAA](#daa), [DEC](#dec), [INC](#inc), [SBC](#sbc)
 
----
+
 ## XOR
 `XOR` is an instruction that takes one 8-bit input and compares it with the accumulator. `XOR` is similar to `OR`, except for one thing: only 1 of the 2 test bits can be set or else it will result in a zero. The final answer is stored to the accumulator.
 
