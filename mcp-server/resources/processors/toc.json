@@ -3,19 +3,19 @@
     "description": "Technical Info about the Z80, R800, and others processors, including detailed instruction sets, undocumented instructions, and timing information.",
     "toc": [
         {
-            "title": "Z80 Detailed Instruction Set (Z80 Heaven)",
-            "uri": "msxdocs://processors/Z80_detailed_instruction_set",
+            "title": "Z80 Detailed Instruction Set",
+            "uri": "msxdocs://processors/z80_detailed_instruction_set",
             "external_url": "http://z80-heaven.wikidot.com/instructions-set",
             "description": "This document is a comprehensive reference for the Z80 processor instruction set, organized alphabetically from ADC to XOR, featuring over 80 different instructions with detailed syntax, allowed operands, flag effects (C, N, S, Z, P/V, H), practical use cases, and clock cycles (T-States) for each variant. Each instruction is documented with specific assembly code examples, describing arithmetic operations (ADD, SUB, ADC, SBC), logical operations (AND, OR, XOR), comparison operations (CP, CPI, CPD), bit manipulation (BIT, SET, RES), flow control (JP, JR, CALL, RET, DJNZ), data transfer (LD, LDD, LDI, PUSH, POP), rotation/shifting (RL, RR, SLA, SRA), and system control (HALT, DI, EI, NOP). Provides precise technical context about registers (A, B, C, D, E, H, L, IX, IY, SP), addressing modes (immediate, direct, indirect, indexed), and the exact semantics of each operation, being especially valuable for generating Z80 assembly code, debugging MSX programs, or explaining processor behavior in retro systems like MSX, Amstrad CPC, or ZX Spectrum."
         },
         {
             "title": "Z80 / R800 Instruction Set",
-            "uri": "msxdocs://processors/Z80_R800_instruction_set",
+            "uri": "msxdocs://processors/z80_r800_instruction_set",
             "external_url": "https://map.grauw.nl/resources/z80instr.php",
             "description": "This comprehensive instruction set reference provides a complete tabular listing of all Z80 processor instructions plus R800-specific extensions (MULUB/MULUW multiplication instructions), including documented and undocumented opcodes with precise timing data for MSX systems. It details instruction timing across four scenarios (Z80, Z80+M1 waits, R800, R800+waits), hexadecimal opcodes, instruction sizes, and MSX-specific timing considerations including M1 wait states, memory access patterns, I/O timing, and R800 internal/external memory performance characteristics. Essential for MSX assembly programming, emulator development, performance optimization, cycle-accurate timing calculations, and understanding the behavioral differences between Z80 and R800 processors in MSX environments."
         },
         {
-            "title": "The Undocumented Z80 Documented (Maintained by Jan Wilmans).",
+            "title": "The Undocumented Z80 Documented",
             "uri": "msxdocs://processors/z80-undocumented",
             "external_url": "http://bifi.msxnet.org/msxnet/tech/",
             "description": "Provides a comprehensive technical reference for Z80 microprocessor instructions, focusing on both officially documented and undocumented instruction sets. It serves as an authoritative guide for Z80 assembly programming, particularly relevant for MSX computer development."

@@ -13,7 +13,7 @@
             "description": "Technical documentation for Konami's SCC (Sound Creative Chip) used in MSX cartridges. The SCC provides 5-channel wavetable synthesis with custom waveforms, offering enhanced audio capabilities beyond the standard PSG. Commonly found in Konami game cartridges like Gradius series, providing richer sound effects and music."
         },
         {
-            "title": "Konami SCC+ Sound Chip",
+            "title": "Konami SCCI Sound Chip",
             "uri": "http://bifi.msxnet.org/msxnet/tech/soundcartridge",
             "description": "Technical documentation for Konami's enhanced SCC+ (Sound Creative Chip Plus) found in later MSX sound cartridges. Improved version of the original SCC providing enhanced wavetable synthesis capabilities, additional sound channels, and better audio quality. Used in advanced Konami cartridges and dedicated sound cartridges for expanded audio functionality."
         },
