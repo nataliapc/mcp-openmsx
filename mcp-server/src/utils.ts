@@ -7,8 +7,9 @@
 import fs from 'fs/promises';
 import path from 'path';
 import mime from 'mime-types';
+import { gunzipSync } from 'zlib';
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-
+import { PACKAGE_VERSION } from "./server.js";
 
 /**
  * Extract description from XML file
@@ -87,14 +88,51 @@ export async function fetchCleanWebpage(url: string): Promise<[string, string]> 
     let mimeType = 'text/plain';
 
     try {
-        resourceContent = await fetch(url).then(response => {
-            if (response.status == 200) {
-                mimeType = response.headers.get('content-type') || 'text/plain';
-                return response.text();
-            } else {
-                return '';
+        const response = await fetch(url, {
+            headers: {
+                // Accept compressed content gzip/deflate
+                'Accept-Encoding': 'gzip, deflate, br',
+                // User agent to avoid blocking by some servers
+                'User-Agent': `Mozilla/5.0 (compatible; MCP-openMSX/${PACKAGE_VERSION})`
             }
-        }) || 'Error downloading content';
+        });
+
+        if (response.status === 200) {
+            mimeType = response.headers.get('content-type') || 'text/plain';
+            
+            // Detect if the content is actually compressed or just mislabeled
+            const contentType = response.headers.get('content-type') || '';
+            
+            // Specifically handle the case of application/x-gzip without content-encoding
+            if (contentType.includes('x-gzip') || contentType.includes('gzip')) {
+                // The server claims it's gzip, verify if it actually is
+                const arrayBuffer = await response.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                // Check if it is actually compressed with gzip (magic number 0x1f 0x8b)
+                if (uint8Array[0] === 0x1f && uint8Array[1] === 0x8b) {
+                    // It is actually compressed, use gunzipSync to decompress
+                    try {
+                        const decompressed = gunzipSync(Buffer.from(uint8Array));
+                        resourceContent = decompressed.toString('utf8');
+                        mimeType = 'text/html'; // Correct the MIME type
+                    } catch (error) {
+                        // If decompression fails, treat as plain text
+                        resourceContent = new TextDecoder().decode(uint8Array);
+                        mimeType = 'text/html';
+                    }
+                } else {
+                    // Not compressed, mislabeled plain text
+                    resourceContent = new TextDecoder().decode(uint8Array);
+                    mimeType = 'text/html'; // Correct the MIME type
+                }
+            } else {
+                // Normal case, use response.text() which automatically handles decompression
+                resourceContent = await response.text();
+            }
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         // Remove script, style, and link tags from the content
         resourceContent = resourceContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>|<link\b[^>]*\/?>/gi, '');
     } catch (error) {

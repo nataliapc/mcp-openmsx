@@ -64,6 +64,7 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 - `emu_savestates`: Save and restore machine states: _`load`, `save`, `list`_.
 - `screen_shot`: Capture emulator screen: _`as_image`, `to_file`_.
 - `screen_dump`: Export screen data as BASIC BSAVE instruction.
+- `msxdocs_resource_get`: Retrieve MCP resources for MCP clients that don't support MCP resources.
 
 ## 📚 Available MCP Resources
 

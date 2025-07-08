@@ -10,7 +10,7 @@
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
-import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, RegisteredResource, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -24,7 +24,7 @@ import { fetchCleanWebpage, addFileExtension, listResourcesDirectory, encodeType
 
 
 // Version info for CLI
-const PACKAGE_VERSION = "1.1.14";
+export const PACKAGE_VERSION = "1.1.14";
 
 const resourcesDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../resources");
 
@@ -906,6 +906,11 @@ The parameter scrbasename is the name of the filename (without path) to save the
 	// MSX Documentation resources
 
 	const resdocs: string[] = (await listResourcesDirectory(resourcesDir)).sort();
+	interface RegResource {
+		resource: RegisteredResource;
+		uri: string;
+	}
+	const regResources:RegResource[] = [];
 
 	for (let index = 0; index < resdocs.length; index++) {
 		const sectionName = resdocs[index];
@@ -913,7 +918,10 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		const tocContent = JSON.parse(await fs.readFile(tocFile, 'utf8'));
 		tocContent.toc.forEach((item: any, itemIndex: number) => {
 			const itemName = path.parse(item.uri.split('/').pop()).name || '';
-			server.registerResource(
+			let resource = {
+				uri: item.uri,
+				filename: '',
+				resource: server.registerResource(
 				// Name of the resource (used to call it)
 				`msxdocs_${sectionName}_${item.title.replace(/[^a-z0-9]+/gi, '_').toLowerCase()}`,
 				// Resource URI template
@@ -955,7 +963,8 @@ The parameter scrbasename is the name of the filename (without path) to save the
 						}],
 					};
 				}
-			);
+			)};
+			regResources.push(resource);
 		});
 	};
 
@@ -1008,6 +1017,74 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			};
 		}
 	);
+
+	server.registerTool(
+		// Name of the tool (used to call it)
+		"msxdocs_resource_get",
+		{
+			title: "Tool to get a resource",
+			// Description of the tool (what it does)
+			description: "Get a specific available MSX documentation resource from this MCP server resources.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				resourceName: z.enum(regResources.map(res => res.resource.name) as [string, ...string[]]).describe("Name of the resource to obtain, e.g. 'msxdocs_programming_interrupts'"),
+			},
+		},
+		// Handler for the tool (function to be executed when the tool is called)
+		async ({ resourceName }: { resourceName: string }, extra) => {
+			const index: number = regResources.findIndex((res: RegResource) => res.resource.name === resourceName);
+			const uriString = index !== -1 ? regResources[index].uri : undefined;
+			const resource = index !== -1 ? regResources[index].resource : undefined;
+			if (!resource || !uriString) {
+				return getResponseContent([
+					`Error: Resource '${resourceName}' not found.`
+				]);
+			}
+			let documentationText = '';
+			try {
+				// If the resource is found, return its content
+				let resourceContent = await resource.readCallback(
+					new URL(uriString),
+					extra
+				);
+				if (!resourceContent.contents?.length) {
+					return getResponseContent([
+						`Error: Resource '${resourceName}' has no content available.`
+					]);
+				}
+				// Return the first content item (assuming it's the main content)
+				const content = resourceContent.contents[0];
+				if ('text' in content) {
+					documentationText = content.text as string;
+				} else {
+					return getResponseContent([
+						`Error: Resource '${resourceName}' has no content available.`
+					]);
+				}
+			} catch (error) {
+				return getResponseContent([
+					`Error: error reading resource '${resourceName}': ${error instanceof Error ? error.message : String(error)}`
+				]);
+			}
+			return {
+				content: [{
+					type: "text",
+					text: `Content from resource: '${resourceName}'`,
+				},{
+					type: "text",
+					text: documentationText || 'No content available for this resource.',
+					mimeType: resource.metadata?.mimeType || 'text/plain',
+				}/*, {
+					type: "resource",
+					resource: {
+						uri: resource.metadata?.uri || resourceName,
+						title: resource.metadata?.title || `Resource: ${resourceName}`,
+						mimeType: resource.metadata?.mimeType || 'text/plain',
+						text: documentationText || 'No content available for this resource.',
+					}
+				}*/],
+			};
+		});
 }
 
 
