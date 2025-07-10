@@ -2,6 +2,15 @@
 
 *"Orchestrating a binary opera where AI conducts, MCP interprets, and openMSX acts as the 8-bit diva."*
 
+[![Built by NataliaPC](https://img.shields.io/badge/Built%20by-NataliaPC-blue)](https://github.com/nataliapc)
+[![License](https://img.shields.io/badge/License-GPL2-blue.svg)](https://github.com/nataliapc/mcp-openmsx/blob/main/LICENSE)
+[![GitHub Repo stars](https://img.shields.io/github/stars/nataliapc/mcp-openmsx)
+](https://github.com/nataliapc/mcp-openmsx/stargazers/)  
+[![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/ishwin74)](https://x.com/ishwin74)  
+[![NPM Version](https://img.shields.io/npm/v/%40nataliapc%2Fmcp-openmsx)](https://www.npmjs.com/package/@nataliapc/mcp-openmsx?activeTab=versions)
+[![NPM Downloads](https://img.shields.io/npm/dm/%40nataliapc%2Fmcp-openmsx?color=808000)]()
+
+
 A [Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) server for automating [openMSX emulator](https://github.com/openMSX/openMSX) instances.
 
 This server provides comprehensive tools for MSX software development, testing, and automation through standardized MCP protocols.
@@ -116,6 +125,9 @@ You can use this MCP server in this basic way with the [precompiled NPM package]
 * Add to your workspace a file `.vscode/mcp.json` with:
 
 ### STDIO mode (recommended)
+
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=github&config=%7B%22type%22%3A%20%22stdio%22%2C%22command%22%3A%20%22npx%22%2C%22args%22%3A%20%5B%22%40nataliapc%2Fmcp-openmsx%22%5D%2C%20%22env%22%3A%20%7B%22OPENMSX_SHARE_DIR%22%3A%20%22%2Fusr%2Fshare%2Fopenmsx%22%7D%7D)
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=github&config=%7B%22type%22%3A%20%22stdio%22%2C%22command%22%3A%20%22npx%22%2C%22args%22%3A%20%5B%22%40nataliapc%2Fmcp-openmsx%22%5D%2C%20%22env%22%3A%20%7B%22OPENMSX_SHARE_DIR%22%3A%20%22%2Fusr%2Fshare%2Fopenmsx%22%7D%7D&quality=insiders)
 
 ```json
 {
