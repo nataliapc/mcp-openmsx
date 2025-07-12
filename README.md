@@ -94,10 +94,11 @@ There are more than 60 resources available, some included directly in the MCP an
 - `MSX-UNAPI`
 - `MSX BASIC`
 
-And two books:
+And books and manuals:
 
 - `MSX2 Technical Handbook`
 - `The MSX Red Book`
+- `SDCC Compiler`
 
 ### Resources from:
 
@@ -107,8 +108,9 @@ And two books:
 - [MSX2 Technical Handbook](https://github.com/Konamiman/MSX2-Technical-Handbook)
 - [Konamiman MSX-UNAPI-specification](https://github.com/Konamiman/MSX-UNAPI-specification)
 - [BiFi MSX Net](http://bifi.msxnet.org/msxnet/)
-- [MSX Wiki](https://www.msx.org/wiki/Main_Page)
+- [MRC Wiki](https://www.msx.org/wiki/Main_Page)
 - [MSX Banzai!](http://msxbanzai.tni.nl/)
+- [SDCC](https://sdcc.sourceforge.net/)
 
 Thanks to the authors of these resources, who have made them available under various licenses. This MCP server includes some of these resources to enhance the development experience.
 

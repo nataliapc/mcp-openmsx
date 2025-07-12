@@ -1,0 +1,77 @@
+{
+    "title": "SDCC Manuals",
+    "description": "",
+    "toc": [
+        {
+            "title": "Compiler User Guide",
+            "uri": "msxdocs://sdcc/sdccman",
+            "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
+            "description": "Comprehensive user guide for SDCC (Small Device C Compiler), a free open source ISO C11/C17 compiler suite targeting 8-bit microcontrollers including 8051, Z80, R800, STM8, and PIC architectures. This manual provides essential information about compiler installation, usage, programming techniques, data types, memory models, optimization strategies, and MCU-specific development practices for embedded systems programming."
+        },
+        {
+            "title": "SDCC 4.5.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%204.5.0%20Release/",
+            "description": "Release notes for SDCC 4.5.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 4.4.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%204.4.0%20Release/",
+            "description": "Release notes for SDCC 4.4.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 4.3.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%204.3.0%20Release/",
+            "description": "Release notes for SDCC 4.3.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 4.2.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%204.2.0%20Release/",
+            "description": "Release notes for SDCC 4.2.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 4.1.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%204.1.0%20Release/",
+            "description": "Release notes for SDCC 4.1.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 4.0.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%204.0.0%20Release/",
+            "description": "Release notes for SDCC 4.0.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 3.9.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%203.9.0%20Release/",
+            "description": "Release notes for SDCC 3.9.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 3.8.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%203.8.0%20Release/",
+            "description": "Release notes for SDCC 3.8.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 3.7.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%203.7.0%20Release/",
+            "description": "Release notes for SDCC 3.7.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 3.6.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%203.6.0%20Release/",
+            "description": "Release notes for SDCC 3.6.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 3.5.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%203.5.0%20Release/",
+            "description": "Release notes for SDCC 3.5.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 3.4.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%203.4.0%20Release/",
+            "description": "Release notes for SDCC 3.4.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        },
+        {
+            "title": "SDCC 3.3.0 Release Notes",
+            "uri": "https://sourceforge.net/p/sdcc/wiki/SDCC%203.3.0%20Release/",
+            "description": "Release notes for SDCC 3.3.0 containing development roadmap, task assignments, and feature tracking. This resource provides comprehensive information about the release timeline, bug fixes, feature requests, and developer discussions."
+        }
+    ]
+}
