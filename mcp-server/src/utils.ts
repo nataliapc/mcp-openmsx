@@ -133,8 +133,14 @@ export async function fetchCleanWebpage(url: string): Promise<[string, string]> 
         } else {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        // Remove script, style, and link tags from the content
-        resourceContent = resourceContent.replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>|<link\b[^>]*\/?>/gi, '');
+        // Remove script, style, and link tags from the content if it's HTML
+        if (mimeType.startsWith('text/html')) {
+            resourceContent = resourceContent
+                // Remove <script>, <style>, and <link> tags
+                .replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>|<form\b[^>]*>[\s\S]*?<\/form>|<link\b[^>]*\/?>/gi, '')
+                // Remove empty lines (including lines with only whitespace)
+                .replace(/^[ \t\n\r]*[\r\n]+/gm, '');
+        }
     } catch (error) {
         // Throw exception (MCP protocol requirement)
         throw new Error(`Error fetching resource from ${url}: ${error instanceof Error ? error.message : String(error)}`);
