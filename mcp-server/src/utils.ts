@@ -10,6 +10,7 @@ import mime from 'mime-types';
 import { gunzipSync } from 'zlib';
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { PACKAGE_VERSION } from "./server.js";
+import sanitizeHtml from 'sanitize-html';
 
 /**
  * Extract description from XML file
@@ -99,32 +100,22 @@ export async function fetchCleanWebpage(url: string): Promise<[string, string]> 
 
         if (response.status === 200) {
             mimeType = response.headers.get('content-type') || 'text/plain';
-            
-            // Detect if the content is actually compressed or just mislabeled
             const contentType = response.headers.get('content-type') || '';
-            
-            // Specifically handle the case of application/x-gzip without content-encoding
             if (contentType.includes('x-gzip') || contentType.includes('gzip')) {
-                // The server claims it's gzip, verify if it actually is
                 const arrayBuffer = await response.arrayBuffer();
                 const uint8Array = new Uint8Array(arrayBuffer);
-                
-                // Check if it is actually compressed with gzip (magic number 0x1f 0x8b)
                 if (uint8Array[0] === 0x1f && uint8Array[1] === 0x8b) {
-                    // It is actually compressed, use gunzipSync to decompress
                     try {
                         const decompressed = gunzipSync(Buffer.from(uint8Array));
                         resourceContent = decompressed.toString('utf8');
-                        mimeType = 'text/html'; // Correct the MIME type
+                        mimeType = 'text/html';
                     } catch (error) {
-                        // If decompression fails, treat as plain text
                         resourceContent = new TextDecoder().decode(uint8Array);
                         mimeType = 'text/html';
                     }
                 } else {
-                    // Not compressed, mislabeled plain text
                     resourceContent = new TextDecoder().decode(uint8Array);
-                    mimeType = 'text/html'; // Correct the MIME type
+                    mimeType = 'text/html';
                 }
             } else {
                 // Normal case, use response.text() which automatically handles decompression
@@ -133,13 +124,9 @@ export async function fetchCleanWebpage(url: string): Promise<[string, string]> 
         } else {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        // Remove script, style, and link tags from the content if it's HTML
+        // Remove script, style, form, and link tags from the content if it's HTML
         if (mimeType.startsWith('text/html')) {
-            resourceContent = resourceContent
-                // Remove <script>, <style>, and <link> tags
-                .replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>|<form\b[^>]*>[\s\S]*?<\/form>|<link\b[^>]*\/?>/gi, '')
-                // Remove empty lines (including lines with only whitespace)
-                .replace(/^[ \t\n\r]*[\r\n]+/gm, '');
+            resourceContent = sanitizeHtml(resourceContent);
         }
     } catch (error) {
         // Throw exception (MCP protocol requirement)
