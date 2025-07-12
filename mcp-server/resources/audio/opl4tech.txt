@@ -1,0 +1,688 @@
+===============================================================================
+  MoonSound technical documentation
+===============================================================================
+
+This document describes the MoonSound and especially the main component, the
+Yamaha OPL4 chip. It is a copy of the official documentation from Yamaha with
+some additional notes made by me where I thought that the original descriptions
+were not very clear. Note that this document does not describe the FM (OPL3)
+part of the OPL4. You can find that information in a seperate text file. All
+diagrams are drawn with ASCII characters to enable easy viewing and printing
+of this document on MSX as well as on PC.
+
+Included with this document are three small GIF files. These are scans of some
+pictures in the original document. Two more GIFs of the hardware pin assignment
+are also available but not included here because of their size and their very
+limited use for the average programmer.
+
+I would like to thank Marcel Delorme for typing and scanning most of the
+original document.
+
+Remco Schrijvers
+
+-------------------------------------------------------------------------------
+
+I replaced the three scans with a single GIF file that contains all the
+envelope diagrams. The image quality is better and it takes less disk space.
+
+Maarten ter Huurne
+
+
+-------------------------------------------------------------------------------
+  MoonSound description
+-------------------------------------------------------------------------------
+
+The MoonSound cartridge has 3 important components:
+- The OPL4 (YMF278B).
+- The Yamaha YRW801 2MB ROM with samples for the OPL4.
+- 128K SRAM to enable you to use your own samples.
+
+The I/O of the OPL4 can be done on the following I/O ports:
+
+07Eh wave register
+07Fh wave data
+0C4h FM bank 1 register
+0C5h FM data
+0C6h FM bank 2 register
+
+0C7h is a mirror of the FM data register but use of 0C5h is preferred.
+
+The status register is also located at 0C4h at all times.
+
+The OPL4 is 100% compatible with the OPL3 which is described in a seperate
+document and meets the OPL(tm) standard. OPL(tm) is a trademark of Yamaha
+Corporation which represents a full register compatibility with Yamaha YMF3812
+(OPL2).
+
+Important: To enable access to the Wave registers and the extra bit in the
+status register, you have to set bit D0 and D1 in register 5 of FM bank 2.
+In basic this would look like this:
+OUT &HC6,5
+OUT &HC5,&B11
+
+There is no documentation available about the contents of the ROM chip. If you
+want to use these for (e.g. your own music editor or replayer) you can contact
+me and I can give you some of the info I found in the two weeks of long hard and
+boring work I spent on it.
+
+-------------------------------------------------------------------------------
+  OPL4 Overview
+-------------------------------------------------------------------------------
+
++ FM synthesizer Unit (same as YMF262) 
+  
+  1. Sound Generation Modes
+        
+    * 2-operator mode
+
+      2-operator mode with eighteen sounds are produced at the same time. Or
+      2-operator with fiftheen sounds, and five rhythm sounds are produced at
+      the same time.
+     
+    * 4-operator mode
+      
+      4-operator mode with six sounds and 2-operator mode with six sounds are
+      produced at the same time. Or 4-operator mode with six sounds, 2-operator
+      mode with three sounds and five rhythm sounds are produced at the same
+      time.
+
+  2. Eight types of waves. 
+
+  3. Stereo output.
+
+
++ PCM synthesizer Unit
+
+  1. Simultaneous generation of 24 sounds.
+
+  2. Voice output data sampling frequency of 44.1 Khz.
+
+  3. Waveform data length: 8 bits, 12 bits and 16 bits.
+
+  4. Stereo output (16-level pan can be specified for each sound)
+
++ Wave Data for PCM Synthesizer Unit
+
+  1. Maximum of 4M-byte external memory can be conected.
+
+  2. Maximum of 512 tones.
+
+  3. External ROM or SRAM memory. If SRAM is connected, wave data can be
+     downloaded from CPU.
+
+  4. Chip select signals for memory can be output: 128K bytes, 512K bytes, 
+     1M bytes and 2M bytes.
+
++ Miscellaneous  
+
+  1. YMF278 has six channels for sound output, and can be connected to the 
+     YAC513.
+
+  2. YMF278 can be connected to the YSS225(EP) witch gives various effects 
+     to sound data.
+
+  3. YMF278 can read all registers.
+
+  4. Pack contains 80-pin QFP.
+
+
+-------------------------------------------------------------------------------
+CPU INTERFACE
+-------------------------------------------------------------------------------
+
+Sound generation control for the YMF278 is performed by writing data into 
+registers. An 8-bit parallel CPU interface is provided to write data into
+and read status form each register. D0-D7 are bi-directional data buses, and 
+/CS,/RD,/WR,/WR,A0,A1,A2 are data bus control signal input.
+The data buses are set as shown below by the data control signal:
+
++-------------------------------------------------------------------+
+|     | /CS | /RD | /WR | /A0 | /A1 | /A2 |          MODE           |
++-----+-----+-----+-----+-----+-----+-----+-------------------------+
+|     |  H  |  X  |  X  |  X  |  X  |  X  |    Inactive mode        |
+|     |  L  |  L  |  H  |  L  |  L  |  L  |    Status read mode     |
++-----+-----+-----+-----+-----+-----+-----+-------------------------+
+|     |  L  |  H  |  L  |  L  | L/H |  L  |    Address write mode   |
+| FM  |  L  |  H  |  L  |  H  |  X  |  L  |    Data write mode      |
+|     |  L  |  L  |  H  |  H  |  X  |  L  |    Data read mode       |
++-----+-----+-----+-----+-----+-----+-----+-------------------------+
+|     |  L  |  H  |  L  |  L  |  L  |  H  |    Address write mode   |
+| PCM |  L  |  H  |  L  |  H  |  L  |  H  |    Data wrtie mode      |
+|     |  L  |  L  |  H  |  H  |  L  |  H  |    Data read mode       |
++-----+-----+-----+-----+-----+-----+-----+-------------------------+
+                                                X: Don't Care
+
+ (a)  Inactive Mode
+     
+      Data buses D0-D7 are set to high impedance when /CS is H
+
+ (b)  Address Write Mode
+    
+      This mode specifies the write address. Output the address data of the 
+      register to be written to the data bus. Then, setting data is written
+      in data write mode. However, a wait period of 17 cycles of the master
+      clock is required during this period. To specify register array 0 with
+      FM, set A1 = L. To use register array 1, set A1 = H.
+
+ (c)  Data Write Mode
+
+      This mode writes data at the address which is set in address write mode
+      immediately before. Output setting data to the datat bus. A wait period
+      of 56 master-clock cycles is required for FM, and a wait period of 88
+      master-clock cycles is required for PCM until the next address write or
+      data write.
+
+ (d)  Data Read Mode
+
+      This mode reads data at the address which is set in address write mode
+      immediately before.
+
+ (e)  Status Read Mode
+
+      This mode outputs the status of the YMF278 to the data bus.
+
+
+------------------------------------------------------------------------------
+ PCM SYNTHESIZER AND MIX UNIT REGISTER
+------------------------------------------------------------------------------
+
++-----+----+----+----+----+----+----+----+----+
+|     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
++-----+----+----+----+----+----+----+----+----+
+| 00H |                TEST                   |
+| 01H |                                       |
++-----+--------------+----+----+----+----+----+
+|     |              | Tone header  |    |    |    MT = Memory type
+| 02H |   DeviceID   | 2    1    0  | MT | MA |    MA = Memory access
++-----+----+----+----+----+----+----+----+----+
+|     |         |Memory address register high |
+| 03H | --------|MA21 MA20 MA19 MA18 MA17 MA16|
++-----+---------+----+----+----+----+----+----+
+|     |     Memory address register mid.      |
+| 04H |MA15 MA14 MA13 MA12 MA11 MA10 MA9  MA8 |
++-----+----+----+----+----+----+----+----+----+
+|     |     Memory address register low       |
+| 05H |MA7  MA6  MA5  MA4  MA3  MA2  MA1  MA0 |
++-----+----+----+----+----+----+----+----+----+
+|     |       Memory data register            |
+| 06H | 7    6    5    4    3    2    1    0  |
++-----+----+----+----+----+----+----+----+----+
+|     |                                       |
+| 07H | ------------------------------------- |
++-----+---------------------------------------+
+| 08H-|             Tone number               |
+|  1FH| 7    6    5    4    3    2    1    0  |
++-----+----+----+----+----+----+----+----+----+
+| 20H-|             F-NUM              Tone no|
+|  37H| F6   F5   F4   F3   F2   F1   F0   8  |
++-----+----+----+----+----+----+----+----+----+
+| 38H |   Octave          pseudo   F-NUM      |
+|  4FH| O3   O2   O1   O0 reverb F9   F8   F7 |
++-----+----+----+----+----+----+----+----+----+
+| 50H-|     Total level                  Level|
+|  67H| 6    5    4    3    2    1    0 direct|
++-----+----+----+----+----+----+----+----+----+
+| 68H | Key  damp LFO  CH      Pan pot        |
+|  7FH| on        RES     3      2    1    0  |
++-----+----+----+----+----+----+----+----+----+
+| 80H-|              LFO         VIB          |
+|  97H| --------  S2   S1   S0   V2   V1   V0 |
++-----+---------+----+----+----+----+----+----+
+| 98H-|        AR                D1R          |
+|  AFH| 3    2    1    0    3    2    1    0  |
++-----+----+----+----+----+----+----+----+----+
+| B0H-|        DL                D2R          |
+|  C7H| 3    2    1    0    3    2    1    0  |
++-----+----+----+----+----+----+----+----+----+
+| C8H-|  Rate compensaton        RR           |
+|  DFH| 3    2    1    0    3    2    1    0  |
++-----+----+----+----+----+----+----+----+----+
+| E0H-|                            AM         |
+|  F7H| -----------------------  2    1    0  |
++-----+------------------------+----+----+----+
+|     |           Mix control    Mix control  |
+|     |             (FM-R)         (FM-L)     |
+| F8H | --------  2    1    0    2    1    0  |
++-----+---------+----+----+----+----+----+----+
+|     |           Mix control    Mix control  |
+|     |             (PCM-R)         (PCM-L)   |
+| F9H | --------  2    1    0    2    1    0  |
++-----+---------+----+----+----+----+----+----+
+
+Notes) 1. Be sure to set unused bits and TEST registers to 0.
+       2. Mix control registers (FM-R, FM-L) of F8h are set to 3 (-9dB), other
+          registers are set to '0' by initial clear.
+
+
+------------------------------------------------------------------------------
+ REGISTERS
+------------------------------------------------------------------------------
+
+In the (OPL4), a sound which is output is called a channel. In the PCM
+synthesizer unit, 1-24 channels can be output simultaneosly. 08H-F7H of 
+registers are grouped into 24-byte units, and each group corresponds to 1-24 
+channels sequentially.
+
++ 00H-01H TEST
+  
+  This register is used for testing LSI. set
+  this registers to "0" for normal use.
+
+                               +-----+----+----+----+----+----+----+----+----+
+                               |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+                               | 00- +----+----+----+----+----+----+----+----+
+                               | 01H |                 TEST                  |
+                               +-----+---------------------------------------+
+
++ 02H MEMORY ACCESS
+
+  0: Normal sound generation mode
+
+  1: CPU reads and writes the
+     external memory. Sound    +-----+----+----+----+----+----+----+----+----+
+     generation cannot be      |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+     performed in this mode.   | 02H +----+----+----+----+----+----+----+----+
+                               |     |                                  | MA |
+                               +-----+----------------------------------+----+
+
++ 02H MEMORY TYPE
+
+  Specify the connection method of the external memory
+
+  0: ROM (always on MoonSound)
+
+  1: SRAM and ROM
+                               +-----+----+----+----+----+----+----+----+----+
+  Refer to the Chip select     |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  Signals of External Memory   | 02H +----+----+----+----+----+----+----+----+
+  for details.                 |     |                             | MT |    |
+                               +-----+-----------------------------+----+----+
+
+  Important: When you are using the MoonSound, always select the ROM mode. Even
+  if you are using SRAM and ROM!!
+
+
++ 02H TONE HEADER
+
+  This register sets the range of setting in every 512K byte unit for the
+  128-tone header (no.384-no.511 out of 512 tones)
+
+                               +-----+----+----+----+----+----+----+----+----+
+  If D2-D4 = 0, set headers    |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  for 512 tones starting with  | 02H +----+----+----+----+----+----+----+----+
+  addres 0 in the external     |     |              | Tone header  |         |
+  memory.                      +-----+--------------+--------------+---------+
+
+  In the MoonSound the last 128 headers will be located after the 2MB ROM.
+  Since this is 4*512, the tone header value must be 4 (100b).
+
+
++ 02H DEVICE ID
+
+                               +-----+----+----+----+----+----+----+----+----+
+  Used for ID register, no     |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  further information          | 02H +----+----+----+----+----+----+----+----+
+  available.                   |     |   DevicdID   |                        |
+                               +-----+--------------+------------------------+
+
+  This is probably used to identify what kind of chip you are using. My guess
+  is that it will have the following values:
+  0 = not used
+  1 = OPL4
+  2 = future OPL5?
+
+
++ 03H-5H MEMORY ADDRESS REGISTER
+
+  These registers set the ex-  +-----+----+----+----+----+----+----+----+----+
+  ternal memory addresses when |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  data is written into or read | 03H +----+----+----+----+----+----+----+----+
+  from the external memory.    |     | ------- |   MA21-MA16                 |
+                               +-----+---------+-----------------------------+
+
+  Set from the highest address +-----+----+----+----+----+----+----+----+----+
+  in sequence because address  |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  setting for MA21-MA0 comple- | 04H +----+----+----+----+----+----+----+----+
+  tes by the setting of 05H.   |     |              MA15-MA8                 |
+                               +-----+---------------------------------------+
+
+  Addresses are automatically  +-----+----+----+----+----+----+----+----+----+
+  incremented by data write or |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  data read from the external  | 05H +----+----+----+----+----+----+----+----+
+  memory.                      |     |               MA7-MA0                 |
+                               +-----+---------------------------------------+
+
+
++ 06H MEMORY DATA REGISTER
+
+  By writing into this reg,    +-----+----+----+----+----+----+----+----+----+
+  the data at the external     |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  memory address which is      | 03H +----+----+----+----+----+----+----+----+
+  currently set can be written.|     | ------- |      MA21-MA16              |
+                               +-----+---------+-----------------------------+
+  A wait period of 28 master-clock cycles
+  is required until the next data write.
+
+  By reading this register, the data at the external memory address which is
+  currently set can be read.
+
+  A wait period of 38 master-clock cycles is required until the next data
+  read.
+
+
++ 08H-1FH TONE NUMBER
+
+  The OPL4 supports a maximum of 512 tones. Select the
+  number of the tone to be     +-----+----+----+----+----+----+----+----+----+
+  produced from 512 tones, and |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  set the selected number in   | 08- +----+----+----+----+----+----+----+----+
+  the tone number register     | 1FH |              Tone number              |
+  of the channel from which    +-----+---------------------------------------+
+  tone is to be produced.
+  The tone header is then internally loaded automaticlly.
+
+  The loading time is approxi- +-----+----+----+----+----+----+----+----+----+
+  mately 300 msec from the     |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  setting of the tone number   | 20- +----+----+----+----+----+----+----+----+
+  in the register. Do not      | 37H |                                  |no8.|
+  access the tone number, LFO, +-----+----------------------------------+----+
+  V1B,AR,D1R,DL,D2R, rate
+  compensation, RR and AM register of the channel during loading.
+  However, access can be made to other register even when the tone header is
+  being loaded.
+
+  The flag which indicates loading is located at bit D1 of the status
+  register.
+
+  Always set the tone numbers (7-0) after the tone number (8) because tone
+  number setting completes by the setting of the tone numbers (7-0).
+
+
++ 20H-4FH F-NUM AND OCTAVE
+
+  The F-NUM and octave reg.    +-----+----+----+----+----+----+----+----+----+
+  control sound generation     |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  pitch.                       | 20- +----+----+----+----+----+----+----+----+
+                               | 37H |             F-Number             |    |
+  Set positive integers from   +-----+----------------------------------+----+
+  0-1023 in the F-NUM registers,
+  and set two's complement     +-----+----+----+----+----+----+----+----+----+
+  from -7 to 7 in the octave   |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  register.                    | 38- +----+----+----+----+----+----+----+----+
+                               | 4FH |                   |    F-Number       |
+  Always set F-NUM (f6-f0)     +-----+-------------------+-------------------+
+  after F-NUM (f9-f7) because
+  F-NUm setting completes by   +-----+----+----+----+----+----+----+----+----+
+  setting of F-NUM (f6-f0).    |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+                               | 38- +----+----+----+----+----+----+----+----+
+  If F-NUM is 0 and octave is  | 4FH |       Octave      |                   |
+  1, waveform data will be     +-----+-------------------+-------------------+
+  regenerated in sequence at
+  44.1 Khz. This is used as the reference (F(c) = 0).
+
+  The formula to obtain the pitch variation for the reference is as follows:
+
+  F (c) = 1200 * (octave-1) + 1200 * log2 [(1024 + F-NUM) /1024 ]
+
+                              Where 1 octave = 1200 c
+
++ 38H-4FH PSEUDOREVERB
+
+  Set the reverb rate (RevR)   +-----+----+----+----+----+----+----+----+----+
+  to 5 when the envelope beco- |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  mes smaller than 18 dB so    | 38- +----+----+----+----+----+----+----+----+
+  that pseudoreverb effect is  | 4FH |                   | ps |              |
+  on.                          +-----+-------------------+----+--------------+
+
+  0: Pseudoreverb off                    ps = Pseudoreverb
+
+  1: Pseudoreverb on
+
+  Refer to the "Envelopes" for details.
+
+
++ 50H-67H TOTAL LEVEL
+
+                               +-----+----+----+----+----+----+----+----+----+
+  Set the total level. The     |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  table shown below shows the  | 50- +----+----+----+----+----+----+----+----+
+  correspondence of each bit   | 67H |              Total level         |    |
+  of the total level.          +-----+----------------------------------+----+
+
+  +---------+-----+-----+-----+-----+-----+-----+------+
+  | Bit No. |  6  |  5  |  4  |  3  |  2  |  1  |  0   |
+  +---------+-----+-----+-----+-----+-----+-----+------+
+  | ATT.(dB)| -24 | -12 | -6  | -3  | -1.5|-0,75|-0,375|
+  +---------+-----+-----+-----+-----+-----+-----+------+
+
+
++ 50H-67H LEVEL DIRECT
+
+  Select the method of change  +-----+----+----+----+----+----+----+----+----+
+  when the total level is      |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  changed.                     | 50- +----+----+----+----+----+----+----+----+
+                               | 67H |                                  | LD |
+  0: Changes while the total   +-----+----------------------------------+----+
+     level interpolates
+
+  1: The total level is immediately used as the current value.
+
+  If interpolation is performed, the time required for the sound volume to
+  change from the minimum to the maximum is ?? msec, and the time required
+  to change from the maximum to the minimum is ?? msec.
+
+
++ 68H-7FH KEY ON
+
+  0: Key off                 +-----+----+----+----+----+----+----+----+----+
+                             |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  1: Key on                  | 68- +----+----+----+----+----+----+----+----+
+                             | 7FH |KEY |                                  |
+                             +-----+----+----------------------------------+
+
+
++ 68H-7FH DAMP
+
+  Forced damp starts by setting+-----+----+----+----+----+----+----+----+----+
+  D6 of this register to 1:    |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+                               | 68- +----+----+----+----+----+----+----+----+
+  0: Normal rate is valid      | 7FH |    |Damp|                             |
+                               +-----+----+----+-----------------------------+
+  1: Damp rate is valid
+
+  Damp is performed as shown in the table below at the time elapses:
+
+  +-----------+-----+-----+-----+-----+
+  | Time(msec)| 5.8 | 8.0 | 9.4 | 10.9|
+  +-----------+-----+-----+-----+-----+
+  | ATT.(dB)  | -12 | -48 | -72 | -96 |
+  +-----------+-----+-----+-----+-----+
+
+
++ 68H-7FH LFO RES
+
+  The operation of LFO is as +-----+----+----+----+----+----+----+----+----+
+  follows:                   |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+                             | 68- +----+----+----+----+----+----+----+----+
+  0: Start operation         | 7FH |         |LFOR|                        |
+                             +-----+---------+----+------------------------+
+  1: Stops operation and resets
+
+
++ 68H-7FH CH
+
+  Output channel:            +-----+----+----+----+----+----+----+----+----+
+                             |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  0: Outputs to MIX          | 68- +----+----+----+----+----+----+----+----+
+                             | 7FH |              | CH |                   |
+  1: Outputs to PCM-EXT      +-----+--------------+----+-------------------+
+
+  For the MoonSound all channels need to be set to PCM-EXT.
+
+
++ 68H-7FH PAN POT
+
+  Set the pan pot. The pan pot +-----+----+----+----+----+----+----+----+----+
+  changes as shown in the table|     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  below according to the value | 68- +----+----+----+----+----+----+----+----+
+  to be written:               | 7FH |                   |     Pan Pot       |
+                               +-----+-------------------+-------------------+
+
++-----------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| Bit No.   | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10| 11| 12| 13| 14| 15|
++-----------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| ATT.(dB) L| 0 |-3 |-6 |-9 |-12|-15|-18| oo| oo| 0 | 0 | 0 | 0 | 0 | 0 | 0 |
++-----------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+| ATT.(dB) R| 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | oo| oo|-18|-15|-12|-9 |-6 |-3 |
++-----------+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+
+
++ 80H-97H LFO
+
+  Set the speed for LFO. The   +-----+----+----+----+----+----+----+----+----+
+  speed changes as shown in the|     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  table below according to the | 80- +----+----+----+----+----+----+----+----+
+  value to be written:         | 97H | ------- |     LFO      |              |
+                               +-----+---------+--------------+--------------+
+
+  +--------------------+-----+-----+-----+-----+-----+-----+-----+-----+
+  | Value              |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |
+  +--------------------+-----+-----+-----+-----+-----+-----+-----+-----+
+  | LFO Frequency (Hz) |0.168|2.019|3.196|4.206|5.215|5.888|6.224|7.066|
+  +--------------------+-----+-----+-----+-----+-----+-----+-----+-----+
+
+
++ F8H FM MIXING CONTROL
+
+  Sets the output level of the +-----+----+----+----+----+----+----+----+----+
+  FM channels. 0 means maximum |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  output. Initial value is 3   |     +----+----+----+----+----+----+----+----+
+  (-9 dB).                     | F8H | ------- |     FM-R     |     FM-L     |
+                               +-----+---------+--------------+--------------+
+
+
++ F9H WAVE MIXING CONTROL
+
+  Sets the output level of the +-----+----+----+----+----+----+----+----+----+
+  PCM channels. 0 means        |     | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+  maximum output. Initial      |     +----+----+----+----+----+----+----+----+
+  value is 0.                  | F9H | ------- |    PCM-R     |    PCM-L     |
+                               +-----+---------+--------------+--------------+
+
+
+-------------------------------------------------------------------------------
+  STATUS REGISTER
+-------------------------------------------------------------------------------
+
+  +------+------+------+------+------+------+------+------+------+
+  |      |  D7  |  D6  |  D5  |  D4  |  D3  |  D2  |  D1  |  D0  |
+  |------+------+------+------+------+------+------+------+------+
+  |Status|  IRQ |  FT1 |  FT2 | ------------------ |  LD  | BUSY |
+  +------+------+------+------+------+------+------+------+------+
+
+  See the OPL3 document for more info on IRQ, FT1 and FT2.
+
+  BUSY: The BUSY flag is valid while NEW2=1. This flag becomes 1 while writing
+        address and data. BUSY flag automatically returns to 0 when writing is
+        completed.
+
+  LD  : Indicates that a Wave Table header is loaded. Returns to 0 when loading
+        is completed. See reg. 8 for more info.
+
+Although there is no info in the manual about this I think that the BUSY flag
+is not only for writing, but also for reading. It works for FM, Wave and Wave
+data transfer! On the Z80A waiting for the BUSY flag is never neccessary, but
+on the 7Mhz Z80 or the R800 it is neccessary. Not always, but on unpredictable
+moments so it MUST be used if you are making something and you are planning to
+use it for R800 or 7Mhz. The disadvantage for Z80 is that it takes some time
+to check this every time and the Z80 needs all the speed it can get.
+
+-------------------------------------------------------------------------------
+  ENVELOPES
+-------------------------------------------------------------------------------
+
++ Envelope Graphs
+
+  The envelopes are shown in the GIF file.
+  To produce continuous sound, set D2R = 0 (RATE = 0, real time = inf).
+
++ Pseudoreverb effect
+
+  When the pseudoreverb in 38H-4FH is set to "1", pseudoreverb effect can be
+  applied. The envelope when pseudoreverb effect is applied is shown in the
+  GIF file. When the envelope decreases below -18 dB, D1R, D2R and RR are
+  disregarded,and RevR (fixed at 5) is set. Pseudoreverb can also be applied
+  to continuous at below -18 dB in the same manner.
+
+
+-------------------------------------------------------------------------------
+WAVE DATA IN EXTERNAL MEMORY
+-------------------------------------------------------------------------------
+
+         +----+----+----+----+----+----+----+----+
+Address  | D7 | D6 | D5 | D4 | D3 | D2 | D1 | D0 |
+         +----+----+----+----+----+----+----+----+ -------------------------
+   0     | Data bit|        Start address        | D1-D0 = 0 for  8 bit data
+         | D1   D0 | S21  S20  S19| S18  S17  S16| D1-D0 = 1 for 12 bit data
+         +----+----+----+----+----+----+----+----+ D1-D0 = 2 for 16 bit data
+   1     |             Start address             |
+         | S15  S14  S13  S12  S11  S10  S9   S8 |
+         +----+----+----+----+----+----+----+----+
+   2     |             Start address             | Header for tone No.0
+         | S7   S6   S5   S4   S3   S2   S1   S0 |
+         +----+----+----+----+----+----+----+----+
+   3     |             Loop address              |
+         | L15  L14  L13  L12  L11  L10  L9   L8 |
+         +----+----+----+----+----+----+----+----+
+   4     |             Loop address              |
+         | L7   L6   L5   L4   L3   L2   L1   L0 |
+         +----+----+----+----+----+----+----+----+
+   5     |             End address               | End address must be
+         | E15  E14  E13  E12  E11  E10  E9   E8 | inverted!
+         +----+----+----+----+----+----+----+----+
+   6     |             End address               |
+         | E7   E6   E5   E4   E3   E2   E1   E0 |
+         +----+----+----+----+----+----+----+----+
+   7     |         |   LFO speed  |     VIB      |
+         | ------- | S2   S1   S0 |  V2  V1   V0 |
+         +---------+----+----+----+----+----+----+
+   8     |  Attack rate (AR) | 1st decay (D1R)   |
+         |  3    2    1    0 |  3    2    1   0  |
+         +---------+----+----+----+----+----+----+
+   9     |  Decay level (DL) | 2st decay (D2R)   |
+         |  3    2    1    0 |  3    2    1   0  |
+         +---------+----+----+----+----+----+----+
+  10     | Rate compensation | Release rate (RR) |
+         |  3    2    1    0 |  3    2    1   0  |
+         +----+----+----+----+----+----+----+----+
+  11     |                        |      AM      |
+         | ---------------------- | A2   A1   A0 |
+         +------------------------+----+----+----+ -------------------------
+         |                                       | Header for tone No.1
+         |                                       |
+         |                                       | -------------------------
+         |The following is the waveform data for | Header for tone No.2-283
+         |tone numbers 0-383                     |
+         +---------------------------------------+ -------------------------
+         |                                       |
+         | D15  D14  D13  D12  D11  D10  D9   D8 |
+         +----+----+----+----+----+----+----+----+ For 16 bit data
+         |                                       |
+         | D7   D6   D5   D4   D3   D2   D1   D0 |
+         +----+----+----+----+----+----+----+----+ -------------------------
+         |             1st data                  |
+         | D11  D10  D9   D8   D7   D6   D5   D4 |
+         +----+----+----+----+----+----+----+----+
+         |     1st data      |    2nd data       |
+         | D3   D2   D1   D0 | D3   D2   D1   D0 | For 12 bit data
+         +----+----+----+----+----+----+----+----+
+         |              2nd data                 |
+         | D7   D6   D5   D4   D3   D2   D1   D0 |
+         +----+----+----+----+----+----+----+----+ -------------------------
+         |                                       |
+         | D7   D6   D5   D4   D3   D2   D1   D0 | For 8 bit data
+         +----+----+----+----+----+----+----+----+ -------------------------
+
+Note that the end and loop addresses are NOT in bytes but indicate the number
+of samples! This means that the maximum size for a 8-bit sample is 64K, for
+a 12-bit sample 96K and for a 16-bit sample 128K.

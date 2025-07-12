@@ -23,8 +23,15 @@
             "description": "Complete technical documentation for MSX-MIDI interface covering hardware configuration, MIDI data communication using 8251 IC, baud rate generator with 8253/8254 timer IC, I/O port assignments (0E8H, 0E9H), internal vs external cartridge implementations, and BASIC extensions. Available only for MSX turbo R and later systems with 16K ROM containing MIDI functionality."
         },
         {
-            "title": "MGSDRV MML 1.1",
-            "uri": "https://mus.msx.click/index.php?title=MGSDRV_MML_11",
+            "title": "Moonsound Technical Documentation",
+            "uri": "msxdocs://audio/opl4tech",
+            "external_url": "https://www.msxarchive.nl/pub/msx/docs/programming/opl4tech.txt",
+            "description": "Comprehensive technical documentation for the MoonSound MSX cartridge and its Yamaha OPL4 (YMF278B) chip. Covers hardware components, I/O ports, register maps, CPU interface, PCM and FM synthesis, memory access, envelopes, mixing, and status flags. Includes practical notes for MSX programmers, register tables, and usage tips for both Z80 and R800 CPUs. Useful for developers working with advanced MSX audio hardware and music software."
+        },
+        {
+            "title": "MGSDRV MML 1.11",
+            "uri": "msxdocs://audio/MGSC111",
+            "external_url": "https://www.gigamix.jp/mgsdrv/MGSC111.TXT",
             "description": "Complete documentation for MGSC MML compiler version 1.11 by Ain (1992-93) that converts MML (Music Macro Language) text files to MGS formatted play data for MGSDRV. Covers control functions, OPLL modes (FM 9 sound/FM 6+rhythm), machine vendor codes (SONY, Panasonic, SANYO), macro definitions, tone definitions, tempo control, and compilation options including real-time playback and debugging features."
         }
     ]
