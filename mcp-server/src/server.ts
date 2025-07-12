@@ -6,7 +6,7 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.1.14
+ * @version 1.1.15
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
@@ -24,7 +24,7 @@ import { fetchCleanWebpage, addFileExtension, listResourcesDirectory, encodeType
 
 
 // Version info for CLI
-export const PACKAGE_VERSION = "1.1.14";
+export const PACKAGE_VERSION = "1.1.15";
 
 const resourcesDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../resources");
 
