@@ -48,7 +48,7 @@
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.15.0",
     "@types/mime-types": "^3.0.1",
-    "@types/node": "^22.15.27",
+    "@types/node": "^24.0.13",
     "@types/sanitize-html": "^2.16.0",
     "shx": "^0.4.0",
     "typescript": "^5.8.3"

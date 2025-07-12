@@ -6,7 +6,6 @@
  * through TCL commands via stdio.
  * 
  * @package @nataliapc/mcp-openmsx
- * @version 1.1.15
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
@@ -21,10 +20,12 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { fetchCleanWebpage, addFileExtension, listResourcesDirectory, encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
+import { createRequire } from 'module';
 
 
-// Version info for CLI
-export const PACKAGE_VERSION = "1.1.15";
+// Dynamically obtain PACKAGE_VERSION from package.json at runtime
+const require = createRequire(import.meta.url);
+export const PACKAGE_VERSION = require('../package.json').version;
 
 const resourcesDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../resources");
 
