@@ -968,6 +968,22 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		});
 	};
 
+
+	// Source: https://www.msx.org/wiki/Category:MSX-BASIC_Instructions
+	const basicInstructions: string[] = [
+		"ABS()", "AND", "ASC()", "ATN()", "AUTO", "BASE()", "BEEP", "BIN$()", "BLOAD", "BSAVE", "CALL", "CALL ADJUST", "CALL PAUSE", "CALL PCMPLAY", "CALL PCMREC",
+		"CDBL()", "CHR$()", "CINT()", "CIRCLE", "CLEAR", "CLOAD", "CLOAD?", "CLOSE", "CLS", "COLOR", "COLOR=", "COLOR SPRITE()", "COLOR SPRITE$()", "CONT", "COPY",
+		"COPY SCREEN", "COS()", "CSAVE", "CSNG()", "CSRLIN", "DATA", "DEFDBL", "DEF FN", "DEFINT", "DEFSNG", "DEFSTR", "DEF USR", "DELETE", "DIM", "DRAW", "ELSE",
+		"END", "EOF()", "EQV", "ERASE", "ERL", "ERR", "ERROR", "EXP()", "FIX()", "FN", "FOR...NEXT", "FRE()", "GET DATE", "GET TIME", "GOSUB", "GOTO", "HEX$()",
+		"IF...GOTO...ELSE", "IF...THEN...ELSE", "IMP", "INKEY$", "INP()", "INPUT", "INPUT$()", "INSTR()", "INT()", "INTERVAL", "KEY", "KEY()", "LEFT$()", "LEN()",
+		"LET", "LINE", "LINE INPUT", "LIST", "LLIST", "LOAD", "LOCATE", "LOG()", "LPOS()", "LPRINT", "MAXFILES", "MERGE", "MID$()", "MOD", "MOTOR", "NEW", "NOT",
+		"OCT$()", "ON...GOSUB", "ON...GOTO", "ON ERROR GOTO", "ON INTERVAL GOSUB", "ON KEY GOSUB", "ON SPRITE GOSUB", "ON STOP GOSUB", "ON STRIG GOSUB", "OPEN",
+		"OR", "OUT", "PAD()", "PAINT", "PDL()", "PEEK()", "PLAY", "PLAY()", "POINT", "POKE", "POS()", "PRESET", "PRINT", "PSET", "PUT KANJI", "PUT SPRITE", "READ",
+		"REM", "RENUM", "RESTORE", "RESUME", "RETURN", "RIGHT$()", "RND()", "RUN", "SAVE", "SCREEN", "SET ADJUST", "SET BEEP", "SET DATE", "SET PAGE", "SET PASSWORD",
+		"SET PROMPT", "SET SCREEN", "SET SCROLL", "SET TIME", "SET TITLE", "SET VIDEO", "SGN()", "SIN()", "SOUND", "SPACE$()", "SPC()", "SPRITE", "SPRITE$()",
+		"SQR()", "STICK()", "STOP", "STR$()", "STRIG()", "STRING$()", "SWAP", "TAB()", "TAN()", "TIME", "TROFF", "TRON", "USR()", "VAL()", "VARPTR()", "VDP()",
+		"VPEEK()", "VPOKE", "WAIT", "WIDTH", "XOR"
+	];
 	server.resource(
 		"msxdocs_basic_wiki",
 		new ResourceTemplate(
@@ -975,20 +991,7 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			{
 				list: undefined,
 				complete: {
-					instruction: (value: string) => [
-						"ABS()", "AND", "ASC()", "ATN()", "AUTO", "BASE()", "BEEP", "BIN$()", "BLOAD", "BSAVE", "CALL", "CALL ADJUST", "CALL PAUSE", "CALL PCMPLAY", "CALL PCMREC",
-						"CDBL()", "CHR$()", "CINT()", "CIRCLE", "CLEAR", "CLOAD", "CLOAD?", "CLOSE", "CLS","COLOR","COLOR=","COLOR","COLOR","CONT","COPY","COPY","COS()","CSAVE",
-						"CSNG()","CSRLIN","DATA","DEFDBL","DEF FN","DEFINT","DEFSNG","DEFSTR","DEF USR","DELETE","DIM","DRAW","ELSE","END", "EOF()", "EQV", "ERASE", "ERL", "ERR",
-						"ERROR", "EXP()", "FIX()", "FN", "FOR...NEXT", "FRE()", "GET DATE", "GET TIME", "GOSUB", "GOTO", "HEX$()", "IF...GOTO...ELSE", "IF...THEN...ELSE", "IMP",
-						"INKEY$", "INP()", "INPUT", "INPUT$()", "INSTR()", "INT()", "INTERVAL", "KEY", "KEY()", "LEFT$()", "LEN()", "LET", "LINE", "LINE INPUT", "LIST", "LLIST",
-						"LOAD", "LOCATE", "LOG()", "LPOS()", "LPRINT", "MAXFILES", "MERGE", "MID$()", "MOD", "MOTOR", "NEW", "NOT", "OCT$()", "ON...GOSUB", "ON...GOTO",
-						"ON ERROR GOTO", "ON INTERVAL GOSUB", "ON KEY GOSUB", "ON SPRITE GOSUB", "ON STOP GOSUB", "ON STRIG GOSUB", "OPEN", "OR", "OUT", "PAD()", "PAINT", "PDL()",
-						"PEEK()", "PLAY", "PLAY()", "POINT", "POKE", "POS()", "PRESET", "PRINT", "PSET", "PUT KANJI", "PUT SPRITE", "READ", "REM", "RENUM", "RESTORE", "RESUME",
-						"RETURN", "RIGHT$()", "RND()", "RUN", "SAVE", "SCREEN", "SET ADJUST", "SET BEEP", "SET DATE", "SET PAGE", "SET PASSWORD", "SET PROMPT", "SET SCREEN",
-						"SET SCROLL", "SET TIME", "SET TITLE", "SET VIDEO", "SGN()", "SIN()", "SOUND", "SPACE$()", "SPC()", "SPRITE", "SPRITE$()", "SQR()", "STICK()", "STOP",
-						"STR$()", "STRIG()", "STRING$()", "SWAP", "TAB()", "TAN()", "TIME", "TROFF", "TRON", "USR()", "VAL()", "VARPTR()", "VDP()", "VPEEK()", "VPOKE", "WAIT",
-						"WIDTH", "XOR"
-					],
+					instruction: (value: string) => basicInstructions,
 				},
 			}
 		),
@@ -998,7 +1001,10 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			mimeType: "text/html",
 		},
 		async (uri: URL, variables: any) => {
-			const instruction = (variables.instruction as string).replace(/ /g, '_').replace(/\?/g, '%3F').replace(/=/g, '%3D');
+			const instruction = (variables.instruction as string)
+				.replace(/ /g, '_')
+				.replace(/\?/g, '%3F')
+				.replace(/=/g, '%3D');
 			const url = `https://www.msx.org/wiki/${instruction}`;
 			let resourceContent: string;
 			let mimeType: string | undefined;
@@ -1018,6 +1024,7 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		}
 	);
 
+	// Register the tool to get a specific MSX documentation resource
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"msxdocs_resource_get",
