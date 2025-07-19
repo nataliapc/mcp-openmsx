@@ -25,7 +25,7 @@ This project creates a bridge between modern AI-assisted development (e.g. GitHu
 - **Video Control**: VDP register manipulation and screen capture.
 - **Memory Operations**: Read/write RAM, VRAM, and I/O port access.
 - **Automation**: Keyboard input simulation and savestate management.
-- **Dual Transport**: Support for both stdio and HTTP transports.
+- **Hybrid mode**: This MCP server supports hybrid access mode (_STDIO_ and _HTTP_ transports).
 
 ## 🏗️ Architecture
 
@@ -118,17 +118,18 @@ The rights to these resources belong to their respective authors and are distrib
 
 ## 🚀 Quick Start
 
-You can use this MCP server in this basic way with the [precompiled NPM package](https://www.npmjs.com/package/@nataliapc/mcp-openmsx). You may need to have `nodejs` installed for this to work.
+You can use this MCP server in this basic way with the [precompiled NPM package](https://www.npmjs.com/package/@nataliapc/mcp-openmsx).
 
-### 🟢 Basic Usage with VSCode
+### 🟢 Quick installation with VSCode
 
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP_Server-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22mcp-openmsx%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40nataliapc%2Fmcp-openmsx%22%5D%7D)
+
+Steps to install the MCP server in VSCode:
 * Install [Github Copilot extension](https://code.visualstudio.com/docs/copilot/overview)
-* Add to your workspace a file `.vscode/mcp.json` with:
+* Use the **Install in VS Code** button above to install the MCP server in your VSCode workspace.
+* Or add to your workspace a file `.vscode/mcp.json` with the json configuration below.
 
 ### STDIO mode (recommended)
-
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=github&config=%7B%22type%22%3A%20%22stdio%22%2C%22command%22%3A%20%22npx%22%2C%22args%22%3A%20%5B%22%40nataliapc%2Fmcp-openmsx%22%5D%2C%20%22env%22%3A%20%7B%22OPENMSX_SHARE_DIR%22%3A%20%22%2Fusr%2Fshare%2Fopenmsx%22%7D%7D)
-[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=github&config=%7B%22type%22%3A%20%22stdio%22%2C%22command%22%3A%20%22npx%22%2C%22args%22%3A%20%5B%22%40nataliapc%2Fmcp-openmsx%22%5D%2C%20%22env%22%3A%20%7B%22OPENMSX_SHARE_DIR%22%3A%20%22%2Fusr%2Fshare%2Fopenmsx%22%7D%7D&quality=insiders)
 
 ```json
 {
@@ -137,7 +138,7 @@ You can use this MCP server in this basic way with the [precompiled NPM package]
       "command": "npx",
       "args": ["@nataliapc/mcp-openmsx"],
       "env": {
-        "OPENMSX_SHARE_DIR": "/usr/share/openmsx"
+        "OPENMSX_SHARE_DIR": "C:\the\location\of\your\openmsx\share\folder"
       }
     }
   }
@@ -164,7 +165,9 @@ You can use this MCP server in this basic way with the [precompiled NPM package]
 
 ### 🟢 Basic Usage with Claude Desktop
 
-Add to your `claude_desktop_config.json`:
+Follow [these instrutions](https://modelcontextprotocol.io/quickstart/user#for-claude-desktop-users) to access Claude's `claude_desktop_config.json` file.
+
+Edit it to include the following JSON entry:
 
 ```json
 {
@@ -173,12 +176,14 @@ Add to your `claude_desktop_config.json`:
       "command": "npx",
       "args": ["@nataliapc/mcp-openmsx"],
       "env": {
-        "OPENMSX_SHARE_DIR": "/usr/share/openmsx"
+        "OPENMSX_SHARE_DIR": "C:\the\location\of\your\openmsx\share\folder"
       }
     }
   }
 }
 ```
+
+**Note:** Environment variables are optional. Customize them as you need.
 
 ### 🟢 Environment Variables
 
@@ -194,6 +199,8 @@ Add to your `claude_desktop_config.json`:
 
 
 ## 🧑‍💻 Advanced Manual Usage
+
+This is not needed for using the MCP server, but if you want to install it manually, follow these steps.
 
 Currently, the MCP server requires Linux to be compiled. It has not been tested on Windows or macOS, although it will likely work on the latter as well.
 
@@ -230,10 +237,11 @@ MCP_TRANSPORT=http mcp-openmsx
 mcp-openmsx http
 ```
 
-
 ## 💡 Development
 
-### Prerequisites
+This is not needed for using the MCP server, but if you want to contribute or modify the code, follow these steps.
+
+### Prerequisites to build
 
 - Node.js >= 18.0.0
 - TypeScript
@@ -253,7 +261,6 @@ npm run build
 ```bash
 npm run dev
 ```
-
 
 ## 🪪 License
 
