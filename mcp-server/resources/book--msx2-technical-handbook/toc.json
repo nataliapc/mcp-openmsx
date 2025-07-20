@@ -75,7 +75,7 @@
         },
         {
             "title": "MSX Kun Basic compiler",
-            "uri": "msxdocs://book--msx2-technical-handbook/MSX_Kun_BASIC_compiler.md",
+            "uri": "msxdocs://book--msx2-technical-handbook/MSX_Kun_BASIC_Compiler.md",
             "description": "The document describes MSX-BASIC-KUN, a BASIC compiler for MSX computers that significantly accelerates program execution (15 to 100 times faster). It compiles most MSX-BASIC statements, supports strings and floating-point numbers, and introduces turbo blocks (_TURBO ON/OFF) for selective compilation. The compiler has limitations, such as unsupported commands (e.g., BLOAD, PRINT#) and restrictions on variable handling within turbo blocks. It adds new features like inline assembly (#I), clipping control (#C), and overflow checks (#N). The compiler operates within RAM and cannot save compiled programs independently. It is ideal for creating high-performance MSX applications without requiring Z80 assembly language expertise."
         }
     ]
