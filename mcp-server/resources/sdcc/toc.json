@@ -3,7 +3,7 @@
     "description": "",
     "toc": [
         {
-            "title": "Compiler User Guide",
+            "title": "SDCC Compiler User Guide",
             "uri": "msxdocs://sdcc/sdccman",
             "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
             "description": "Comprehensive user guide for SDCC (Small Device C Compiler), a free open source ISO C11/C17 compiler suite targeting 8-bit microcontrollers including 8051, Z80, R800, STM8, and PIC architectures. This manual provides essential information about compiler installation, usage, programming techniques, data types, memory models, optimization strategies, and MCU-specific development practices for embedded systems programming."
