@@ -13,3 +13,4 @@ npm-debug.log*
 .nyc_output/
 coverage/
 .vscode/
+.embeddings.cache.json

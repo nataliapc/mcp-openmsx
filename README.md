@@ -9,7 +9,6 @@
 [![NPM Version](https://img.shields.io/npm/v/%40nataliapc%2Fmcp-openmsx)](https://www.npmjs.com/package/@nataliapc/mcp-openmsx?activeTab=versions)
 [![NPM Downloads](https://img.shields.io/npm/dm/%40nataliapc%2Fmcp-openmsx?color=808000)]()
 
-
 A [Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) server for automating [openMSX emulator](https://github.com/openMSX/openMSX) instances.
 
 This server provides comprehensive tools for MSX software development, testing, and automation through standardized MCP protocols.
@@ -25,7 +24,8 @@ This project creates a bridge between modern AI-assisted development (e.g. GitHu
 - **Video Control**: VDP register manipulation and screen capture.
 - **Memory Operations**: Read/write RAM, VRAM, and I/O port access.
 - **Automation**: Keyboard input simulation and savestate management.
-- **Hybrid mode**: This MCP server supports hybrid access mode (_STDIO_ and _HTTP_ transports).
+- **Vector DB Integration**: Query an embedded vector database with MSX resources for development support.
+- **Hybrid Mode**: This MCP server supports hybrid access mode (_STDIO_ and _HTTP_ transports).
 
 ## 🏗️ Architecture
 
@@ -72,6 +72,10 @@ The MCP server translates high-level commands from your Copilot AI into `TCL` co
 - `emu_savestates`: Save and restore machine states: _`load`, `save`, `list`_.
 - `screen_shot`: Capture emulator screen: _`as_image`, `to_file`_.
 - `screen_dump`: Export screen data as BASIC BSAVE instruction.
+- `msxdocs_resource_get`: Retrieve MCP resources for MCP clients that don't support MCP resources.
+
+### Documentation Tools
+- `vector_db_query`: Query the Vector DB resources to obtain information about MSX systems, cartridges, and other development resources.
 - `msxdocs_resource_get`: Retrieve MCP resources for MCP clients that don't support MCP resources.
 
 ## 📚 Available MCP Resources

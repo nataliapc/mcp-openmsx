@@ -1,8 +1,11 @@
 # Makefile for MCP-openMSX project
-.PHONY: all npm_install build run_stdio run_http pack publish info clean update-mcp-docs
+.PHONY: all npm_install build run_stdio run_http pack publish info clean embeddings query update-mcp-docs
 
 SERVER_DIR = mcp-server
 MAKE = make -s --no-print-directory -C $(SERVER_DIR)
+
+VECTOR_DIR = vector-db
+MAKE_VECTOR = make -s --no-print-directory -C $(VECTOR_DIR)
 
 
 npm_install:
@@ -32,7 +35,15 @@ info:
 clean:
 	@$(MAKE) clean
 
-#UpdateMCP documentation
+# Create embeddings for VectorDB
+embeddings:
+	@$(MAKE_VECTOR) embeddings
+
+# Querying VectorDB
+query:
+	@$(MAKE_VECTOR) query
+
+# UpdateMCP documentation
 update-mcp-docs:
 	@echo "Updating MCP documentation..."
 	# Assuming the documentation is in a specific directory

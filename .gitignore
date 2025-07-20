@@ -1,12 +1,14 @@
-**/.env
 .github
 .vscode
 .amazonq
-package*.json
+package-lock.json
+**/.env
+**/.embeddings.cache.json
 *.tgz
 assets
 node_modules
 test-scripts
+vector-db/index*.json
 mcp-server/dist
 mcp-server/node_modules
 mcp-output.log

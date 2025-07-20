@@ -19,6 +19,7 @@ import express, { Request, Response } from "express";
 import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
+import { VectorDB } from "./vectordb.js";
 import { fetchCleanWebpage, addFileExtension, listResourcesDirectory, encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
 import { createRequire } from 'module';
 
@@ -28,6 +29,7 @@ const require = createRequire(import.meta.url);
 export const PACKAGE_VERSION = require('../package.json').version;
 
 const resourcesDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../resources");
+const vectorDbDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../vector-db");
 
 // Defaults for openMSX paths
 var OPENMSX_EXECUTABLE = 'openmsx';
@@ -902,6 +904,44 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		}
 	);
 
+	server.registerTool(
+		// Name of the tool (used to call it)
+		"vector_db_query",
+		{
+			title: "Vector DB query from resources",
+			// Description of the tool (what it does)
+			description: `Query the Vector DB resources to obtain information about MSX system, cartridges, programming, and other development resources.
+The query is a string used to search within the Vector DB resources; it is case-insensitive and may contain spaces.
+The response is the list of the top 10 result resources that match the query, including their score, title, and resource URI, and are sorted in descending order by proximity score to the query.
+**Important Note**: The Vector DB resources are in english, japanese, or dutch.
+`,
+			// Schema for the tool (input validation)
+			inputSchema: {
+				query: z.string().min(2).max(100).describe("Query string to search in the Vector DB resources, case-insensitive and may contain spaces."),
+			},
+			// outputSchema: {
+			// 	results: z.array(z.object({
+			// 		score: z.number().describe("Proximity score of the result to the query, higher is better."),
+			// 		title: z.string().describe("Title of the resource."),
+			// 		uri: z.string().describe("URI of the resource, which can be used to access the resource."),
+			// 		document: z.string().describe("Document chunk of the resource, retrieved from the Vector DB."),
+			// 		id: z.string().describe("Unique resource chunk ID, used internally by the Vector DB."),
+			// 	}))
+			// },
+		},
+		// Handler for the tool (function to be executed when the tool is called)
+		async ({ query }: { query: string }) => {
+			const results = await VectorDB.getInstance().query(query);
+			return {
+				content: [{
+					type: "text",
+					text: JSON.stringify(results),
+				}],
+				results: results,
+				isError: false,
+			};
+		});
+
 
 	// ============================================================================
 	// MSX Documentation resources
@@ -1296,6 +1336,8 @@ async function main()
 		MACHINES_DIR = `${OPENMSX_SHARE_DIR}machines`;
 		EXTENSIONS_DIR = `${OPENMSX_SHARE_DIR}extensions`;
 	}
+
+	VectorDB.setIndexDirectory(vectorDbDir);
 
 	// Detect transport type from environment or command line
 	const transportType = process.env.MCP_TRANSPORT || process.argv[2] || 'stdio';
