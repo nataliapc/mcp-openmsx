@@ -4,22 +4,26 @@
     "toc": [
         {
             "title": "PSG Registers",
-            "uri": "https://www.msx.org/wiki/PSG_Registers",
+            "uri": "msxdocs://audio/psg_registers",
+            "external_url": "https://www.msx.org/wiki/PSG_Registers",
             "description": "Complete reference for MSX PSG (Programmable Sound Generator) registers covering all 16 registers including frequency control, white noise control, voice and I/O port control, amplitude and volume control, envelope form and period control, and I/O parallel port registers. Includes BIOS routines WRTPSG, RDPSG, and GICINI for PSG access and initialization."
         },
         {
             "title": "Konami SCC Sound Chip",
-            "uri": "http://bifi.msxnet.org/msxnet/tech/scc",
+            "uri": "msxdocs://audio/sound_cartridge_scc",
+            "external_url": "http://bifi.msxnet.org/msxnet/tech/scc",
             "description": "Technical documentation for Konami's SCC (Sound Creative Chip) used in MSX cartridges. The SCC provides 5-channel wavetable synthesis with custom waveforms, offering enhanced audio capabilities beyond the standard PSG. Commonly found in Konami game cartridges like Gradius series, providing richer sound effects and music."
         },
         {
             "title": "Konami SCCI Sound Chip",
-            "uri": "http://bifi.msxnet.org/msxnet/tech/soundcartridge",
+            "uri": "msxdocs://audio/sound_cartridge_scci",
+            "external_url": "http://bifi.msxnet.org/msxnet/tech/soundcartridge",
             "description": "Technical documentation for Konami's enhanced SCC+ (Sound Creative Chip Plus) found in later MSX sound cartridges. Improved version of the original SCC providing enhanced wavetable synthesis capabilities, additional sound channels, and better audio quality. Used in advanced Konami cartridges and dedicated sound cartridges for expanded audio functionality."
         },
         {
             "title": "MSX-MIDI",
-            "uri": "https://map.grauw.nl/resources/midi/msx-midi.php",
+            "uri": "msxdocs://audio/msx-midi",
+            "external_url": "https://map.grauw.nl/resources/midi/msx-midi.php",
             "description": "Complete technical documentation for MSX-MIDI interface covering hardware configuration, MIDI data communication using 8251 IC, baud rate generator with 8253/8254 timer IC, I/O port assignments (0E8H, 0E9H), internal vs external cartridge implementations, and BASIC extensions. Available only for MSX turbo R and later systems with 16K ROM containing MIDI functionality."
         },
         {
