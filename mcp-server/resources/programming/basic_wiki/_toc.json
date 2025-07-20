@@ -1,0 +1,871 @@
+{
+    "title": "MSX BASIC Programming Reference",
+    "description": "Comprehensive reference documentation for MSX BASIC programming language commands, functions, statements, and procedures. Covers all standard MSX BASIC commands, mathematical functions, string operations, I/O operations, graphics commands, sound functions, and system calls.",
+    "toc": [
+        {
+            "title": "ABS() - Absolute Value Function",
+            "uri": "msxdocs://basic_wiki/ABS()",
+            "description": "Returns the absolute value of a numeric expression. Converts negative numbers to positive while leaving positive numbers unchanged."
+        },
+        {
+            "title": "AND - Logical AND Operator",
+            "uri": "msxdocs://basic_wiki/AND",
+            "description": "Performs logical AND operation between two expressions. Returns true only when both operands are true."
+        },
+        {
+            "title": "ASC() - ASCII Code Function",
+            "uri": "msxdocs://basic_wiki/ASC()",
+            "description": "Returns the ASCII code value of the first character in a string expression."
+        },
+        {
+            "title": "ATN() - Arctangent Function",
+            "uri": "msxdocs://basic_wiki/ATN()",
+            "description": "Returns the arctangent (inverse tangent) of a numeric expression in radians."
+        },
+        {
+            "title": "AUTO - Automatic Line Numbering",
+            "uri": "msxdocs://basic_wiki/AUTO",
+            "description": "Automatically generates line numbers when entering BASIC program lines, with optional increment values."
+        },
+        {
+            "title": "BASE() - Numeric Base Function",
+            "uri": "msxdocs://basic_wiki/BASE()",
+            "description": "Function for working with different numeric bases and base conversions in MSX BASIC."
+        },
+        {
+            "title": "BEEP - Sound Beep Command",
+            "uri": "msxdocs://basic_wiki/BEEP",
+            "description": "Produces a simple beep sound through the MSX sound system."
+        },
+        {
+            "title": "BIN$() - Binary String Function",
+            "uri": "msxdocs://basic_wiki/BIN$()",
+            "description": "Converts a numeric value to its binary string representation."
+        },
+        {
+            "title": "BLOAD - Binary Load Command",
+            "uri": "msxdocs://basic_wiki/BLOAD",
+            "description": "Loads binary data from tape or disk into memory at a specified address."
+        },
+        {
+            "title": "BSAVE - Binary Save Command",
+            "uri": "msxdocs://basic_wiki/BSAVE",
+            "description": "Saves a block of memory as binary data to tape or disk."
+        },
+        {
+            "title": "CALL - Machine Language Call",
+            "uri": "msxdocs://basic_wiki/CALL",
+            "description": "Calls a machine language subroutine at a specified memory address."
+        },
+        {
+            "title": "CALL ADJUST - Screen Adjustment",
+            "uri": "msxdocs://basic_wiki/CALL_ADJUST",
+            "description": "MSX2+ specific command for adjusting screen position and display parameters."
+        },
+        {
+            "title": "CALL IMPOSE - Image Overlay",
+            "uri": "msxdocs://basic_wiki/CALL_IMPOSE",
+            "description": "MSX2+ specific command for overlaying images and graphics on the screen."
+        },
+        {
+            "title": "CALL OPTIONS - System Options",
+            "uri": "msxdocs://basic_wiki/CALL_OPTIONS",
+            "description": "MSX2+ specific command for setting various system options and configurations."
+        },
+        {
+            "title": "CALL PAUSE - Execution Pause",
+            "uri": "msxdocs://basic_wiki/CALL_PAUSE",
+            "description": "MSX2+ specific command for pausing program execution."
+        },
+        {
+            "title": "CALL PCMPLAY - PCM Playback",
+            "uri": "msxdocs://basic_wiki/CALL_PCMPLAY",
+            "description": "MSX2+ specific command for playing PCM audio data."
+        },
+        {
+            "title": "CALL PCMREC - PCM Recording",
+            "uri": "msxdocs://basic_wiki/CALL_PCMREC",
+            "description": "MSX2+ specific command for recording PCM audio data."
+        },
+        {
+            "title": "CDBL() - Convert to Double Precision",
+            "uri": "msxdocs://basic_wiki/CDBL()",
+            "description": "Converts a numeric expression to double precision floating point format."
+        },
+        {
+            "title": "CHR$() - Character Function",
+            "uri": "msxdocs://basic_wiki/CHR$()",
+            "description": "Returns the character corresponding to a given ASCII code value."
+        },
+        {
+            "title": "CINT() - Convert to Integer",
+            "uri": "msxdocs://basic_wiki/CINT()",
+            "description": "Converts a numeric expression to integer format by rounding to the nearest whole number."
+        },
+        {
+            "title": "CIRCLE - Draw Circle Command",
+            "uri": "msxdocs://basic_wiki/CIRCLE",
+            "description": "Draws circles, ellipses, arcs, and sectors on the graphics screen."
+        },
+        {
+            "title": "CLEAR - Clear Variables Command",
+            "uri": "msxdocs://basic_wiki/CLEAR",
+            "description": "Clears all variables and sets aside space for string storage and stack."
+        },
+        {
+            "title": "CLOAD - Cassette Load Command",
+            "uri": "msxdocs://basic_wiki/CLOAD",
+            "description": "Loads a BASIC program from cassette tape into memory."
+        },
+        {
+            "title": "CLOAD? - Verify Cassette Load",
+            "uri": "msxdocs://basic_wiki/CLOAD?",
+            "description": "Verifies a BASIC program on cassette tape against the program in memory."
+        },
+        {
+            "title": "CLOSE - Close File Command",
+            "uri": "msxdocs://basic_wiki/CLOSE",
+            "description": "Closes one or more open files and frees file numbers for reuse."
+        },
+        {
+            "title": "CLS - Clear Screen Command",
+            "uri": "msxdocs://basic_wiki/CLS",
+            "description": "Clears the screen and homes the cursor to the upper-left corner."
+        },
+        {
+            "title": "COLOR - Set Color Command",
+            "uri": "msxdocs://basic_wiki/COLOR",
+            "description": "Sets the foreground, background, and border colors for text and graphics modes."
+        },
+        {
+            "title": "COLOR= - Color Palette Assignment",
+            "uri": "msxdocs://basic_wiki/COLOR=",
+            "description": "MSX2/2+ command for setting color palette entries with RGB values."
+        },
+        {
+            "title": "COLOR_SPRITE$() - Sprite Color String Function",
+            "uri": "msxdocs://basic_wiki/COLOR_SPRITE$()",
+            "description": "MSX2/2+ function that returns sprite color information as a string."
+        },
+        {
+            "title": "COLOR_SPRITE() - Sprite Color Function",
+            "uri": "msxdocs://basic_wiki/COLOR_SPRITE()",
+            "description": "MSX2/2+ function that returns sprite color information."
+        },
+        {
+            "title": "CONT - Continue Execution",
+            "uri": "msxdocs://basic_wiki/CONT",
+            "description": "Continues program execution after a STOP command or break."
+        },
+        {
+            "title": "COPY - Screen Copy Command",
+            "uri": "msxdocs://basic_wiki/COPY",
+            "description": "Copies screen content to printer or other output device."
+        },
+        {
+            "title": "COPY_SCREEN - Screen Copy Function",
+            "uri": "msxdocs://basic_wiki/COPY_SCREEN",
+            "description": "MSX2/2+ command for copying screen areas between video pages."
+        },
+        {
+            "title": "COS() - Cosine Function",
+            "uri": "msxdocs://basic_wiki/COS()",
+            "description": "Returns the cosine of an angle expressed in radians."
+        },
+        {
+            "title": "CSAVE - Cassette Save Command",
+            "uri": "msxdocs://basic_wiki/CSAVE",
+            "description": "Saves the current BASIC program to cassette tape."
+        },
+        {
+            "title": "CSNG() - Convert to Single Precision",
+            "uri": "msxdocs://basic_wiki/CSNG()",
+            "description": "Converts a numeric expression to single precision floating point format."
+        },
+        {
+            "title": "CSRLIN - Cursor Line Function",
+            "uri": "msxdocs://basic_wiki/CSRLIN",
+            "description": "Returns the current line position of the cursor on the screen."
+        },
+        {
+            "title": "DATA - Data Statement",
+            "uri": "msxdocs://basic_wiki/DATA",
+            "description": "Stores numeric and string constants that can be accessed by READ statements."
+        },
+        {
+            "title": "DEFDBL - Define Double Precision",
+            "uri": "msxdocs://basic_wiki/DEFDBL",
+            "description": "Declares that variables starting with specified letters are double precision by default."
+        },
+        {
+            "title": "DEFINT - Define Integer",
+            "uri": "msxdocs://basic_wiki/DEFINT",
+            "description": "Declares that variables starting with specified letters are integers by default."
+        },
+        {
+            "title": "DEFSNG - Define Single Precision",
+            "uri": "msxdocs://basic_wiki/DEFSNG",
+            "description": "Declares that variables starting with specified letters are single precision by default."
+        },
+        {
+            "title": "DEFSTR - Define String",
+            "uri": "msxdocs://basic_wiki/DEFSTR",
+            "description": "Declares that variables starting with specified letters are strings by default."
+        },
+        {
+            "title": "DEF FN - Define Function",
+            "uri": "msxdocs://basic_wiki/DEF_FN",
+            "description": "Defines a user-defined function that can be called later in the program."
+        },
+        {
+            "title": "DEF USR - Define User Routine",
+            "uri": "msxdocs://basic_wiki/DEF_USR",
+            "description": "Defines the starting address of a machine language routine accessible via USR function."
+        },
+        {
+            "title": "DELETE - Delete Lines Command",
+            "uri": "msxdocs://basic_wiki/DELETE",
+            "description": "Deletes specified lines from the current BASIC program."
+        },
+        {
+            "title": "DIM - Dimension Arrays",
+            "uri": "msxdocs://basic_wiki/DIM",
+            "description": "Declares and allocates space for arrays with specified dimensions."
+        },
+        {
+            "title": "DRAW - Draw Graphics Command",
+            "uri": "msxdocs://basic_wiki/DRAW",
+            "description": "Draws complex graphics using a string of drawing commands (macro language)."
+        },
+        {
+            "title": "ELSE - Conditional Else",
+            "uri": "msxdocs://basic_wiki/ELSE",
+            "description": "Provides alternative execution path in IF...THEN...ELSE conditional statements."
+        },
+        {
+            "title": "END - End Program",
+            "uri": "msxdocs://basic_wiki/END",
+            "description": "Terminates program execution and returns control to command mode."
+        },
+        {
+            "title": "EOF() - End of File Function",
+            "uri": "msxdocs://basic_wiki/EOF()",
+            "description": "Returns true if the end of a file has been reached during file operations."
+        },
+        {
+            "title": "EQV - Logical Equivalence",
+            "uri": "msxdocs://basic_wiki/EQV",
+            "description": "Performs logical equivalence operation between two expressions."
+        },
+        {
+            "title": "ERASE - Erase Arrays",
+            "uri": "msxdocs://basic_wiki/ERASE",
+            "description": "Erases arrays and frees the memory space they occupied."
+        },
+        {
+            "title": "ERL - Error Line Function",
+            "uri": "msxdocs://basic_wiki/ERL",
+            "description": "Returns the line number where the last error occurred."
+        },
+        {
+            "title": "ERR - Error Code Function",
+            "uri": "msxdocs://basic_wiki/ERR",
+            "description": "Returns the error code of the last error that occurred."
+        },
+        {
+            "title": "ERROR - Generate Error",
+            "uri": "msxdocs://basic_wiki/ERROR",
+            "description": "Generates a specified error condition for testing error handling routines."
+        },
+        {
+            "title": "EXP() - Exponential Function",
+            "uri": "msxdocs://basic_wiki/EXP()",
+            "description": "Returns e raised to the power of the specified expression."
+        },
+        {
+            "title": "FIELD - Define Record Fields",
+            "uri": "msxdocs://basic_wiki/FIELD",
+            "description": "Defines string variables to access portions of a random access file record."
+        },
+        {
+            "title": "FIX() - Fix Function",
+            "uri": "msxdocs://basic_wiki/FIX()",
+            "description": "Returns the integer portion of a number by truncating the decimal part."
+        },
+        {
+            "title": "FN - User-Defined Function Call",
+            "uri": "msxdocs://basic_wiki/FN",
+            "description": "Calls a user-defined function previously defined with DEF FN."
+        },
+        {
+            "title": "FOR...NEXT - Loop Structure",
+            "uri": "msxdocs://basic_wiki/FOR...NEXT",
+            "description": "Creates a counting loop that repeats a block of statements a specified number of times."
+        },
+        {
+            "title": "FRE() - Free Memory Function",
+            "uri": "msxdocs://basic_wiki/FRE()",
+            "description": "Returns the amount of available memory in bytes."
+        },
+        {
+            "title": "GET_DATE - Get System Date",
+            "uri": "msxdocs://basic_wiki/GET_DATE",
+            "description": "MSX2+ command that retrieves the current system date."
+        },
+        {
+            "title": "GET_TIME - Get System Time",
+            "uri": "msxdocs://basic_wiki/GET_TIME",
+            "description": "MSX2+ command that retrieves the current system time."
+        },
+        {
+            "title": "GOSUB - Goto Subroutine",
+            "uri": "msxdocs://basic_wiki/GOSUB",
+            "description": "Calls a subroutine at a specified line number and remembers the return location."
+        },
+        {
+            "title": "GOTO - Goto Statement",
+            "uri": "msxdocs://basic_wiki/GOTO",
+            "description": "Transfers program control unconditionally to a specified line number."
+        },
+        {
+            "title": "HEX$() - Hexadecimal String Function",
+            "uri": "msxdocs://basic_wiki/HEX$()",
+            "description": "Converts a numeric value to its hexadecimal string representation."
+        },
+        {
+            "title": "IF...GOTO...ELSE - Conditional Goto",
+            "uri": "msxdocs://basic_wiki/IF...GOTO...ELSE",
+            "description": "Conditional statement that transfers control to specified line numbers based on condition."
+        },
+        {
+            "title": "IF...THEN...ELSE - Conditional Statement",
+            "uri": "msxdocs://basic_wiki/IF...THEN...ELSE",
+            "description": "Conditional statement that executes different code blocks based on logical conditions."
+        },
+        {
+            "title": "IMP - Logical Implication",
+            "uri": "msxdocs://basic_wiki/IMP",
+            "description": "Performs logical implication operation between two expressions."
+        },
+        {
+            "title": "INKEY$ - Input Key Function",
+            "uri": "msxdocs://basic_wiki/INKEY$",
+            "description": "Returns the character of a key pressed on the keyboard without waiting."
+        },
+        {
+            "title": "INP() - Input Port Function",
+            "uri": "msxdocs://basic_wiki/INP()",
+            "description": "Reads a byte value from a specified I/O port."
+        },
+        {
+            "title": "INPUT$() - Input String Function",
+            "uri": "msxdocs://basic_wiki/INPUT$()",
+            "description": "Reads a specified number of characters from keyboard or file."
+        },
+        {
+            "title": "INPUT - Input Statement",
+            "uri": "msxdocs://basic_wiki/INPUT",
+            "description": "Accepts input from keyboard or file and assigns values to variables."
+        },
+        {
+            "title": "INSTR() - String Search Function",
+            "uri": "msxdocs://basic_wiki/INSTR()",
+            "description": "Searches for the position of a substring within a string."
+        },
+        {
+            "title": "INT() - Integer Function",
+            "uri": "msxdocs://basic_wiki/INT()",
+            "description": "Returns the largest integer less than or equal to the specified value."
+        },
+        {
+            "title": "INTERVAL - Set Timer Interval",
+            "uri": "msxdocs://basic_wiki/INTERVAL",
+            "description": "Sets the interval for the timer interrupt used with ON INTERVAL GOSUB."
+        },
+        {
+            "title": "KEY() - Function Key Status",
+            "uri": "msxdocs://basic_wiki/KEY()",
+            "description": "Returns the status of function keys and other special keys."
+        },
+        {
+            "title": "KEY - Key Assignment",
+            "uri": "msxdocs://basic_wiki/KEY",
+            "description": "Assigns strings to function keys and controls key display."
+        },
+        {
+            "title": "LEFT$() - Left String Function",
+            "uri": "msxdocs://basic_wiki/LEFT$()",
+            "description": "Returns a specified number of characters from the left side of a string."
+        },
+        {
+            "title": "LEN() - String Length Function",
+            "uri": "msxdocs://basic_wiki/LEN()",
+            "description": "Returns the number of characters in a string expression."
+        },
+        {
+            "title": "LET - Assignment Statement",
+            "uri": "msxdocs://basic_wiki/LET",
+            "description": "Assigns a value to a variable. The LET keyword is optional in most cases."
+        },
+        {
+            "title": "LINE - Draw Line Command",
+            "uri": "msxdocs://basic_wiki/LINE",
+            "description": "Draws lines, rectangles, and filled boxes on the graphics screen."
+        },
+        {
+            "title": "LINE INPUT - Line Input Statement",
+            "uri": "msxdocs://basic_wiki/LINE_INPUT",
+            "description": "Reads an entire line of input including commas and quotation marks."
+        },
+        {
+            "title": "LIST - List Program",
+            "uri": "msxdocs://basic_wiki/LIST",
+            "description": "Displays the current BASIC program or specified line ranges on screen."
+        },
+        {
+            "title": "LLIST - List to Printer",
+            "uri": "msxdocs://basic_wiki/LLIST",
+            "description": "Prints the current BASIC program or specified line ranges to printer."
+        },
+        {
+            "title": "LOAD - Load Program",
+            "uri": "msxdocs://basic_wiki/LOAD",
+            "description": "Loads a BASIC program from disk or tape into memory."
+        },
+        {
+            "title": "LOCATE - Position Cursor",
+            "uri": "msxdocs://basic_wiki/LOCATE",
+            "description": "Positions the text cursor at specified column and row coordinates."
+        },
+        {
+            "title": "LOG() - Natural Logarithm Function",
+            "uri": "msxdocs://basic_wiki/LOG()",
+            "description": "Returns the natural logarithm (base e) of a specified value."
+        },
+        {
+            "title": "LPOS() - Printer Position Function",
+            "uri": "msxdocs://basic_wiki/LPOS()",
+            "description": "Returns the current print head position on the printer."
+        },
+        {
+            "title": "LPRINT - Print to Printer",
+            "uri": "msxdocs://basic_wiki/LPRINT",
+            "description": "Sends formatted output directly to the printer."
+        },
+        {
+            "title": "MAXFILES - Set Maximum Files",
+            "uri": "msxdocs://basic_wiki/MAXFILES",
+            "description": "Sets the maximum number of files that can be open simultaneously."
+        },
+        {
+            "title": "MERGE - Merge Programs",
+            "uri": "msxdocs://basic_wiki/MERGE",
+            "description": "Merges a BASIC program from disk or tape with the program currently in memory."
+        },
+        {
+            "title": "MID$() - Middle String Function",
+            "uri": "msxdocs://basic_wiki/MID$()",
+            "description": "Returns a substring from the middle of a string expression."
+        },
+        {
+            "title": "MOD - Modulo Operator",
+            "uri": "msxdocs://basic_wiki/MOD",
+            "description": "Returns the remainder of integer division between two numbers."
+        },
+        {
+            "title": "MOTOR - Cassette Motor Control",
+            "uri": "msxdocs://basic_wiki/MOTOR",
+            "description": "Controls the cassette tape motor for tape operations."
+        },
+        {
+            "title": "NEW - Clear Program",
+            "uri": "msxdocs://basic_wiki/NEW",
+            "description": "Erases the current program and variables from memory."
+        },
+        {
+            "title": "NOT - Logical NOT Operator",
+            "uri": "msxdocs://basic_wiki/NOT",
+            "description": "Performs logical negation on an expression, inverting true/false values."
+        },
+        {
+            "title": "OCT$() - Octal String Function",
+            "uri": "msxdocs://basic_wiki/OCT$()",
+            "description": "Converts a numeric value to its octal string representation."
+        },
+        {
+            "title": "ON...GOSUB - Conditional Subroutine Call",
+            "uri": "msxdocs://basic_wiki/ON...GOSUB",
+            "description": "Calls one of several subroutines based on the value of an expression."
+        },
+        {
+            "title": "ON...GOTO - Conditional Branch",
+            "uri": "msxdocs://basic_wiki/ON...GOTO",
+            "description": "Transfers control to one of several line numbers based on expression value."
+        },
+        {
+            "title": "ON ERROR GOTO - Error Handling",
+            "uri": "msxdocs://basic_wiki/ON_ERROR_GOTO",
+            "description": "Sets up error handling by specifying where to branch when errors occur."
+        },
+        {
+            "title": "ON INTERVAL GOSUB - Timer Interrupt",
+            "uri": "msxdocs://basic_wiki/ON_INTERVAL_GOSUB",
+            "description": "Sets up a timer interrupt that calls a subroutine at regular intervals."
+        },
+        {
+            "title": "ON KEY GOSUB - Key Interrupt",
+            "uri": "msxdocs://basic_wiki/ON_KEY_GOSUB",
+            "description": "Sets up key press interrupts that call subroutines when specific keys are pressed."
+        },
+        {
+            "title": "ON SPRITE GOSUB - Sprite Interrupt",
+            "uri": "msxdocs://basic_wiki/ON_SPRITE_GOSUB",
+            "description": "Sets up sprite collision interrupts that call subroutines when sprites collide."
+        },
+        {
+            "title": "ON STOP GOSUB - Stop Key Interrupt",
+            "uri": "msxdocs://basic_wiki/ON_STOP_GOSUB",
+            "description": "Sets up interrupt handling for the STOP key press."
+        },
+        {
+            "title": "ON STRIG GOSUB - Trigger Interrupt",
+            "uri": "msxdocs://basic_wiki/ON_STRIG_GOSUB",
+            "description": "Sets up trigger/joystick button interrupts that call subroutines."
+        },
+        {
+            "title": "OPEN - Open File",
+            "uri": "msxdocs://basic_wiki/OPEN",
+            "description": "Opens a file for input, output, or random access operations."
+        },
+        {
+            "title": "OR - Logical OR Operator",
+            "uri": "msxdocs://basic_wiki/OR",
+            "description": "Performs logical OR operation between two expressions."
+        },
+        {
+            "title": "OUT - Output to Port",
+            "uri": "msxdocs://basic_wiki/OUT",
+            "description": "Sends a byte value to a specified I/O port."
+        },
+        {
+            "title": "PAD() - Touchpad Function",
+            "uri": "msxdocs://basic_wiki/PAD()",
+            "description": "Returns the status of touchpad coordinates and buttons."
+        },
+        {
+            "title": "PAINT - Paint Fill Command",
+            "uri": "msxdocs://basic_wiki/PAINT",
+            "description": "Fills an enclosed area on the graphics screen with a specified color or pattern."
+        },
+        {
+            "title": "PDL() - Paddle Function",
+            "uri": "msxdocs://basic_wiki/PDL()",
+            "description": "Returns the analog value of paddle controllers connected to the MSX."
+        },
+        {
+            "title": "PEEK() - Memory Peek Function",
+            "uri": "msxdocs://basic_wiki/PEEK()",
+            "description": "Returns the byte value stored at a specified memory address."
+        },
+        {
+            "title": "PLAY() - Music Status Function",
+            "uri": "msxdocs://basic_wiki/PLAY()",
+            "description": "Returns the number of notes remaining in the music buffer for specified sound channel."
+        },
+        {
+            "title": "PLAY - Music Play Command",
+            "uri": "msxdocs://basic_wiki/PLAY",
+            "description": "Plays music using Music Macro Language (MML) strings on PSG sound channels."
+        },
+        {
+            "title": "POINT - Point Function",
+            "uri": "msxdocs://basic_wiki/POINT",
+            "description": "Returns the color of a pixel at specified coordinates on the graphics screen."
+        },
+        {
+            "title": "POKE - Memory Poke Command",
+            "uri": "msxdocs://basic_wiki/POKE",
+            "description": "Stores a byte value at a specified memory address."
+        },
+        {
+            "title": "POS() - Print Position Function",
+            "uri": "msxdocs://basic_wiki/POS()",
+            "description": "Returns the current column position of the cursor or print head."
+        },
+        {
+            "title": "PRESET - Reset Pixel Command",
+            "uri": "msxdocs://basic_wiki/PRESET",
+            "description": "Sets a pixel to the background color at specified coordinates."
+        },
+        {
+            "title": "PRINT - Print Statement",
+            "uri": "msxdocs://basic_wiki/PRINT",
+            "description": "Displays text, numbers, and expressions on screen or sends data to files. Can be abbreviated as '?'."
+        },
+        {
+            "title": "PSET - Set Pixel Command",
+            "uri": "msxdocs://basic_wiki/PSET",
+            "description": "Sets a pixel to a specified color at given coordinates on the graphics screen."
+        },
+        {
+            "title": "PUT_KANJI - Display Kanji Character",
+            "uri": "msxdocs://basic_wiki/PUT_KANJI",
+            "description": "MSX2+ command for displaying Kanji characters from the Kanji ROM."
+        },
+        {
+            "title": "PUT_SPRITE - Put Sprite Command",
+            "uri": "msxdocs://basic_wiki/PUT_SPRITE",
+            "description": "Displays a sprite at specified coordinates with given pattern and attributes."
+        },
+        {
+            "title": "READ - Read Data Statement",
+            "uri": "msxdocs://basic_wiki/READ",
+            "description": "Reads values from DATA statements and assigns them to variables."
+        },
+        {
+            "title": "REM - Remark Statement",
+            "uri": "msxdocs://basic_wiki/REM",
+            "description": "Indicates a comment or remark in the program. Text after REM is ignored during execution."
+        },
+        {
+            "title": "RENUM - Renumber Lines",
+            "uri": "msxdocs://basic_wiki/RENUM",
+            "description": "Renumbers the lines of the current BASIC program with new increment values."
+        },
+        {
+            "title": "RESTORE - Restore Data Pointer",
+            "uri": "msxdocs://basic_wiki/RESTORE",
+            "description": "Resets the data pointer to the beginning of DATA statements or to a specified line."
+        },
+        {
+            "title": "RESUME - Resume After Error",
+            "uri": "msxdocs://basic_wiki/RESUME",
+            "description": "Resumes program execution after an error handling routine."
+        },
+        {
+            "title": "RETURN - Return from Subroutine",
+            "uri": "msxdocs://basic_wiki/RETURN",
+            "description": "Returns control from a subroutine to the statement following the GOSUB call."
+        },
+        {
+            "title": "RIGHT$() - Right String Function",
+            "uri": "msxdocs://basic_wiki/RIGHT$()",
+            "description": "Returns a specified number of characters from the right side of a string."
+        },
+        {
+            "title": "RND() - Random Number Function",
+            "uri": "msxdocs://basic_wiki/RND()",
+            "description": "Returns a random number between 0 and 1, or within a specified range."
+        },
+        {
+            "title": "RUN - Run Program",
+            "uri": "msxdocs://basic_wiki/RUN",
+            "description": "Starts execution of the current BASIC program, optionally from a specified line."
+        },
+        {
+            "title": "SAVE - Save Program",
+            "uri": "msxdocs://basic_wiki/SAVE",
+            "description": "Saves the current BASIC program to disk or tape."
+        },
+        {
+            "title": "SCREEN - Set Screen Mode",
+            "uri": "msxdocs://basic_wiki/SCREEN",
+            "description": "Sets the video display mode, determining resolution, colors, and graphics capabilities."
+        },
+        {
+            "title": "SET_ADJUST - Set Screen Adjustment",
+            "uri": "msxdocs://basic_wiki/SET_ADJUST",
+            "description": "MSX2+ command for adjusting screen position and display parameters."
+        },
+        {
+            "title": "SET_BEEP - Set Beep Parameters",
+            "uri": "msxdocs://basic_wiki/SET_BEEP",
+            "description": "MSX2+ command for setting beep sound parameters."
+        },
+        {
+            "title": "SET_DATE - Set System Date",
+            "uri": "msxdocs://basic_wiki/SET_DATE",
+            "description": "MSX2+ command for setting the system date."
+        },
+        {
+            "title": "SET_PAGE - Set Video Page",
+            "uri": "msxdocs://basic_wiki/SET_PAGE",
+            "description": "MSX2/2+ command for setting active and visible video pages."
+        },
+        {
+            "title": "SET_PASSWORD - Set Password",
+            "uri": "msxdocs://basic_wiki/SET_PASSWORD",
+            "description": "MSX2+ command for setting system password protection."
+        },
+        {
+            "title": "SET_PROMPT - Set Command Prompt",
+            "uri": "msxdocs://basic_wiki/SET_PROMPT",
+            "description": "MSX2+ command for customizing the command prompt."
+        },
+        {
+            "title": "SET_SCREEN - Set Screen Parameters",
+            "uri": "msxdocs://basic_wiki/SET_SCREEN",
+            "description": "MSX2+ command for setting various screen parameters and modes."
+        },
+        {
+            "title": "SET_SCROLL - Set Scroll Parameters",
+            "uri": "msxdocs://basic_wiki/SET_SCROLL",
+            "description": "MSX2/2+ command for setting hardware scrolling parameters."
+        },
+        {
+            "title": "SET_TIME - Set System Time",
+            "uri": "msxdocs://basic_wiki/SET_TIME",
+            "description": "MSX2+ command for setting the system time."
+        },
+        {
+            "title": "SET_TITLE - Set Screen Title",
+            "uri": "msxdocs://basic_wiki/SET_TITLE",
+            "description": "MSX2+ command for setting screen title text."
+        },
+        {
+            "title": "SET_VIDEO - Set Video Parameters",
+            "uri": "msxdocs://basic_wiki/SET_VIDEO",
+            "description": "MSX2+ command for setting video output parameters."
+        },
+        {
+            "title": "SGN() - Sign Function",
+            "uri": "msxdocs://basic_wiki/SGN()",
+            "description": "Returns the sign of a number: -1 for negative, 0 for zero, +1 for positive."
+        },
+        {
+            "title": "SIN() - Sine Function",
+            "uri": "msxdocs://basic_wiki/SIN()",
+            "description": "Returns the sine of an angle expressed in radians."
+        },
+        {
+            "title": "SOUND - Sound Command",
+            "uri": "msxdocs://basic_wiki/SOUND",
+            "description": "Generates sounds by directly controlling PSG sound chip registers."
+        },
+        {
+            "title": "SPACE$() - Space String Function",
+            "uri": "msxdocs://basic_wiki/SPACE$()",
+            "description": "Returns a string consisting of a specified number of space characters."
+        },
+        {
+            "title": "SPC() - Space Print Function",
+            "uri": "msxdocs://basic_wiki/SPC()",
+            "description": "Prints a specified number of spaces in PRINT statements."
+        },
+        {
+            "title": "SPRITE$() - Sprite String Function",
+            "uri": "msxdocs://basic_wiki/SPRITE$()",
+            "description": "Returns sprite pattern data as a string for manipulation and storage."
+        },
+        {
+            "title": "SPRITE - Sprite Command",
+            "uri": "msxdocs://basic_wiki/SPRITE",
+            "description": "Controls sprite attributes including position, color, and pattern."
+        },
+        {
+            "title": "SQR() - Square Root Function",
+            "uri": "msxdocs://basic_wiki/SQR()",
+            "description": "Returns the square root of a specified numeric expression."
+        },
+        {
+            "title": "STICK() - Joystick Function",
+            "uri": "msxdocs://basic_wiki/STICK()",
+            "description": "Returns the direction status of joystick controllers."
+        },
+        {
+            "title": "STOP - Stop Program",
+            "uri": "msxdocs://basic_wiki/STOP",
+            "description": "Halts program execution and displays 'Break in [line number]' message."
+        },
+        {
+            "title": "STR$() - String Conversion Function",
+            "uri": "msxdocs://basic_wiki/STR$()",
+            "description": "Converts a numeric value to its string representation."
+        },
+        {
+            "title": "STRIG() - Trigger Function",
+            "uri": "msxdocs://basic_wiki/STRIG()",
+            "description": "Returns the status of joystick trigger buttons and mouse buttons."
+        },
+        {
+            "title": "STRING$() - Repeat String Function",
+            "uri": "msxdocs://basic_wiki/STRING$()",
+            "description": "Returns a string consisting of a character repeated a specified number of times."
+        },
+        {
+            "title": "SWAP - Swap Variables",
+            "uri": "msxdocs://basic_wiki/SWAP",
+            "description": "Exchanges the values of two variables of the same type."
+        },
+        {
+            "title": "TAB() - Tab Print Function",
+            "uri": "msxdocs://basic_wiki/TAB()",
+            "description": "Moves the cursor to a specified column position in PRINT statements."
+        },
+        {
+            "title": "TAN() - Tangent Function",
+            "uri": "msxdocs://basic_wiki/TAN()",
+            "description": "Returns the tangent of an angle expressed in radians."
+        },
+        {
+            "title": "TIME - System Time Variable",
+            "uri": "msxdocs://basic_wiki/TIME",
+            "description": "System variable that holds the current time in seconds since midnight."
+        },
+        {
+            "title": "TROFF - Trace Off",
+            "uri": "msxdocs://basic_wiki/TROFF",
+            "description": "Turns off program trace mode that displays line numbers during execution."
+        },
+        {
+            "title": "TRON - Trace On",
+            "uri": "msxdocs://basic_wiki/TRON",
+            "description": "Turns on program trace mode that displays line numbers as they execute."
+        },
+        {
+            "title": "USR() - User Function Call",
+            "uri": "msxdocs://basic_wiki/USR()",
+            "description": "Calls a machine language routine and returns a value."
+        },
+        {
+            "title": "VAL() - Value Function",
+            "uri": "msxdocs://basic_wiki/VAL()",
+            "description": "Converts a string representation of a number to its numeric value."
+        },
+        {
+            "title": "VARPTR() - Variable Pointer Function",
+            "uri": "msxdocs://basic_wiki/VARPTR()",
+            "description": "Returns the memory address where a variable is stored."
+        },
+        {
+            "title": "VDP() - Video Display Processor Function",
+            "uri": "msxdocs://basic_wiki/VDP()",
+            "description": "Reads from VDP (Video Display Processor) status and control registers."
+        },
+        {
+            "title": "VPEEK() - Video Memory Peek Function",
+            "uri": "msxdocs://basic_wiki/VPEEK()",
+            "description": "Returns a byte value from Video RAM (VRAM) at specified address."
+        },
+        {
+            "title": "VPOKE - Video Memory Poke Command",
+            "uri": "msxdocs://basic_wiki/VPOKE",
+            "description": "Stores a byte value in Video RAM (VRAM) at specified address."
+        },
+        {
+            "title": "WAIT - Wait Command",
+            "uri": "msxdocs://basic_wiki/WAIT",
+            "description": "Suspends program execution until a specified I/O port condition is met."
+        },
+        {
+            "title": "WIDTH - Set Screen Width",
+            "uri": "msxdocs://basic_wiki/WIDTH",
+            "description": "Sets the character width of the screen display and printer output."
+        },
+        {
+            "title": "XOR - Logical XOR Operator",
+            "uri": "msxdocs://basic_wiki/XOR",
+            "description": "Performs logical exclusive OR operation between two expressions."
+        }
+    ]
+}
