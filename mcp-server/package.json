@@ -38,7 +38,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.15.1",
+    "@modelcontextprotocol/sdk": "^1.16.0",
     "@themaximalist/embeddings.js": "^0.1.3",
     "vectra": "^0.11.1",
     "@types/express": "^5.0.2",
