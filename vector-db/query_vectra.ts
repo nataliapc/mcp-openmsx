@@ -12,7 +12,7 @@ const DB_DIR = path.resolve('./');
 const index = new LocalIndex(DB_DIR);
 
 const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
+	apiKey: process.env.OPENAI_API_KEY 
 });
 
 async function initDatabase(): Promise<Boolean> {
@@ -28,45 +28,37 @@ async function initDatabase(): Promise<Boolean> {
 }
 
 async function testDatabase() {
-  try {
-	if (await initDatabase() === false) {
-		return;
-	}
+	try {
+		if (await initDatabase() === false) {
+			return;
+		}
 
-	console.log('🔍 Testing Vectra database...');
-	
-	// Get all items
-	const items = await index.listItems();
-	console.log(`📊 Total items in database: ${items.length}`);
-	
-	// Show a sample of items
-	if (items.length > 0) {
-	  console.log('\n📋 Sample items:');
-	  for (let i = 0; i < Math.min(5, items.length); i++) {
-		const item = items[i];
-		console.log(`  ${i + 1}. ID: ${item.metadata?.id}`);
-		console.log(`     URI: ${item.metadata?.uri}`);
-		console.log(`     Title: ${item.metadata?.title}`);
-		console.log(`     Doc: ${String(item.metadata?.document).substring(0, 100)}...`);
-		console.log('');
-	  }
+		console.log('🔍 Testing Vectra database...');
+		
+		// Get all items
+		const items = await index.listItems();
+		console.log(`📊 Total items in database: ${items.length}`);
+		
+		// Show a sample of items
+		if (items.length > 0) {
+			console.log('\n📋 Sample items:');
+			for (let i = 0; i < Math.min(5, items.length); i++) {
+				const item = items[i];
+				console.log(`  ${i + 1}. ID: ${item.metadata?.id}`);
+				console.log(`     URI: ${item.metadata?.uri}`);
+				console.log(`     Title: ${item.metadata?.title}`);
+				console.log(`     Doc: ${String(item.metadata?.document).substring(0, 100)}...`);
+				console.log('');
+			}
+		}
+		console.log('✅ Database test completed successfully');
+		
+	} catch (error) {
+		console.error('💥 Database test failed:', error);
 	}
-	
-	console.log('✅ Database test completed successfully');
-	
-  } catch (error) {
-	console.error('💥 Database test failed:', error);
-  }
 }
 
 async function getVector(text: string) {
-/*	const model = process.env.EMBED_MODEL ?? 'text-embedding-3-small';
-	const response = await openai.embeddings.create({
-		'model': model,
-		'input': text,
-	});
-	return response.data[0].embedding;
-*/
 	const response = await embeddings(text);
 	if (!response || !Array.isArray(response) || response.length === 0) {
 		throw new Error('Failed to generate embedding vector');
