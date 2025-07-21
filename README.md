@@ -13,7 +13,23 @@ A [Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) s
 
 This server provides comprehensive tools for MSX software development, testing, and automation through standardized MCP protocols.
 
-## 🎯 Project Overview
+## Table of Contents
+
+- [Project overview](#project-overview)
+- [Architecture](#architecture)
+- [Available MCP Tools](#available-mcp-tools)
+- [Available MCP Resources](#available-mcp-resources)
+- [**Quick Start**](#quick-start)
+  - [Quick installation with **VSCode**](#quick-installation-with-vscode)
+  - [Basic installation with **Claude Desktop**](#basic-installation-with-claude-desktop)
+  - [Environment Variables](#environment-variables)
+- [Advanced manual usage](#advanced-manual-usage)
+- [Development](#development)
+- [License](#license)
+- [Support](#support)
+- [Contributing](#contributing)
+
+## Project Overview
 
 This project creates a bridge between modern AI-assisted development (e.g. GitHub Copilot, Claude Desktop) and retro computing (MSX systems) by providing:
 
@@ -27,7 +43,7 @@ This project creates a bridge between modern AI-assisted development (e.g. GitHu
 - **Vector DB Integration**: Query an embedded vector database with MSX resources for development support.
 - **Hybrid Mode**: This MCP server supports hybrid access mode (_STDIO_ and _HTTP_ transports).
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TB
@@ -68,7 +84,7 @@ flowchart TB
 
 The MCP server translates high-level natural language commands from your Copilot AI into `TCL` commands to control `openMSX`, enabling automated MSX software testing and debugging.
 
-## 🛠️ Available MCP Tools
+## Available MCP Tools
 
 ### Emulator Control Tools
 - `emu_control`: Controls an openMSX emulator: _`launch`, `close`, `powerOn`, `powerOff`, `reset`, `getEmulatorSpeed`, `setEmulatorSpeed`, `machineList`, `extensionList`, `wait`_.
@@ -98,7 +114,7 @@ The MCP server translates high-level natural language commands from your Copilot
 - `vector_db_query`: Query the Vector DB resources to obtain information about MSX systems, cartridges, and other development resources.
 - `msxdocs_resource_get`: Retrieve MCP resources for MCP clients that don't support MCP resources.
 
-## 📚 Available MCP Resources
+## Available MCP Resources
 
 ### What are MCP Resources?
 
@@ -140,11 +156,11 @@ Thanks to the authors of these resources, who have made them available under var
 
 The rights to these resources belong to their respective authors and are distributed under the licenses they have defined.
 
-## 🚀 Quick Start
+## Quick Start
 
 You can use this MCP server in this basic way with the [precompiled NPM package](https://www.npmjs.com/package/@nataliapc/mcp-openmsx).
 
-### 🟢 Quick installation with VSCode
+### Quick installation with VSCode
 
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP_Server-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](https://insiders.vscode.dev/redirect/mcp/install?name=mcp-openmsx&config=%7B%22name%22%3A%22mcp-openmsx%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40nataliapc%2Fmcp-openmsx%22%5D%7D)
 
@@ -162,7 +178,7 @@ Steps to install the MCP server in VSCode:
       "command": "npx",
       "args": ["@nataliapc/mcp-openmsx"],
       "env": {
-        "OPENMSX_SHARE_DIR": "C:\the\location\of\your\openmsx\share\folder"
+        "OPENMSX_SHARE_DIR": "C:\\the\\location\\of\\your\\openmsx\\share\\folder"
       }
     }
   }
@@ -187,7 +203,7 @@ Steps to install the MCP server in VSCode:
 
 **Note:** The MCP HTTP Server must be running standalone in the same computer or in another (`make run_http`).
 
-### 🟢 Basic Usage with Claude Desktop
+### Basic Installation with Claude Desktop
 
 Follow [these instrutions](https://modelcontextprotocol.io/quickstart/user#for-claude-desktop-users) to access Claude's `claude_desktop_config.json` file.
 
@@ -200,7 +216,7 @@ Edit it to include the following JSON entry:
       "command": "npx",
       "args": ["@nataliapc/mcp-openmsx"],
       "env": {
-        "OPENMSX_SHARE_DIR": "C:\the\location\of\your\openmsx\share\folder"
+        "OPENMSX_SHARE_DIR": "C:\\the\\location\\of\\your\\openmsx\\share\\folder"
       }
     }
   }
@@ -209,7 +225,7 @@ Edit it to include the following JSON entry:
 
 **Note:** Environment variables are optional. Customize them as you need.
 
-### 🟢 Environment Variables
+### Environment Variables
 
 | Variable | Description | Default Value | Example |
 |----------|-------------|---------------|---------|
@@ -222,7 +238,7 @@ Edit it to include the following JSON entry:
 | `MCP_HTTP_PORT` | Port number for HTTP transport mode | `3000` | `8080` |
 
 
-## 🧑‍💻 Advanced Manual Usage
+## Advanced Manual Usage
 
 This is not needed for using the MCP server, but if you want to install it manually, follow these steps.
 
@@ -261,7 +277,7 @@ MCP_TRANSPORT=http mcp-openmsx
 mcp-openmsx http
 ```
 
-## 💡 Development
+## Development
 
 This is not needed for using the MCP server, but if you want to contribute or modify the code, follow these steps.
 
@@ -286,17 +302,17 @@ npm run build
 npm run dev
 ```
 
-## 🪪 License
+## License
 
 GPL2 License - see [LICENSE](LICENSE) file for details.
 
 
-## 🆘 Support
+## Support
 
 If you need help, or have questions or suggestions, please open an issue on the [GitHub Issues](https://github.com/nataliapc/mcp-openmsx/issues) page or check the project discussions.
 
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
