@@ -43,20 +43,22 @@ flowchart TB
       VECTORDB[("Embeddings RAG<br>(Vector Database)")]
       RESOURCES["MCP Resources"]
       LOCALDATA["Local data<br>(inner documentation)"]
-      EXTDATA["External data<br>(internet webpages)"]
     end
+    EXTDATA["External data<br>(webpages)"]
 
     HOST <--"_MCP<br>&nbsp;protocol&nbsp;_"--> MCP
     MCP <--> TOOLS & RESOURCES
     TOOLS <--"_&nbsp;Query&nbsp;_"--> VECTORDB
     TOOLS <--"_&nbsp;Console commands&nbsp;_"---> EMU
+    RESOURCES <--_&nbsp;http&nbsp;_---> EXTDATA
     RESOURCES <--> LOCALDATA
-    RESOURCES <--_&nbsp;http&nbsp;_--> EXTDATA
   end
 
   HOST@{ shape: rounded }
   MCP@{ shape: rounded }
   EMU@{ shape: rounded }
+  LOCALDATA@{ shape: docs }
+  EXTDATA@{ shape: docs }
   style yourComputerGroup color:#fff,fill:#4444,text-align:left
   style mcpGroup color:#fff,fill:#4444
   style HOST color:#000000,fill:#BBDEFB,stroke-width:4px,stroke-dasharray:0
@@ -64,7 +66,7 @@ flowchart TB
   style EMU color:#FFFFFF,fill:#0000FF,stroke-width:4px,stroke-dasharray:0
 ```
 
-The MCP server translates high-level commands from your Copilot AI into `TCL` commands to control `openMSX`, enabling automated MSX software _testing_ and _debugging_.
+The MCP server translates high-level natural language commands from your Copilot AI into `TCL` commands to control `openMSX`, enabling automated MSX software testing and debugging.
 
 ## 🛠️ Available MCP Tools
 
