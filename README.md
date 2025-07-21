@@ -166,7 +166,7 @@ You can use this MCP server in this basic way with the [precompiled NPM package]
 
 Steps to install the MCP server in VSCode:
 * Install [Github Copilot extension](https://code.visualstudio.com/docs/copilot/overview)
-* Use the **Install in VS Code** button above to install the MCP server in your VSCode workspace.
+* Use the **Install MCP Server** button above to install the MCP server in your VSCode settings.
 * Or add to your workspace a file `.vscode/mcp.json` with the json configuration below.
 
 ### STDIO mode (recommended)
