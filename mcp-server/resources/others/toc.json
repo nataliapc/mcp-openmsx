@@ -6,6 +6,12 @@
             "title": "MemMan v2.32 TSR Development Kit",
             "uri": "https://map.grauw.nl/resources/tsrdev_en.php",
             "description": "Development kit documentation for MemMan 2.32 TSR (Terminate and Stay Resident) programs on MSX2 systems. Covers new XTsrCall function (61), improved memory allocation with DOS2 RAMdisk support, enhanced Info function (50) for direct entry addresses, enlarged internal stack (240 bytes), and direct function calling methods to improve TSR program performance by bypassing EXTBIO hook overhead."
+        },
+        {
+            "title": "Keyboard matrices",
+            "uri": "msxdocs://others/keyboard_matrices",
+            "external_url": "https://map.grauw.nl/articles/keymatrix.php",
+            "description": "Comprehensive guide to MSX keyboard matrix layouts covering the 11x8 bit key matrix structure, keyboard version detection from BIOS address #002C, differences between Japanese, International, French, German, and Spanish keyboard layouts. Discusses keyboard matrix reading techniques and compatibility issues across different MSX computer models, with special focus on rows 6-10 standardization."
         }
     ]
 }
