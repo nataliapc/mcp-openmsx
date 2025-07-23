@@ -13,6 +13,19 @@
             "uri": "msxdocs://msx-dos/MSX-DOS_2_Function_Specifications",
             "external_url": "https://map.grauw.nl/resources/dos2_functioncalls.php",
             "description": "This document provides a comprehensive specification of MSX-DOS 2 function calls (version 2.20), detailing over 90 system functions accessible via two calling methods: CALL 00005h for MSX-DOS environment programs and CALL 0F37Dh for disk BASIC programs. The functions are categorized by compatibility level (CPM for CP/M 2.2 compatibility, MSX1 for MSX-DOS version 1 compatibility, and NEW for MSX-DOS 2 exclusive features) and cover essential system operations including file management (FCB and file handle based), directory operations, disk I/O, console I/O, memory management, process control, and device handling. Each function is thoroughly documented with parameters, return values, error conditions, and implementation details, making this an indispensable reference for MSX software development, system programming, and understanding the MSX-DOS operating system interface for both legacy compatibility and modern MSX development workflows."
+        },
+        {
+            "title": "MSX-DOS 2 Environment Variables",
+            "uri": "msxdocs://msx-dos/MSX-DOS_2_Environment_Variables",
+            "external_url": "https://www.msx.org/wiki/MSX-DOS_2_Environment_Variables",
+            "description": "This document provides a detailed overview of the environment variables used in MSX-DOS 2, including their purpose, default values, and how they can be modified. It covers variables such as PATH, which defines the search path for executable files; PROMPT, which sets the command prompt appearance; and others that control system behavior and configuration. The document serves as a reference for developers and users to understand how to customize their MSX-DOS 2 environment for optimal performance and usability."
+        },
+        {
+            "title": "MSX-DOS File extensions",
+            "uri": "msxdocs://msx-dos/MSX-DOS_File_extensions",
+            "external_url": "https://www.msx.org/wiki/File_extensions_used_on_MSX",
+            "description": "This document provides a comprehensive list of file extensions used in the MSX-DOS operating system, detailing their specific purposes and associations. It includes extensions for various types of files such as executable programs (.COM, .BAS), data files (.DAT, .TXT), and system files (.SYS, .CFG). Each extension is explained with its typical usage context."
         }
+
     ]
 }
