@@ -4,13 +4,14 @@
  * @author Natalia Pujol Cremades (@nataliapc)
  * @license GPL2
  */
+import path from 'path';
 import { LocalIndex, QueryResult } from 'vectra';
 import embeddings from '@themaximalist/embeddings.js';
 
 
 export class VectorDB {
 	private static instance: VectorDB;
-	private static vectorDbDir: string = '../vector-db';
+	private static vectorDbDir: string = path.join('..', 'vector-db');
 	private index: LocalIndex;
 
 	static getInstance(): VectorDB

@@ -12,6 +12,41 @@ import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { PACKAGE_VERSION } from "./server.js";
 import sanitizeHtml from 'sanitize-html';
 
+import { existsSync } from "fs";
+import os from "os";
+
+
+/**
+ * Detect the openMSX share directory by checking various methods
+ * @returns string - The detected share directory or an empty string if not found
+ */
+export function detectOpenMSXShareDir(): string {
+	try {
+		// Check standard locations
+		const possiblePaths = [
+			// Linux paths
+			path.join(os.homedir(), '.openMSX', 'share'),
+			'/usr/local/share/openmsx',
+			'/usr/share/openmsx',
+			// Windows paths
+			path.join(os.homedir(), 'Documents', 'openMSX', 'share'),
+			path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'openMSX', 'share'),
+			// macOS paths
+			path.join(os.homedir(), 'Library', 'Application Support', 'openMSX', 'share'),
+			'/Applications/openMSX.app/Contents/Resources/share',
+		];
+
+		for (const dirPath of possiblePaths) {
+			if (existsSync(dirPath) && existsSync(path.join(dirPath, 'machines'))) {
+				return dirPath;
+			}
+		}
+	} catch (error) {
+		console.error('Error detecting openMSX share directory:', error);
+	}
+	return '';
+}
+
 /**
  * Extract description from XML file
  * @param filePath - Full path to the XML file

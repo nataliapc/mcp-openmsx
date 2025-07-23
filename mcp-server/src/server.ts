@@ -20,8 +20,10 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { fetchCleanWebpage, addFileExtension, listResourcesDirectory, encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
 import { createRequire } from 'module';
+import {
+	detectOpenMSXShareDir, fetchCleanWebpage, addFileExtension, listResourcesDirectory, 
+	encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
 
 
 // Dynamically obtain PACKAGE_VERSION from package.json at runtime
@@ -33,12 +35,12 @@ const vectorDbDir = path.join(path.dirname(new URL(import.meta.url).pathname), "
 
 // Defaults for openMSX paths
 var OPENMSX_EXECUTABLE = 'openmsx';
-var OPENMSX_SHARE_DIR = '/usr/share/openmsx';
+var OPENMSX_SHARE_DIR = '';
 var OPENMSX_REPLAYS_DIR = '';
 var OPENMSX_SCREENSHOT_DIR = '';
 var OPENMSX_SCREENDUMP_DIR = '';
-var MACHINES_DIR = `${OPENMSX_SHARE_DIR}/machines`;
-var EXTENSIONS_DIR = `${OPENMSX_SHARE_DIR}/extensions`;
+var MACHINES_DIR = '';
+var EXTENSIONS_DIR = '';
 
 
 // ============================================================================
@@ -659,11 +661,11 @@ async function registerAllTools(server: McpServer)
 					tclCommand = `reverse_frame ${frames}`;
 					break;
 				case "saveReplay":
-					if (filename) filename = `"${OPENMSX_REPLAYS_DIR}${filename}"`;
+					if (filename) filename = path.join(OPENMSX_REPLAYS_DIR, filename);
 					tclCommand = `reverse savereplay ${filename || ''}`;
 					break;
 				case "loadReplay":
-					if (filename) filename = `"${OPENMSX_REPLAYS_DIR}${filename}"`;
+					if (filename) filename = path.join(OPENMSX_REPLAYS_DIR, filename);
 					tclCommand = `reverse loadreplay ${filename}`;
 					break;
 				default:
@@ -729,7 +731,7 @@ async function registerAllTools(server: McpServer)
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command }: { command: string }) => {
-			const openmsxCommand = `screenshot -raw -prefix "${OPENMSX_SCREENSHOT_DIR}mcp_"`;
+			const openmsxCommand = `screenshot -raw -prefix "${path.join(OPENMSX_SCREENSHOT_DIR,'mcp_')}"`;
 			const response = await openMSXInstance.sendCommand(openmsxCommand);
 			switch (command) {
 				case "as_image":
@@ -788,7 +790,7 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ scrbasename }: { scrbasename: string }) => {
-			const openmsxCommand = `save_msx_screen "${OPENMSX_SCREENDUMP_DIR + scrbasename}"`;
+			const openmsxCommand = `save_msx_screen "${path.join(OPENMSX_SCREENDUMP_DIR,scrbasename)}"`;
 			const response = await openMSXInstance.sendCommand(openmsxCommand);
 			return getResponseContent([
 				isErrorResponse(response) ? 'Fail:' : 'Screendump file saved as:',
@@ -1215,7 +1217,8 @@ Environment variables:
   OPENMSX_SHARE_DIR       openMSX share directory
   OPENMSX_SCREENSHOT_DIR  Screenshot output directory
   OPENMSX_SCREENDUMP_DIR  Screen dump output directory
-  MCP_HTTP_PORT          HTTP server port (default: 3000)
+  OPENMSX_REPLAYS_DIR     Replay output directory
+  MCP_HTTP_PORT           HTTP server port (default: 3000)
 
 Examples:
   mcp-openmsx                    # stdio transport
@@ -1332,19 +1335,28 @@ async function main()
 		OPENMSX_EXECUTABLE = process.env.OPENMSX_EXECUTABLE;
 	}
 	if (process.env.OPENMSX_SCREENSHOT_DIR && process.env.OPENMSX_SCREENSHOT_DIR !== '') {
-		OPENMSX_SCREENSHOT_DIR = process.env.OPENMSX_SCREENSHOT_DIR + path.sep;
+		OPENMSX_SCREENSHOT_DIR = process.env.OPENMSX_SCREENSHOT_DIR;
 	}
 	if (process.env.OPENMSX_SCREENDUMP_DIR && process.env.OPENMSX_SCREENDUMP_DIR !== '') {
-		OPENMSX_SCREENDUMP_DIR = process.env.OPENMSX_SCREENDUMP_DIR + path.sep;
+		OPENMSX_SCREENDUMP_DIR = process.env.OPENMSX_SCREENDUMP_DIR;
 	}
 	if (process.env.OPENMSX_REPLAYS_DIR && process.env.OPENMSX_REPLAYS_DIR !== '') {
-		OPENMSX_REPLAYS_DIR = process.env.OPENMSX_REPLAYS_DIR + path.sep;
+		OPENMSX_REPLAYS_DIR = process.env.OPENMSX_REPLAYS_DIR;
 	}
-	if (process.env.OPENMSX_SHARE_DIR) {
-		OPENMSX_SHARE_DIR = process.env.OPENMSX_SHARE_DIR + path.sep;
-		MACHINES_DIR = `${OPENMSX_SHARE_DIR}machines`;
-		EXTENSIONS_DIR = `${OPENMSX_SHARE_DIR}extensions`;
+	if (process.env.OPENMSX_SHARE_DIR && process.env.OPENMSX_SHARE_DIR !== '') {
+		OPENMSX_SHARE_DIR = process.env.OPENMSX_SHARE_DIR;
+	} else {
+		// Auto-detect openMSX share directory if not set
+		const detectedShareDir = detectOpenMSXShareDir();
+		if (detectedShareDir) {
+			OPENMSX_SHARE_DIR = detectedShareDir;
+			console.warn(`Auto-detected openMSX share folder: ${OPENMSX_SHARE_DIR}`);
+		} else {
+			console.error("Error: OPENMSX_SHARE_DIR environment variable is not set and could not be auto-detected.");
+		}
 	}
+	MACHINES_DIR = path.join(OPENMSX_SHARE_DIR, 'machines');
+	EXTENSIONS_DIR = path.join(OPENMSX_SHARE_DIR, 'extensions');
 
 	VectorDB.setIndexDirectory(vectorDbDir);
 
