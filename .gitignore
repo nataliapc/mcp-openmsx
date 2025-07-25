@@ -1,6 +1,7 @@
 .github
 .vscode
 .amazonq
+.gemini
 package-lock.json
 **/.env
 **/.embeddings.cache.json
