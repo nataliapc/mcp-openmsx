@@ -919,13 +919,12 @@ The parameter scrbasename is the name of the filename (without path) to save the
 	'deleteProgramLines <startLine> [endLine]': deletes a specific range of lines from the current BASIC program; if endLine is not specified, only the startLine is deleted.
 **Important Note**: if error 'not in BASIC mode' then use the command 'isBasicAvailable' to wait for a ready state.
 **Important Note**: prioritize these tools for developing BASIC programs, as they are more efficient than using the 'sendText' tool.
-**Important Note**: all program lines must end with a carriage return (\\r) to be processed correctly, including the last line.
 **Important Note**: if you have questions about MSX BASIC, use the resources provided by this MCP server.
 `),
 				program: z.string()
 					.max(10000, 'BASIC program too long')
 					.optional()
-					.describe("Basic program to set; use only \\r for line endings, even the last one. Used by [setProgram]"),
+					.describe("Basic program to set. Used by [setProgram]"),
 				startLine: z.number()
 					.min(0, 'Minimum start line number too low')
 					.max(9999, 'Maximum start line number too high')
@@ -972,12 +971,17 @@ The parameter scrbasename is the name of the filename (without path) to save the
 						response = 'Error: no BASIC program provided to set.'
 						break;
 					}
-					if (program.includes('\n') || program.includes('\\n')) {
-						response = 'Error: you cannot use \\n for line endings, use only \\r instead.';
-						break;
-					}
+					// Transform the program \n into \r, and (\r)+ into \r, as openMSX does not support \n in BASIC programs
+					// and if last character is not \r, add it
+					program = program
+						.replace(/\n/g, '\r')
+						.replace(/(\r)+/g, '\r');
+					if (!program.endsWith('\r')) program += '\r';
 					// Escape '$' characters if '(' is the next character and is not escaped yet (openMSX variable substitutions)
-					program = program.replace(/([^\\])(\$\()/g, '$1\\$2');
+					// and escape '[' and ']' characters if not escaped yet
+					program = program
+						.replace(/([^\\])(\$\()/g, '$1\\$2')
+						.replace(/([^\\])([\]\[])/g, '$1\\$2');
 					// Get current speed to restore it later
 					let speed = '100';
 					if (isErrorResponse(speed = await openMSXInstance.sendCommand('set speed'))) {
@@ -987,7 +991,11 @@ The parameter scrbasename is the name of the filename (without path) to save the
 					// Set speed to fast, type de program, wait to end, and restore speed
 					if (isErrorResponse(response = await openMSXInstance.sendCommand(
 						`set speed 10000 ; type_via_keybuf "${encodeTypeText(program)}" ; after idle 20 { set speed ${speed} }`
-					))) break;
+					))) {
+						// Restore speed in case of error
+						await openMSXInstance.sendCommand(`set speed ${speed}`);
+						break;
+					}
 					// Success response
 					response = '';
 					break;
@@ -1059,79 +1067,79 @@ The response is the list of the top 10 result resources that match the query, in
 			};
 		});
 
-		// ============================================================================
-		// Register a tool to get a specific MSX documentation resource
-		// Retrieve MCP resources for MCP clients that don't support MCP resources.
-	
-		server.registerTool(
-			// Name of the tool (used to call it)
-			"msxdocs_resource_get",
-			{
-				title: "Tool to get a resource",
-				// Description of the tool (what it does)
-				description: "Get a specific available MSX documentation resource from this MCP server resources.",
-				// Schema for the tool (input validation)
-				inputSchema: {
-					resourceName: z.enum(getRegisteredResourcesList().map(res => res.resource.name) as [string, ...string[]])
-						.describe("Name of the resource to obtain, e.g. 'msxdocs_programming_interrupts'"),
-				},
+	// ============================================================================
+	// Register a tool to get a specific MSX documentation resource
+	// Retrieve MCP resources for MCP clients that don't support MCP resources.
+
+	server.registerTool(
+		// Name of the tool (used to call it)
+		"msxdocs_resource_get",
+		{
+			title: "Tool to get a resource",
+			// Description of the tool (what it does)
+			description: "Get a specific available MSX documentation resource from this MCP server resources.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				resourceName: z.enum(getRegisteredResourcesList().map(res => res.resource.name) as [string, ...string[]])
+					.describe("Name of the resource to obtain, e.g. 'msxdocs_programming_interrupts'"),
 			},
-			// Handler for the tool (function to be executed when the tool is called)
-			async ({ resourceName }: { resourceName: string }, extra) => {
-				const regResources = getRegisteredResourcesList();
-				const index: number = regResources.findIndex((res: RegResource) => res.resource.name === resourceName);
-				const uriString = index !== -1 ? regResources[index].uri : undefined;
-				const resource = index !== -1 ? regResources[index].resource : undefined;
-				if (!resource || !uriString) {
+		},
+		// Handler for the tool (function to be executed when the tool is called)
+		async ({ resourceName }: { resourceName: string }, extra) => {
+			const regResources = getRegisteredResourcesList();
+			const index: number = regResources.findIndex((res: RegResource) => res.resource.name === resourceName);
+			const uriString = index !== -1 ? regResources[index].uri : undefined;
+			const resource = index !== -1 ? regResources[index].resource : undefined;
+			if (!resource || !uriString) {
+				return getResponseContent([
+					`Error: Resource '${resourceName}' not found.`
+				]);
+			}
+			let documentationText = '';
+			try {
+				// If the resource is found, return its content
+				let resourceContent = await resource.readCallback(
+					new URL(uriString),
+					extra
+				);
+				if (!resourceContent.contents?.length) {
 					return getResponseContent([
-						`Error: Resource '${resourceName}' not found.`
+						`Error: Resource '${resourceName}' has no content available.`
 					]);
 				}
-				let documentationText = '';
-				try {
-					// If the resource is found, return its content
-					let resourceContent = await resource.readCallback(
-						new URL(uriString),
-						extra
-					);
-					if (!resourceContent.contents?.length) {
-						return getResponseContent([
-							`Error: Resource '${resourceName}' has no content available.`
-						]);
-					}
-					// Return the first content item (assuming it's the main content)
-					const content = resourceContent.contents[0];
-					if ('text' in content) {
-						documentationText = content.text as string;
-					} else {
-						return getResponseContent([
-							`Error: Resource '${resourceName}' has no content available.`
-						]);
-					}
-				} catch (error) {
+				// Return the first content item (assuming it's the main content)
+				const content = resourceContent.contents[0];
+				if ('text' in content) {
+					documentationText = content.text as string;
+				} else {
 					return getResponseContent([
-						`Error: error reading resource '${resourceName}': ${error instanceof Error ? error.message : String(error)}`
+						`Error: Resource '${resourceName}' has no content available.`
 					]);
 				}
-				return {
-					content: [{
-						type: "text",
-						text: `Content from resource: '${resourceName}'`,
-					},{
-						type: "text",
-						text: documentationText || 'No content available for this resource.',
+			} catch (error) {
+				return getResponseContent([
+					`Error: error reading resource '${resourceName}': ${error instanceof Error ? error.message : String(error)}`
+				]);
+			}
+			return {
+				content: [{
+					type: "text",
+					text: `Content from resource: '${resourceName}'`,
+				},{
+					type: "text",
+					text: documentationText || 'No content available for this resource.',
+					mimeType: resource.metadata?.mimeType || 'text/plain',
+				}/*, {
+					type: "resource",
+					resource: {
+						uri: resource.metadata?.uri || resourceName,
+						title: resource.metadata?.title || `Resource: ${resourceName}`,
 						mimeType: resource.metadata?.mimeType || 'text/plain',
-					}/*, {
-						type: "resource",
-						resource: {
-							uri: resource.metadata?.uri || resourceName,
-							title: resource.metadata?.title || `Resource: ${resourceName}`,
-							mimeType: resource.metadata?.mimeType || 'text/plain',
-							text: documentationText || 'No content available for this resource.',
-						}
-					}*/],
-				};
-			});
-	
+						text: documentationText || 'No content available for this resource.',
+					}
+				}*/],
+			};
+		});
+
 }
 
