@@ -2,6 +2,7 @@
 .PHONY: all clean
 
 COL_WHITE = \e[1;37m
+COL_ORANGE = \e[1;38:5:208m
 COL_RESET = \e[0m
 
 
@@ -43,10 +44,25 @@ info:
 	npm view @nataliapc/mcp-openmsx
 
 clean:
-	@echo "$(COL_WHITE)#### Cleaning up build artifacts...$(COL_RESET)"
 	rm -rf node_modules
 	rm -rf dist
 	rm -f package-lock.json
 	rm -f README.md
 	rm -f LICENSE
 	rm -f *.tgz
+
+#Checks
+
+depcheck:
+	@echo "$(COL_ORANGE)## depcheck...$(COL_RESET)"
+	@depcheck || true
+
+outdated:
+	@echo "$(COL_ORANGE)## npm outdated...$(COL_RESET)"
+	@npm outdated || true
+
+npq:
+	@echo "$(COL_ORANGE)## npq...$(COL_RESET)"
+	@npq --dry-run || true
+
+check: depcheck outdated npq
