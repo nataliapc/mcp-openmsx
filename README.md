@@ -1,6 +1,6 @@
 # MCP-openMSX
 
-*"Orchestrating a binary opera where AI conducts, MCP interprets, and openMSX acts as the 8-bit diva."*
+_"Orchestrating a binary opera where AI conducts, MCP interprets, and openMSX acts as the 8-bit diva."_
 
 [![Built by NataliaPC](https://img.shields.io/badge/Built%20by-NataliaPC-blue)](https://github.com/nataliapc)
 [![License](https://img.shields.io/badge/License-GPL2-blue.svg)](https://github.com/nataliapc/mcp-openmsx/blob/main/LICENSE)
@@ -12,6 +12,11 @@
 A [Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) server for automating [openMSX emulator](https://github.com/openMSX/openMSX) instances.
 
 This server provides comprehensive tools for MSX software development, testing, and automation through standardized MCP protocols.
+
+
+> 🎁🎁 _If you find this program useful, please consider making a donation: [PAYPAL Link](https://www.paypal.com/donate/?hosted_button_id=9X268YDDS9SYC)_
+
+---
 
 ## Table of Contents
 
@@ -154,7 +159,8 @@ And books and manuals:
 
 Thanks to the authors of these resources, who have made them available under various licenses. This MCP server includes some of these resources to enhance the development experience.
 
-The rights to these resources belong to their respective authors and are distributed under the licenses they have defined.
+> [!IMPORTANT]  
+> The rights to these resources belong to their respective authors and are distributed under the licenses they have defined.
 
 ## Quick Start
 
@@ -165,9 +171,11 @@ You can use this MCP server in this basic way with the [precompiled NPM package]
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP_Server-0098FF?style=flat&logo=visualstudiocode&logoColor=ffffff)](https://insiders.vscode.dev/redirect/mcp/install?name=mcp-openmsx&config=%7B%22name%22%3A%22mcp-openmsx%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40nataliapc%2Fmcp-openmsx%22%5D%7D)
 
 Steps to install the MCP server in VSCode:
-* Install [Github Copilot extension](https://code.visualstudio.com/docs/copilot/overview)
-* Use the **Install MCP Server** button above to install the MCP server in your VSCode settings.
-* Or add to your workspace a file `.vscode/mcp.json` with the json configuration below.
+1. Install [Github Copilot extension](https://code.visualstudio.com/docs/copilot/overview)
+2. [Install nodejs](https://nodejs.org/en/download) (`npx` command must be available in your PATH).
+3. Install de MCP Server:
+    - Use the **Install MCP Server** button above to install the MCP server in your VSCode settings.
+    - Or add to your _workspace folder_ a file named `.vscode/mcp.json` with the json configuration below.
 
 ### STDIO mode (recommended)
 
@@ -185,7 +193,8 @@ Steps to install the MCP server in VSCode:
 }
 ```
 
-**Note:** Environment variables are optional. Customize them as you need.
+> [!NOTE]  
+> Environment variables are optional. Customize them as you need.
 
 ### Streamed HTTP mode (more advanced)
 
@@ -201,7 +210,8 @@ Steps to install the MCP server in VSCode:
 }
 ```
 
-**Note:** The MCP HTTP Server must be running standalone in the same computer or in another (`make run_http`).
+> [!NOTE]  
+> The MCP HTTP Server must be running standalone in the same computer or in another (`make run_http`).
 
 ### Basic Installation with Claude Desktop
 
@@ -223,7 +233,8 @@ Edit it to include the following JSON entry:
 }
 ```
 
-**Note:** Environment variables are optional. Customize them as you need.
+> [!NOTE]  
+> Environment variables are optional. Customize them as you need.
 
 ### Environment Variables
 
@@ -240,7 +251,8 @@ Edit it to include the following JSON entry:
 
 ## Advanced Manual Usage
 
-This is not needed for using the MCP server, but if you want to install it manually, follow these steps.
+> [!IMPORTANT]  
+> This is not needed for using the MCP server, but if you want to install it manually, follow these steps.
 
 Currently, the MCP server requires Linux to be compiled. It has not been tested on Windows or macOS, although it will likely work on the latter as well.
 
@@ -279,7 +291,8 @@ mcp-openmsx http
 
 ## Development
 
-This is not needed for using the MCP server, but if you want to contribute or modify the code, follow these steps.
+> [!IMPORTANT]  
+> This is not needed for using the MCP server, but if you want to contribute or modify the code, follow these steps.
 
 ### Prerequisites to build
 
