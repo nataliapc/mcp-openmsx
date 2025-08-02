@@ -28,7 +28,7 @@ export async function registerPrompts(server: McpServer)
 					.max(50, "Instruction name too long")
 					.describe("Name of the MSX BASIC instruction to get information about (e.g. 'PRINT', 'FOR', 'POKE'). Case insensitive.")
 					.transform(val => val.trim().toUpperCase()),
-			}
+			},
 		},
 		// Handler for the prompt (function to be executed when the prompt is called)
 		({ instruction }: { instruction: string }) => {

@@ -65,6 +65,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.default(3)
 					.describe("Number of seconds to wait; default is 3. Used by [wait]."),
 			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, machine, extensions, emuspeed, seconds }: { command: string, machine?: string; extensions?: string[]; emuspeed?: number, seconds?: number }) => {
@@ -160,6 +166,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("Absolute Disk folder filename to insert. Used by [diskInsertFolder]"),
 			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, tapefile, romfile, diskfile, diskfolder }: { command: string; tapefile?: string; romfile?: string; diskfile?: string; diskfolder?: string }) => {
@@ -216,6 +228,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 	'getIOPortsMap': shows an overview about the I/O mapped devices.
 `),
 			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command }: { command: string }) => {
@@ -270,6 +288,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.regex(/^0x[0-9a-fA-F]{2}$/, 'Value must be a 2 digits hexadecimal number')
 					.optional()
 					.describe("2 hexadecimal digits for a VDP register value (e.g. 0x1f). Used by [setRegisterValue]"),
+			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
@@ -333,6 +357,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.regex(/^0x[0-9a-fA-F]{4}$/, 'Address must be a 4 digits hexadecimal number')
 					.optional()
 					.describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [runTo]"),
+			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
@@ -412,6 +442,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("Number of bytes to disassemble. Used by [disassemble]"),
 			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, register, value, size }: { command: string; address?: string; register?: string; value?: string; size?: number }) => {
@@ -484,6 +520,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("4 hexadecimal digits for a word value (e.g. 0xa5b1). Used by [writeWord]"),
 			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, lines, value8, value16 }: { command: string; address?: string; lines?: number; value8?: string; value16?: string }) => {
@@ -546,6 +588,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.describe("Number of lines to obtain. Used by [getBlock]"),
 				value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a byte value (e.g. 0xa5). Used by [writeByte]"),
 			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, lines, value8 }: { command: string; address?: string; lines?: number; value8?: string }) => {
@@ -598,6 +646,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("Breakpoint name (e.g. bp#1). Used by [remove]"),
 			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, address, bpname }: { command: string; address?: string; bpname?: string }) => {
@@ -644,6 +698,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.max(50, 'Savestate name too long')
 					.optional()
 					.describe("Name of the savestate to load/save. Used by [load, save]"),
+			},
+			annotations: {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": false,
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
@@ -720,6 +780,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("Filename to save/load replay. Used by [saveReplay, loadReplay]"),
 			},
+			annotations: {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, seconds, time, frames, filename }: { command: string; seconds?: number; time?: string; frames?: number, filename?: string }) => {
@@ -789,6 +855,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.default('').describe("Text to send to the emulator via emulated keyboard"),
 			},
+			annotations: {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command, text }: { command: string; text: string }) => {
@@ -822,6 +894,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 	'as_image': take a screenshot and the image is returned in the response.
 	'to_file': take a screenshot and save it to a file, the file name is returned in the response.
 `),
+			},
+			annotations: {
+				"readOnlyHint": false,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
@@ -886,6 +964,12 @@ The parameter scrbasename is the name of the filename (without path) to save the
 					.default("screendump")
 					.describe("Screendump filename (without path nor extension) to save the screendump; default is 'screendump'"),
 			},
+			annotations: {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ scrbasename }: { scrbasename: string }) => {
@@ -935,6 +1019,12 @@ The parameter scrbasename is the name of the filename (without path) to save the
 					.max(9999, 'Maximum end line number too high')
 					.optional()
 					.describe("End line number to list/delete BASIC program lines. Used by [listProgramLines, deleteProgramLines]"),
+			},
+			annotations: {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": false,
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
@@ -1053,6 +1143,12 @@ The response is the list of the top 10 result resources that match the query, in
 			// 		id: z.string().describe("Unique resource chunk ID, used internally by the Vector DB."),
 			// 	}))
 			// },
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": false,
+			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ query }: { query: string }) => {
@@ -1082,6 +1178,12 @@ The response is the list of the top 10 result resources that match the query, in
 			inputSchema: {
 				resourceName: z.enum(getRegisteredResourcesList().map(res => res.resource.name) as [string, ...string[]])
 					.describe("Name of the resource to obtain, e.g. 'msxdocs_programming_interrupts'"),
+			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": true,
+				"openWorldHint": true,
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)

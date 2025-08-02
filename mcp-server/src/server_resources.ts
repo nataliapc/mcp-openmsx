@@ -7,7 +7,7 @@ import { McpServer, RegisteredResource, ResourceTemplate } from "@modelcontextpr
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
-import { fetchCleanWebpage, addFileExtension, listResourcesDirectory, getResponseContent } from "./utils.js";
+import { fetchCleanWebpage, addFileExtension, listResourcesDirectory } from "./utils.js";
 
 
 // Source: https://www.msx.org/wiki/Category:MSX-BASIC_Instructions
@@ -79,6 +79,10 @@ export async function registerResources(server: McpServer, resourcesDir: string)
 					title: item.title || `MSX Documentation '${sectionName}': ${itemName}`,
 					description: item.description || `Documentation for MSX resource '${sectionName}': ${itemName}`,
 					mimeType: item.mimeType || 'text/markdown',
+					annotations: {
+						"audience": [ "user", "assistant" ],
+						"priority": 0.8,
+					},
 				},
 				// Handler for the resource (function to be executed when the resource is called)
 				async (uri: URL) => {
@@ -117,7 +121,7 @@ export async function registerResources(server: McpServer, resourcesDir: string)
 	};
 
 	// Source: https://www.msx.org/wiki/Category:MSX-BASIC_Instructions
-	server.resource(
+	server.registerResource(
 		"msxdocs_basic_wiki",
 		new ResourceTemplate(
 			"msxdocs://basic_wiki/{instruction}",
@@ -132,6 +136,10 @@ export async function registerResources(server: McpServer, resourcesDir: string)
 			title: "MSX BASIC Instructions Documentation",
 			description: "Documentation about all the standard MSX BASIC instructions from www.msx.org/wiki/Category:MSX-BASIC_Instructions",
 			mimeType: "text/html",
+			annotations: {
+				"audience": [ "user", "assistant" ],
+				"priority": 0.8,
+			},
 		},
 		async (uri: URL, variables: any) => {
 			let instruction = (variables.instruction as string);
