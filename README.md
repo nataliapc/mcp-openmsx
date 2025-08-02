@@ -24,7 +24,7 @@ This server provides comprehensive tools for MSX software development, testing, 
 - [Architecture](#architecture)
 - [Available MCP Tools](#available-mcp-tools)
 - [Available MCP Resources](#available-mcp-resources)
-- [**Quick Start**](#quick-start)
+- ⚡ [Quick Start](#quick-start)
   - [Quick installation with **VSCode**](#quick-installation-with-vscode)
   - [Basic installation with **Claude Desktop**](#basic-installation-with-claude-desktop)
   - [Environment Variables](#environment-variables)
