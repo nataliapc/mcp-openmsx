@@ -33,6 +33,7 @@ This server provides comprehensive tools for MSX software development, testing, 
 - [License](#license)
 - [Support](#support)
 - [Contributing](#contributing)
+- 🌟 [More stars!](#more-stars) 🌟
 
 ## Project Overview
 
@@ -328,5 +329,12 @@ If you need help, or have questions or suggestions, please open an issue on the 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+
+## More stars!
+
+Please give us a star on [GitHub](https://github.com/nataliapc/mcp-openmsx) if you like this project.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=nataliapc/mcp-openmsx&type=Date)](https://www.star-history.com/#nataliapc/mcp-openmsx&Date)
 
 ---
