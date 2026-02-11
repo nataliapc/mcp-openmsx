@@ -154,6 +154,8 @@ async function startHttpServer()
 		} else if (!sessionId && isInitializeRequest(req.body)) {
 			transport = new StreamableHTTPServerTransport({
 				sessionIdGenerator: () => randomUUID(),
+				enableDnsRebindingProtection: true,
+				allowedOrigins: process.env.MCP_ALLOWED_ORIGINS?.split(',') || [],
 				onsessioninitialized: (sessionId) => {
 					transports[sessionId] = transport;
 				}

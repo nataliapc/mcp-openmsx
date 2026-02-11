@@ -2,6 +2,8 @@
 .vscode
 .amazonq
 .gemini
+.opencode
+.agents
 package-lock.json
 **/.env
 **/.embeddings.cache.json
