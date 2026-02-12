@@ -278,6 +278,129 @@ export function getResponseContent(response: string[], isError: boolean = false)
 	};
 }
 
+/**
+ * Parse the output of the openMSX 'cpuregs' TCL command into a structured object.
+ * The output format is:
+ *   AF =0044  BC =0000  DE =0000  HL =F380
+ *   AF'=0000  BC'=0000  DE'=0000  HL'=0000
+ *   IX =0000  IY =0000  PC =632F  SP =F37E
+ *   I  =00    R  =5D    IM =01    IFF=01
+ * @param response - Raw text response from the cpuregs command
+ * @returns Record mapping register names to hex values
+ */
+export function parseCpuRegs(response: string): Record<string, string> {
+	const registers: Record<string, string> = {};
+	const regex = /(\w+'?)\s*=\s*([0-9a-fA-F]+)/g;
+	let match;
+	while ((match = regex.exec(response)) !== null) {
+		registers[match[1]] = match[2];
+	}
+	return registers;
+}
+
+/**
+ * Check if a CPU register name corresponds to a 16-bit register.
+ * @param register - Register name (e.g. 'pc', 'a', 'ix')
+ * @returns true if the register is 16-bit
+ */
+export function is16bitRegister(register: string): boolean {
+	return ["pc", "sp", "ix", "iy", "af", "bc", "de", "hl"].includes(register.toLowerCase());
+}
+
+/**
+ * Parse the output of the openMSX 'vdpregs' TCL command into a structured object.
+ * Output format:
+ *  0 : 0x04    8 : 0x08   16 : 0x00   24 : 0x00
+ *  1 : 0x70    9 : 0x02   17 : 0x18   25 : 0x00
+ *  ...
+ * @param response - Raw text response from the vdpregs command
+ * @returns Record mapping register number (string) to hex value string
+ */
+export function parseVdpRegs(response: string): Record<string, string> {
+	const registers: Record<string, string> = {};
+	const regex = /(\d+)\s*:\s*(0x[0-9a-fA-F]{2})/g;
+	let match;
+	while ((match = regex.exec(response)) !== null) {
+		registers[match[1]] = match[2];
+	}
+	return registers;
+}
+
+/**
+ * Parse the output of the openMSX 'palette' TCL command into a structured object.
+ * Output format:
+ *  0:000  4:117  8:711  c:141
+ *  1:000  5:237  9:733  d:625
+ *  ...
+ * @param response - Raw text response from the palette command
+ * @returns Array of 16 palette entries with index, r, g, b values
+ */
+export function parsePalette(response: string): { index: number; r: number; g: number; b: number; rgb: string }[] {
+	const palette: { index: number; r: number; g: number; b: number; rgb: string }[] = [];
+	const regex = /([0-9a-fA-F]):([0-7])([0-7])([0-7])/g;
+	let match;
+	while ((match = regex.exec(response)) !== null) {
+		palette.push({
+			index: parseInt(match[1], 16),
+			r: parseInt(match[2]),
+			g: parseInt(match[3]),
+			b: parseInt(match[4]),
+			rgb: match[2] + match[3] + match[4],
+		});
+	}
+	palette.sort((a, b) => a.index - b.index);
+	return palette;
+}
+
+/**
+ * Parse the output of the openMSX 'debug list_bp' TCL command into a structured array.
+ * Output format:
+ *  bp#1 0x4000 {} {debug break}
+ *  bp#2 0x8000 {} {debug break}
+ * @param response - Raw text response from the debug list_bp command
+ * @returns Array of breakpoint objects
+ */
+export function parseBreakpoints(response: string): { name: string; address: string; condition: string; command: string }[] {
+	if (!response.trim()) return [];
+	const breakpoints: { name: string; address: string; condition: string; command: string }[] = [];
+	const lines = response.trim().split('\n');
+	for (const line of lines) {
+		const match = line.match(/^(\S+)\s+(0x[0-9a-fA-F]{4})\s+\{([^}]*)\}\s+\{([^}]*)\}/);
+		if (match) {
+			breakpoints.push({
+				name: match[1],
+				address: match[2],
+				condition: match[3],
+				command: match[4],
+			});
+		}
+	}
+	return breakpoints;
+}
+
+/**
+ * Parse the output of the openMSX 'reverse status' TCL command into a structured object.
+ * Output format:
+ *  status enabled begin 0.0 end 294.08 current 294.08 snapshots {...} last_event 0.0
+ * @param response - Raw text response from the reverse status command
+ * @returns Structured replay status object
+ */
+export function parseReplayStatus(response: string): { enabled: boolean; begin: number; end: number; current: number; snapshotCount: number } {
+	const statusMatch = response.match(/status\s+(\w+)/);
+	const beginMatch = response.match(/begin\s+([\d.]+)/);
+	const endMatch = response.match(/end\s+([\d.]+)/);
+	const currentMatch = response.match(/current\s+([\d.]+)/);
+	const snapshotsMatch = response.match(/snapshots\s+\{([^}]*)\}/);
+	const snapshotCount = snapshotsMatch ? snapshotsMatch[1].trim().split(/\s+/).filter(s => s).length : 0;
+	return {
+		enabled: statusMatch ? statusMatch[1] === 'enabled' : false,
+		begin: beginMatch ? parseFloat(beginMatch[1]) : 0,
+		end: endMatch ? parseFloat(endMatch[1]) : 0,
+		current: currentMatch ? parseFloat(currentMatch[1]) : 0,
+		snapshotCount,
+	};
+}
+
 /*
  * Sleep for a specified number of milliseconds
  * @param ms - Number of milliseconds to sleep

@@ -9,7 +9,7 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { encodeTypeText, isErrorResponse, getResponseContent } from "./utils.js";
+import { encodeTypeText, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus } from "./utils.js";
 import { EmuDirectories } from "./server.js";
 import { RegResource, getRegisteredResourcesList } from "./server_resources.js";
 
@@ -64,6 +64,23 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.default(3)
 					.describe("Number of seconds to wait; default is 3. Used by [wait]."),
+			},
+			outputSchema: {
+				command: z.string().describe("The command that was executed."),
+				speed: z.number().optional()
+					.describe("Emulator speed percentage. Present for 'getEmulatorSpeed' and 'setEmulatorSpeed'."),
+				machines: z.array(z.object({
+					name: z.string().describe("Machine name."),
+					description: z.string().describe("Machine description."),
+				})).optional()
+					.describe("List of available MSX machines. Present for 'machineList'."),
+				extensions: z.array(z.object({
+					name: z.string().describe("Extension name."),
+					description: z.string().describe("Extension description."),
+				})).optional()
+					.describe("List of available MSX extensions. Present for 'extensionList'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
 			},
 			annotations: {
 				"readOnlyHint": true,
@@ -120,10 +137,47 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					result = `Error: Unknown command "${command}".`;
 					break;
 			}
-			// Return result with proper format for MCP
-			return getResponseContent([
-				result
-			]);
+			if (isErrorResponse(result)) {
+				return { content: [{ type: "text" as const, text: result }], isError: true };
+			}
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case 'getEmulatorSpeed': {
+					const match = result.match(/(\d+)%/);
+					structuredContent = { command, speed: match ? parseInt(match[1]) : undefined, result };
+					break;
+				}
+				case 'setEmulatorSpeed': {
+					structuredContent = { command, speed: emuspeed, result };
+					break;
+				}
+				case 'machineList': {
+					try {
+						const machines = JSON.parse(result);
+						structuredContent = { command, machines };
+					} catch {
+						structuredContent = { command, result };
+					}
+					break;
+				}
+				case 'extensionList': {
+					try {
+						const extensions = JSON.parse(result);
+						structuredContent = { command, extensions };
+					} catch {
+						structuredContent = { command, result };
+					}
+					break;
+				}
+				default: {
+					structuredContent = { command, result };
+				}
+			}
+			return {
+				content: [{ type: "text" as const, text: result }],
+				structuredContent,
+				isError: false,
+			};
 		});
 
 	server.registerTool(
@@ -228,6 +282,13 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 	'getIOPortsMap': shows an overview about the I/O mapped devices.
 `),
 			},
+			outputSchema: {
+				command: z.string().describe("The command that was executed."),
+				status: z.record(z.string()).optional()
+					.describe("Machine status key-value pairs (type, manufacturer, year, etc.). Present for 'getStatus'."),
+				result: z.string().optional()
+					.describe("Generic result text. Present for 'getSlotsMap' and 'getIOPortsMap'."),
+			},
 			annotations: {
 				"readOnlyHint": true,
 				"destructiveHint": false,
@@ -237,27 +298,40 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command }: { command: string }) => {
-			let tclCommand: string;
+			let response: string;
 			switch (command) {
 				case "getStatus":
-					return getResponseContent([
-						await openMSXInstance.emu_status()
-					]);
+					response = await openMSXInstance.emu_status();
+					break;
 				case "getSlotsMap":
-					tclCommand = "slotmap";
+					response = await openMSXInstance.sendCommand("slotmap");
 					break;
 				case "getIOPortsMap":
-					tclCommand = "iomap";
+					response = await openMSXInstance.sendCommand("iomap");
 					break;
 				default:
-					return getResponseContent([
-						`Error: Unknown emulator info command "${command}".`
-					]);
+					return { content: [{ type: "text" as const, text: `Error: Unknown emulator info command "${command}".` }], isError: true };
 			}
-			const response = await openMSXInstance.sendCommand(tclCommand);
-			return getResponseContent([
-				response
-			]);
+			if (isErrorResponse(response)) {
+				return { content: [{ type: "text" as const, text: response }], isError: true };
+			}
+			let structuredContent: Record<string, unknown>;
+			if (command === "getStatus") {
+				try {
+					const status = JSON.parse(response);
+					structuredContent = { command, status };
+				} catch {
+					structuredContent = { command, result: response };
+				}
+			} else {
+				//TODO: parse the slotmap and iomap responses into structured content
+				structuredContent = { command, result: response };
+			}
+			return {
+				content: [{ type: "text" as const, text: response }],
+				structuredContent,
+				isError: false,
+			};
 		});
 
 	server.registerTool(
@@ -289,6 +363,31 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("2 hexadecimal digits for a VDP register value (e.g. 0x1f). Used by [setRegisterValue]"),
 			},
+			// Structured output schema (MCP protocol 2025-11-25)
+			outputSchema: {
+				command: z.string()
+					.describe("The executed command name."),
+				registers: z.record(z.string()).optional()
+					.describe("VDP register values as hex strings keyed by register number (0-31). Present for 'getRegisters'."),
+				register: z.number().optional()
+					.describe("VDP register number queried/modified. Present for 'getRegisterValue' and 'setRegisterValue'."),
+				decimalValue: z.number().optional()
+					.describe("Register value in decimal. Present for 'getRegisterValue'."),
+				hexValue: z.string().optional()
+					.describe("Register value in hexadecimal (e.g. '0x1F'). Present for 'getRegisterValue'."),
+				newValue: z.string().optional()
+					.describe("Value written to the register. Present for 'setRegisterValue'."),
+				palette: z.array(z.object({
+					index: z.number(), r: z.number(), g: z.number(), b: z.number(), rgb: z.string()
+				})).optional()
+					.describe("Color palette as array of 16 RGB333 entries. Present for 'getPalette'."),
+				screenMode: z.string().optional()
+					.describe("Current screen mode name (e.g. 'TEXT80', 'GRAPHIC2'). Present for 'screenGetMode'."),
+				screenText: z.string().optional()
+					.describe("Full text content of the MSX screen. Present for 'screenGetFullText'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
+			},
 			annotations: {
 				"readOnlyHint": true,
 				"destructiveHint": false,
@@ -315,20 +414,59 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				case "screenGetMode":
 					tclCommand = "get_screen_mode";
 					break;
-				case "screenGetFullText":
-					const response = await openMSXInstance.sendCommand('get_screen');
-					return isErrorResponse(response) ?
-							getResponseContent([response]) :
-							getResponseContent(["The screen text is:", response]);
+				case "screenGetFullText": {
+					const textResp = await openMSXInstance.sendCommand('get_screen');
+					if (isErrorResponse(textResp)) {
+						return { content: [{ type: "text" as const, text: textResp }], isError: true };
+					}
+					return {
+						content: [{ type: "text" as const, text: `The screen text is:\n${textResp}` }],
+						structuredContent: { command, screenText: textResp },
+						isError: false,
+					};
+				}
 				default:
-					return getResponseContent([
-						`Error: Unknown emulator vdp command "${command}".`
-					]);
+					return { content: [{ type: "text" as const, text: `Error: Unknown emulator vdp command "${command}".` }], isError: true };
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return getResponseContent([
-				response
-			]);
+			if (isErrorResponse(response)) {
+				return { content: [{ type: "text" as const, text: response }], isError: true };
+			}
+
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case "getPalette": {
+					const pal = parsePalette(response);
+					structuredContent = { command, palette: pal };
+					break;
+				}
+				case "getRegisters": {
+					const regs = parseVdpRegs(response);
+					structuredContent = { command, registers: regs };
+					break;
+				}
+				case "getRegisterValue": {
+					const dec = parseInt(response.trim(), 10);
+					const hex = `0x${dec.toString(16).toUpperCase().padStart(2, '0')}`;
+					structuredContent = { command, register, decimalValue: dec, hexValue: hex };
+					break;
+				}
+				case "setRegisterValue": {
+					structuredContent = { command, register, newValue: value, result: response || "Ok" };
+					break;
+				}
+				case "screenGetMode": {
+					structuredContent = { command, screenMode: response.trim() };
+					break;
+				}
+				default:
+					structuredContent = { command, result: response };
+			}
+			return {
+				content: [{ type: "text" as const, text: response || "Ok" }],
+				structuredContent,
+				isError: false,
+			};
 		});
 
 	server.registerTool(
@@ -399,6 +537,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					]);
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
+			//TODO: parse disassembly command response into structured content
 			return getResponseContent([
 				response
 			]);
@@ -425,6 +564,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 "**Important Note**: Addresses and values are in hexadecimal format (e.g. 0xd2 0x3af2)."
 `),
 				register: z.enum(["pc", "sp", "ix", "iy", "af", "bc", "de", "hl", "ixh", "ixl", "iyh", "iyl",
+						"af'", "bc'", "de'", "hl'",
 						"a", "f", "b", "c", "d", "e", "h", "l", "i", "r", "im", "iff"])
 					.optional()
 					.describe("CPU register to read/write. Used by [getRegister, setRegister]"),
@@ -441,6 +581,29 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.max(50, 'Maximum disassemble size too large')
 					.optional()
 					.describe("Number of bytes to disassemble. Used by [disassemble]"),
+			},
+			// Structured output schema (MCP protocol 2025-11-25)
+			outputSchema: {
+				command: z.string()
+					.describe("The executed command name."),
+				registers: z.record(z.string()).optional()
+					.describe("All CPU register values as hex strings, keyed by register name (AF, BC, DE, HL, AF', BC', DE', HL', IX, IY, PC, SP, I, R, IM, IFF). Present for 'getCpuRegisters'."),
+				register: z.string().optional()
+					.describe("CPU register name queried/modified. Present for 'getRegister' and 'setRegister'."),
+				decimalValue: z.number().optional()
+					.describe("Register value in decimal. Present for 'getRegister'."),
+				hexValue: z.string().optional()
+					.describe("Register value in hexadecimal (e.g. '0x1A3F'). Present for 'getRegister'."),
+				newValue: z.string().optional()
+					.describe("Value written to the register. Present for 'setRegister'."),
+				activeCpu: z.string().optional()
+					.describe("Active CPU type: 'z80' or 'r800'. Present for 'getActiveCpu'."),
+				stack: z.string().optional()
+					.describe("Stack pile dump content. Present for 'getStackPile'."),
+				disassembly: z.string().optional()
+					.describe("Disassembled code listing. Present for 'disassemble'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
 			},
 			annotations: {
 				"readOnlyHint": true,
@@ -472,14 +635,63 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = "get_active_cpu";
 					break;
 				default:
-					return getResponseContent([
-						`Error: Unknown memory command "${command}".`
-					]);
+					return {
+						content: [{ type: "text" as const, text: `Error: Unknown command "${command}".` }],
+						isError: true,
+					};
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return getResponseContent([
-				response
-			]);
+
+			// On error, return unstructured content only (SDK skips outputSchema validation on errors)
+			if (isErrorResponse(response)) {
+				return {
+					content: [{ type: "text" as const, text: response }],
+					isError: true,
+				};
+			}
+
+			// Build structuredContent based on the command
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case "getCpuRegisters": {
+					const regs = parseCpuRegs(response);
+					structuredContent = { command, registers: regs };
+					break;
+				}
+				case "getRegister": {
+					const decValue = parseInt(response.trim(), 10);
+					const padLen = is16bitRegister(register!) ? 4 : 2;
+					const hexVal = `0x${decValue.toString(16).toUpperCase().padStart(padLen, '0')}`;
+					structuredContent = { command, register, decimalValue: decValue, hexValue: hexVal };
+					break;
+				}
+				case "setRegister": {
+					structuredContent = { command, register, newValue: value, result: response || "Ok" };
+					break;
+				}
+				case "getStackPile": {
+					//TODO: parse the stack pile response into structured content (e.g. an array of stack entries with address and value)
+					structuredContent = { command, stack: response };
+					break;
+				}
+				case "disassemble": {
+					//TODO: parse the disassembly response into a structured format (e.g. an array of instructions with address, opcode, and assembly)
+					structuredContent = { command, disassembly: response };
+					break;
+				}
+				case "getActiveCpu": {
+					structuredContent = { command, activeCpu: response.trim() };
+					break;
+				}
+				default:
+					structuredContent = { command, result: response };
+			}
+
+			return {
+				content: [{ type: "text" as const, text: response || "Ok" }],
+				structuredContent,
+				isError: false,
+			};
 		});
 
 	server.registerTool(
@@ -520,6 +732,23 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("4 hexadecimal digits for a word value (e.g. 0xa5b1). Used by [writeWord]"),
 			},
+			// Structured output schema (MCP protocol 2025-11-25)
+			outputSchema: {
+				command: z.string()
+					.describe("The executed command name."),
+				address: z.string().optional()
+					.describe("Memory address queried/modified."),
+				decimalValue: z.number().optional()
+					.describe("Memory value in decimal. Present for 'readByte' and 'readWord'."),
+				hexValue: z.string().optional()
+					.describe("Memory value in hexadecimal. Present for 'readByte' and 'readWord'."),
+				hexDump: z.string().optional()
+					.describe("Hex dump block of memory. Present for 'getBlock'."),
+				slots: z.string().optional()
+					.describe("Currently selected memory slots info. Present for 'selectedSlots'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
+			},
 			annotations: {
 				"readOnlyHint": true,
 				"destructiveHint": false,
@@ -550,14 +779,50 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = `poke16 ${address} ${value16}`;
 					break;
 				default:
-					return getResponseContent([
-						`Error: Unknown memory command "${command}".`
-					]);
+					return { content: [{ type: "text" as const, text: `Error: Unknown memory command "${command}".` }], isError: true };
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return getResponseContent([
-				response
-			]);
+			if (isErrorResponse(response)) {
+				return { content: [{ type: "text" as const, text: response }], isError: true };
+			}
+
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case "selectedSlots": {
+					//TODO: parse the slotselect response into structured content (e.g. an array of selected slots with slot number and content info)
+					structuredContent = { command, slots: response };
+					break;
+				}
+				case "getBlock": {
+					structuredContent = { command, address, hexDump: response };
+					break;
+				}
+				case "readByte": {
+					const dec = parseInt(response.trim(), 10);
+					structuredContent = { command, address, decimalValue: dec, hexValue: `0x${dec.toString(16).toUpperCase().padStart(2, '0')}` };
+					break;
+				}
+				case "readWord": {
+					const dec = parseInt(response.trim(), 10);
+					structuredContent = { command, address, decimalValue: dec, hexValue: `0x${dec.toString(16).toUpperCase().padStart(4, '0')}` };
+					break;
+				}
+				case "writeByte": {
+					structuredContent = { command, address, result: response || "Ok" };
+					break;
+				}
+				case "writeWord": {
+					structuredContent = { command, address, result: response || "Ok" };
+					break;
+				}
+				default:
+					structuredContent = { command, result: response };
+			}
+			return {
+				content: [{ type: "text" as const, text: response || "Ok" }],
+				structuredContent,
+				isError: false,
+			};
 		});
 
 	server.registerTool(
@@ -588,6 +853,21 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.describe("Number of lines to obtain. Used by [getBlock]"),
 				value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a byte value (e.g. 0xa5). Used by [writeByte]"),
 			},
+			// Structured output schema (MCP protocol 2025-11-25)
+			outputSchema: {
+				command: z.string()
+					.describe("The executed command name."),
+				address: z.string().optional()
+					.describe("VRAM address queried/modified."),
+				decimalValue: z.number().optional()
+					.describe("VRAM byte value in decimal. Present for 'readByte'."),
+				hexValue: z.string().optional()
+					.describe("VRAM byte value in hexadecimal. Present for 'readByte'."),
+				hexDump: z.string().optional()
+					.describe("Hex dump block of VRAM. Present for 'getBlock'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
+			},
 			annotations: {
 				"readOnlyHint": true,
 				"destructiveHint": false,
@@ -609,14 +889,36 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = `vpoke ${address} ${value8}`;
 					break;
 				default:
-					return getResponseContent([
-						`Error: Unknown video memory command "${command}".`
-					]);
+					return { content: [{ type: "text" as const, text: `Error: Unknown video memory command "${command}".` }], isError: true };
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return getResponseContent([
-				response
-			]);
+			if (isErrorResponse(response)) {
+				return { content: [{ type: "text" as const, text: response }], isError: true };
+			}
+
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case "getBlock": {
+					structuredContent = { command, address, hexDump: response };
+					break;
+				}
+				case "readByte": {
+					const dec = parseInt(response.trim(), 10);
+					structuredContent = { command, address, decimalValue: dec, hexValue: `0x${dec.toString(16).toUpperCase().padStart(2, '0')}` };
+					break;
+				}
+				case "writeByte": {
+					structuredContent = { command, address, result: response || "Ok" };
+					break;
+				}
+				default:
+					structuredContent = { command, result: response };
+			}
+			return {
+				content: [{ type: "text" as const, text: response || "Ok" }],
+				structuredContent,
+				isError: false,
+			};
 		});
 
 	server.registerTool(
@@ -646,6 +948,23 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("Breakpoint name (e.g. bp#1). Used by [remove]"),
 			},
+			// Structured output schema (MCP protocol 2025-11-25)
+			outputSchema: {
+				command: z.string()
+					.describe("The executed command name."),
+				createdName: z.string().optional()
+					.describe("Name assigned to the newly created breakpoint (e.g. 'bp#1'). Present for 'create'."),
+				createdAddress: z.string().optional()
+					.describe("Address of the newly created breakpoint. Present for 'create'."),
+				removedName: z.string().optional()
+					.describe("Name of the removed breakpoint. Present for 'remove'."),
+				breakpoints: z.array(z.object({
+					name: z.string(), address: z.string(), condition: z.string(), command: z.string()
+				})).optional()
+					.describe("List of active breakpoints. Present for 'list'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
+			},
 			annotations: {
 				"readOnlyHint": true,
 				"destructiveHint": false,
@@ -667,14 +986,36 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = 'debug list_bp';
 					break;
 				default:
-					return getResponseContent([
-						`Error: Unknown breakpoint command "${command}".`
-					]);
+					return { content: [{ type: "text" as const, text: `Error: Unknown breakpoint command "${command}".` }], isError: true };
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return getResponseContent([
-				response
-			]);
+			if (isErrorResponse(response)) {
+				return { content: [{ type: "text" as const, text: response }], isError: true };
+			}
+
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case "create": {
+					structuredContent = { command, createdName: response.trim(), createdAddress: address };
+					break;
+				}
+				case "remove": {
+					structuredContent = { command, removedName: bpname, result: response || "Ok" };
+					break;
+				}
+				case "list": {
+					const bps = parseBreakpoints(response);
+					structuredContent = { command, breakpoints: bps };
+					break;
+				}
+				default:
+					structuredContent = { command, result: response };
+			}
+			return {
+				content: [{ type: "text" as const, text: response || "Ok" }],
+				structuredContent,
+				isError: false,
+			};
 		});
 
 	server.registerTool(
@@ -780,6 +1121,25 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.optional()
 					.describe("Filename to save/load replay. Used by [saveReplay, loadReplay]"),
 			},
+			// Structured output schema (MCP protocol 2025-11-25)
+			outputSchema: {
+				command: z.string()
+					.describe("The executed command name."),
+				enabled: z.boolean().optional()
+					.describe("Whether replay is currently enabled. Present for 'status'."),
+				beginTime: z.number().optional()
+					.describe("Replay begin time in seconds. Present for 'status'."),
+				endTime: z.number().optional()
+					.describe("Replay end time in seconds. Present for 'status'."),
+				currentTime: z.number().optional()
+					.describe("Current replay time in seconds. Present for 'status'."),
+				snapshotCount: z.number().optional()
+					.describe("Number of snapshots collected. Present for 'status'."),
+				filename: z.string().optional()
+					.describe("Replay filename saved/loaded. Present for 'saveReplay' and 'loadReplay'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
+			},
 			annotations: {
 				"readOnlyHint": false,
 				"destructiveHint": true,
@@ -824,14 +1184,41 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = `reverse loadreplay ${filename}`;
 					break;
 				default:
-					return getResponseContent([
-						`Error: Unknown replay command "${command}".`
-					]);
+					return { content: [{ type: "text" as const, text: `Error: Unknown replay command "${command}".` }], isError: true };
 			}
 			const response = await openMSXInstance.sendCommand(tclCommand);
-			return getResponseContent([
-				response
-			]);
+			if (isErrorResponse(response)) {
+				return { content: [{ type: "text" as const, text: response }], isError: true };
+			}
+
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case "status": {
+					const status = parseReplayStatus(response);
+					structuredContent = {
+						command,
+						enabled: status.enabled,
+						beginTime: status.begin,
+						endTime: status.end,
+						currentTime: status.current,
+						snapshotCount: status.snapshotCount,
+					};
+					break;
+				}
+				case "saveReplay":
+				case "loadReplay": {
+					structuredContent = { command, filename: filename || response.trim(), result: response || "Ok" };
+					break;
+				}
+				default: {
+					structuredContent = { command, result: response || "Ok" };
+				}
+			}
+			return {
+				content: [{ type: "text" as const, text: response || "Ok" }],
+				structuredContent,
+				isError: false,
+			};
 		});
 
 	server.registerTool(
@@ -1020,6 +1407,15 @@ The parameter scrbasename is the name of the filename (without path) to save the
 					.optional()
 					.describe("End line number to list/delete BASIC program lines. Used by [listProgramLines, deleteProgramLines]"),
 			},
+			outputSchema: {
+				command: z.string().describe("The command that was executed."),
+				available: z.boolean().optional()
+					.describe("Whether BASIC mode is available. Present for 'isBasicAvailable'."),
+				program: z.string().optional()
+					.describe("BASIC program text. Present for 'getFullProgram' and 'getFullProgramAdvanced'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
+			},
 			annotations: {
 				"readOnlyHint": false,
 				"destructiveHint": true,
@@ -1110,9 +1506,32 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			if (response === undefined && tclCommand) {
 				response = await openMSXInstance.sendCommand(tclCommand);
 			}
-			return getResponseContent([
-				response !== undefined ? response : `Error: No response for command "${command}".`
-			]);
+			if (response === undefined) {
+				return { content: [{ type: "text" as const, text: `Error: No response for command "${command}".` }], isError: true };
+			}
+			if (isErrorResponse(response)) {
+				return { content: [{ type: "text" as const, text: response }], isError: true };
+			}
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case "isBasicAvailable": {
+					structuredContent = { command, available: response === "true" };
+					break;
+				}
+				case "getFullProgram":
+				case "getFullProgramAdvanced": {
+					structuredContent = { command, program: response };
+					break;
+				}
+				default: {
+					structuredContent = { command, result: response || "Ok" };
+				}
+			}
+			return {
+				content: [{ type: "text" as const, text: response || "Ok" }],
+				structuredContent,
+				isError: false,
+			};
 		}
 	);
 
@@ -1134,15 +1553,15 @@ The response is the list of the top 10 result resources that match the query, in
 					.max(100, 'Query string too long')
 					.describe("Query string to search in the Vector DB resources, case-insensitive and may contain spaces."),
 			},
-			// outputSchema: {
-			// 	results: z.array(z.object({
-			// 		score: z.number().describe("Proximity score of the result to the query, higher is better."),
-			// 		title: z.string().describe("Title of the resource."),
-			// 		uri: z.string().describe("URI of the resource, which can be used to access the resource."),
-			// 		document: z.string().describe("Document chunk of the resource, retrieved from the Vector DB."),
-			// 		id: z.string().describe("Unique resource chunk ID, used internally by the Vector DB."),
-			// 	}))
-			// },
+			outputSchema: {
+				results: z.array(z.object({
+					score: z.number().describe("Proximity score of the result to the query, higher is better."),
+					title: z.string().describe("Title of the resource."),
+					uri: z.string().describe("URI of the resource, which can be used to access the resource."),
+					document: z.string().describe("Document chunk of the resource, retrieved from the Vector DB."),
+					id: z.string().describe("Unique resource chunk ID, used internally by the Vector DB."),
+				}))
+			},
 			annotations: {
 				"readOnlyHint": true,
 				"destructiveHint": false,
@@ -1155,10 +1574,10 @@ The response is the list of the top 10 result resources that match the query, in
 			const results = await VectorDB.getInstance().query(query);
 			return {
 				content: [{
-					type: "text",
+					type: "text" as const,
 					text: JSON.stringify(results),
 				}],
-				results: results,
+				structuredContent: { results },
 				isError: false,
 			};
 		});
