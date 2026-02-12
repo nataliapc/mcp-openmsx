@@ -409,3 +409,28 @@ export function parseReplayStatus(response: string): { enabled: boolean; begin: 
 export function sleep(ms: number) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/**
+ * Sleep for a specified number of milliseconds, with support for cancellation via AbortSignal.
+ * @param ms - Number of milliseconds to sleep
+ * @param signal - AbortSignal to cancel the sleep early
+ * @returns Promise that resolves after the specified time, or rejects if aborted
+ * @throws {DOMException} If the signal is aborted (with name 'AbortError')
+ */
+export function sleepWithAbort(ms: number, signal: AbortSignal): Promise<void> {
+	return new Promise<void>((resolve, reject) => {
+		if (signal.aborted) {
+			reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+			return;
+		}
+		const timer = setTimeout(() => {
+			signal.removeEventListener('abort', onAbort);
+			resolve();
+		}, ms);
+		const onAbort = () => {
+			clearTimeout(timer);
+			reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
+		};
+		signal.addEventListener('abort', onAbort, { once: true });
+	});
+}

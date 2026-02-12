@@ -4,12 +4,14 @@
  * @license GPL2
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import { ServerRequest, ServerNotification } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { encodeTypeText, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus } from "./utils.js";
+import { encodeTypeText, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus, sleepWithAbort } from "./utils.js";
 import { EmuDirectories } from "./server.js";
 import { RegResource, getRegisteredResourcesList } from "./server_resources.js";
 
@@ -90,7 +92,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
-		async ({ command, machine, extensions, emuspeed, seconds }: { command: string, machine?: string; extensions?: string[]; emuspeed?: number, seconds?: number }) => {
+		async ({ command, machine, extensions, emuspeed, seconds }: { command: string, machine?: string; extensions?: string[]; emuspeed?: number, seconds?: number }, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
 			let result = '';
 			switch (command) {
 				case "launch":
@@ -129,10 +131,28 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				case "extensionList":
 					result = await openMSXInstance.getExtensionList(emuDirectories.EXTENSIONS_DIR);
 					break;
-				case "wait":
-					await new Promise(resolve => setTimeout(resolve, seconds! * 1000));
-					result = `Waited for ${seconds} seconds.`;
+				case "wait": {
+					const total = seconds!;
+					const progressToken = extra._meta?.progressToken;
+					let elapsed = 0;
+					try {
+						for (let i = 1; i <= total; i++) {
+							await sleepWithAbort(1000, extra.signal);
+							elapsed = i;
+							if (progressToken !== undefined) {
+								await extra.sendNotification({
+									method: "notifications/progress",
+									params: { progressToken, progress: i, total, message: `Waited ${i} of ${total} seconds` },
+								});
+							}
+						}
+						result = `Waited for ${total} seconds.`;
+					} catch {
+						result = `Wait cancelled after ${elapsed} of ${total} seconds.`;
+						return { content: [{ type: "text" as const, text: result }], isError: true };
+					}
 					break;
+				}
 				default:
 					result = `Error: Unknown command "${command}".`;
 					break;
