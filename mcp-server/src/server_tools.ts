@@ -14,6 +14,7 @@ import { VectorDB } from "./vectordb.js";
 import { encodeTypeText, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus, sleepWithAbort } from "./utils.js";
 import { EmuDirectories } from "./server.js";
 import { RegResource, getRegisteredResourcesList } from "./server_resources.js";
+import { resolveLaunchParams } from "./server_elicitations.js";
 
 
 // ============================================================================
@@ -34,7 +35,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed",
 						"machineList", "extensionList", "wait"])
 					.describe(`Available commands:
-'launch [machine] [extensions]': opens a powered-on openMSX emulator; you must wait some time waiting the machine is fully booted; machine and extensions parameters can be specified so use 'machineList' and 'extensionList' commands to obtain valid values. " +
+'launch [machine] [extensions]': opens a powered-on openMSX emulator; you must wait some time waiting the machine is fully booted; machine and extensions parameters can be specified so use 'machineList' and 'extensionList' commands to obtain valid values, or let them ambiguous and use elicitation. " +
 'close': closes the openMSX emulator.
 'powerOn': powers on the openMSX emulator.
 'powerOff': powers off the openMSX emulator.
@@ -95,13 +96,21 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 		async ({ command, machine, extensions, emuspeed, seconds }: { command: string, machine?: string; extensions?: string[]; emuspeed?: number, seconds?: number }, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) => {
 			let result = '';
 			switch (command) {
-				case "launch":
+				case "launch": {
+					const resolved = await resolveLaunchParams(server, emuDirectories, machine, extensions);
+					if (resolved.cancelled) {
+						return { content: [{ type: "text" as const, text: "Launch cancelled by user." }], isError: true };
+					}
+					if (resolved.error) {
+						return { content: [{ type: "text" as const, text: resolved.error }], isError: true };
+					}
 					result = await openMSXInstance.emu_launch(
 						emuDirectories.OPENMSX_EXECUTABLE,
-						machine || "", 
-						extensions || []
+						resolved.machine,
+						resolved.extensions
 					);
 					break;
+				}
 				case "close":
 					result = await openMSXInstance.emu_close();
 					break;
