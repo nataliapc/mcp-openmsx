@@ -248,6 +248,7 @@ Edit it to include the following JSON entry:
 | `OPENMSX_REPLAYS_DIR` | Directory where replay files will be saved | Default for openmsx | `/myproject/replays` |
 | `MCP_TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` | `http` |
 | `MCP_HTTP_PORT` | Port number for HTTP transport mode | `3000` | `8080` |
+| `MCP_ALLOWED_ORIGINS` | Comma-separated list of allowed origins for HTTP transport | Empty for all allowed | `http://localhost,http://mydomain.com` |
 
 
 ## Advanced Manual Usage
@@ -274,6 +275,7 @@ export OPENMSX_SCREENSHOT_DIR="/my_project/screenshots"
 export OPENMSX_SCREENDUMP_DIR="/my_project/screendumps"
 export OPENMSX_REPLAYS_DIR="/my_project/replays"
 export MCP_HTTP_PORT=3000
+export MCP_ALLOWED_ORIGINS="http://localhost,http://mydomain.com"
 ```
 
 ### As MCP Server (stdio)

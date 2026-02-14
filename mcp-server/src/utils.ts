@@ -250,6 +250,102 @@ export function encodeTypeText(text: string): string {
 }
 
 /**
+ * MSX keyboard matrix mapping for International (QWERTY) layout.
+ * Maps key names to [row, mask] coordinates in the MSX keyboard matrix.
+ * 
+ * The MSX keyboard matrix is 11 rows × 8 bits. To press a key:
+ * - Use `keymatrixdown <row> <mask>` in openMSX TCL
+ * - Use `keymatrixup <row> <mask>` to release
+ * 
+ * Example: CTRL is at row 6, bit 1 (mask 0x02)
+ * - Press: `keymatrixdown 6 0x02`
+ * - Release: `keymatrixup 6 0x02`
+ * 
+ * Note: Rows 6-8 (modifier keys, special keys, navigation) are consistent
+ * across all MSX models. Other rows may vary by keyboard layout.
+ * 
+ * Reference: mcp-server/resources/others/keyboard_matrices.md
+ */
+export const MSX_KEY_MATRIX: Record<string, [number, number]> = {
+	// Row 6: Modifier and function keys
+	'SHIFT':  [6, 0x01],  // bit 0
+	'CTRL':   [6, 0x02],  // bit 1
+	'GRAPH':  [6, 0x04],  // bit 2
+	'CAPS':   [6, 0x08],  // bit 3
+	'CODE':   [6, 0x10],  // bit 4
+	'F1':     [6, 0x20],  // bit 5
+	'F2':     [6, 0x40],  // bit 6
+	'F3':     [6, 0x80],  // bit 7
+	
+	// Row 7: Special keys
+	'F4':     [7, 0x01],  // bit 0
+	'F5':     [7, 0x02],  // bit 1
+	'ESC':    [7, 0x04],  // bit 2
+	'TAB':    [7, 0x08],  // bit 3
+	'STOP':   [7, 0x10],  // bit 4
+	'BS':     [7, 0x20],  // bit 5
+	'SELECT': [7, 0x40],  // bit 6
+	'RETURN': [7, 0x80],  // bit 7
+	'ENTER':  [7, 0x80],  // bit 7 (alias for RETURN)
+	
+	// Row 8: Navigation and editing keys
+	'SPACE':  [8, 0x01],  // bit 0
+	'HOME':   [8, 0x02],  // bit 1
+	'INS':    [8, 0x04],  // bit 2
+	'DEL':    [8, 0x08],  // bit 3
+	'LEFT':   [8, 0x10],  // bit 4
+	'UP':     [8, 0x20],  // bit 5
+	'DOWN':   [8, 0x40],  // bit 6
+	'RIGHT':  [8, 0x80],  // bit 7
+};
+
+/**
+ * Build a TCL command to press and release a combination of keys on the MSX keyboard.
+ * 
+ * @param keys - Array of key names (e.g., ["CTRL", "STOP"])
+ * @param holdTimeMs - Time in milliseconds to hold keys down (default: 100)
+ * @returns TCL command string for openMSX
+ * @throws Error if any key name is not recognized
+ * 
+ * @example
+ * // Press CTRL+STOP for 100ms
+ * buildKeyComboCommand(["CTRL", "STOP"], 100)
+ * // Returns: "keymatrixdown 6 0x02 ; keymatrixdown 7 0x10 ; after time 0.1 { keymatrixup 6 0x02 ; keymatrixup 7 0x10 }"
+ */
+export function buildKeyComboCommand(keys: string[], holdTimeMs: number = 100): string {
+	if (!keys || keys.length === 0) {
+		throw new Error('No keys provided for key combination');
+	}
+	
+	// Validate all keys exist and collect their matrix coordinates
+	const keyCoords: Array<[number, number]> = [];
+	for (const key of keys) {
+		const keyUpper = key.toUpperCase();
+		if (!MSX_KEY_MATRIX[keyUpper]) {
+			const validKeys = Object.keys(MSX_KEY_MATRIX).join(', ');
+			throw new Error(`Unknown key "${key}". Valid keys: ${validKeys}`);
+		}
+		keyCoords.push(MSX_KEY_MATRIX[keyUpper]);
+	}
+	
+	// Build press commands: keymatrixdown <row> <mask> for each key
+	const pressCommands = keyCoords
+		.map(([row, mask]) => `keymatrixdown ${row} ${mask}`)
+		.join(' ; ');
+	
+	// Build release commands: keymatrixup <row> <mask> for each key
+	const releaseCommands = keyCoords
+		.map(([row, mask]) => `keymatrixup ${row} ${mask}`)
+		.join(' ; ');
+	
+	// Convert milliseconds to seconds for openMSX 'after time' command
+	const holdTimeSec = holdTimeMs / 1000;
+	
+	// Build full TCL command: press all keys, wait, then release all keys
+	return `${pressCommands} ; after time ${holdTimeSec} { ${releaseCommands} }`;
+}
+
+/**
  * Check if a response is an error response
  * @param response - The response string to check
  * @returns boolean - True if the response indicates an error, false otherwise

@@ -11,7 +11,7 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { encodeTypeText, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus, sleepWithAbort } from "./utils.js";
+import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus, sleepWithAbort } from "./utils.js";
 import { EmuDirectories } from "./server.js";
 import { RegResource, getRegisteredResourcesList } from "./server_resources.js";
 import { resolveLaunchParams } from "./server_elicitations.js";
@@ -1256,20 +1256,34 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 		{
 			title: "Keyboard tools",
 			// Description of the tool (what it does)
-			description: "Send a text to the openMSX emulator.",
+			description: "Send text or key combinations to the openMSX emulator.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["sendText"])
+				command: z.enum(["sendText", "sendKeyCombo"])
 					.describe(`Available commands:
 	'sendText <text>': type a string in the emulated MSX, this command automatically press and release keys in the MSX keyboard matrix.
+	'sendKeyCombo <keys> [holdTime]': press a combination of keys (e.g., CTRL+STOP to break a program).
 **Important Note**: each 'text' sent is limited to 200 characters, and the 'text' is sent as if it was typed in the MSX keyboard.
 **Important Note**: escape keys that needs it as Return key (use \\r), double quotes (use \\\"), etc...
+**Important Note**: valid key names for sendKeyCombo include: SHIFT, CTRL, GRAPH, CAPS, CODE, F1-F5, ESC, TAB, STOP, BS, SELECT, RETURN/ENTER, SPACE, HOME, INS, DEL, LEFT, UP, DOWN, RIGHT.
+**Important Note**: MSX keyboards can experience key ghosting with 3+ simultaneous keys due to hardware limitations.
 `),
 				text: z.string()
 					.min(1, 'Text to send is too short')
 					.max(200, 'Text to send is too long')
 					.optional()
-					.default('').describe("Text to send to the emulator via emulated keyboard"),
+					.describe("Text to send to the emulator via emulated keyboard"),
+				keys: z.array(z.string())
+					.min(1, 'At least one key must be specified')
+					.max(10, 'Too many keys (max 10)')
+					.optional()
+					.describe("Array of key names to press simultaneously (e.g., ['CTRL', 'STOP'])"),
+				holdTime: z.number()
+					.min(10, 'Hold time too short (min 10ms)')
+					.max(5000, 'Hold time too long (max 5000ms)')
+					.optional()
+					.default(100)
+					.describe("Time in milliseconds to hold keys down (default: 100)"),
 			},
 			annotations: {
 				"readOnlyHint": false,
@@ -1279,12 +1293,33 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
-		async ({ command, text }: { command: string; text: string }) => {
+		async ({ command, text, keys, holdTime }: { command: string; text?: string; keys?: string[]; holdTime?: number }) => {
 			let tclCommand: string;
 			switch (command) {
 				case "sendText":
+					if (!text) {
+						return getResponseContent([
+							'Error: No text provided for sendText command.'
+						]);
+					}
 					tclCommand = `type "${encodeTypeText(text)}"`;
 					break;
+					
+				case "sendKeyCombo":
+					if (!keys || keys.length === 0) {
+						return getResponseContent([
+							'Error: No keys provided for sendKeyCombo command.'
+						]);
+					}
+					try {
+						tclCommand = buildKeyComboCommand(keys, holdTime || 100);
+					} catch (error) {
+						return getResponseContent([
+							`Error: ${error instanceof Error ? error.message : String(error)}`
+						]);
+					}
+					break;
+					
 				default:
 					return getResponseContent([
 						`Error: Unknown keyboard command "${command}".`
