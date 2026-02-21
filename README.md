@@ -110,7 +110,7 @@ The MCP server translates high-level natural language commands from your Copilot
 - `debug_breakpoints`: Breakpoint management: _`create`, `remove`, `list`_.
 
 ### Automation Tools
-- `emu_keyboard`: Send text input to emulator: _`sendText`_.
+- `emu_keyboard`: Send text or key combinations to emulator: _`sendText`, `sendKeyCombo`_.
 - `emu_savestates`: Save and restore machine states: _`load`, `save`, `list`_.
 - `screen_shot`: Capture emulator screen: _`as_image`, `to_file`_.
 - `screen_dump`: Export screen data as BASIC BSAVE instruction.

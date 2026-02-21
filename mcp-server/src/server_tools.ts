@@ -1619,7 +1619,7 @@ The response is the list of the top 10 result resources that match the query, in
 			},
 			outputSchema: {
 				results: z.array(z.object({
-					score: z.number().describe("Proximity score of the result to the query, higher is better."),
+					score: z.string().describe("Proximity score of the result to the query, higher is better."),
 					title: z.string().describe("Title of the resource."),
 					uri: z.string().describe("URI of the resource, which can be used to access the resource."),
 					document: z.string().describe("Document chunk of the resource, retrieved from the Vector DB."),
