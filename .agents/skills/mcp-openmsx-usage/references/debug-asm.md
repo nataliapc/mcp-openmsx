@@ -40,8 +40,9 @@ Debug a Z80 or R800 assembly program running on the MSX using breakpoints, stepp
     - [Verify a write](#verify-a-write)
 - [Modify Registers at Runtime](#modify-registers-at-runtime)
 - [VRAM Inspection (for graphics debugging)](#vram-inspection-for-graphics-debugging)
-- [Debugging Workflow: Find a Crash](#debugging-workflow-find-a-crash)
+- [Debugging Workflow: Find a Crash or Hang](#debugging-workflow-find-a-crash-or-hang)
 - [Debugging Workflow: Verify BIOS Calls](#debugging-workflow-verify-bios-calls)
+- [Locating Functions Without .sym Files](#locating-functions-without-sym-files)
 - [MSX Memory Map Reference](#msx-memory-map-reference)
 
 ## Loading the Program
@@ -252,7 +253,9 @@ debug_vram { command: "writeByte", address: "0x01800", value8: "0x41" }
 
 VRAM uses 20-bit addresses (5 hex digits) for MSX2 and later machines. MSX1 machines uses 14-bit addresses (4 hex digits). Check your machine's VRAM size and mapping.
 
-## Debugging Workflow: Find a Crash
+## Debugging Workflow: Find a Crash or Hang
+
+### Crash (unexpected jump / stack corruption)
 
 1. Set breakpoint at program entry: `debug_breakpoints { command: "create", address: "0x4000" }`
 2. Reset and wait: `emu_control { command: "reset" }`, `emu_control { command: "wait", seconds: 3 }`
@@ -263,6 +266,29 @@ VRAM uses 20-bit addresses (5 hex digits) for MSX2 and later machines. MSX1 mach
 7. Use `debug_run { command: "stepBack" }` to go back one instruction before the crash
 8. Use `emu_replay { command: "goBack", seconds: 1 }` to rewind further
 
+### Hang (program stops responding)
+
+If the program stops responding but the emulator keeps running, break at any moment and inspect:
+
+```
+debug_run { command: "break" }
+debug_cpu { command: "getCpuRegisters" }
+debug_cpu { command: "getStackPile" }
+debug_cpu { command: "disassemble" }
+```
+
+**Diagnostic signals:**
+
+| Symptom | Likely cause |
+|---------|-------------|
+| `PC` outside program address range (e.g. in string/data area) | Stack corrupted — a `RET` or `JP` landed in data |
+| Stack values look like ASCII text (e.g. `0x6174`, `0x696F`) | A `POP` consumed data as a return address |
+| All registers are `0xFFFF`, `PC=0x0000` | Machine still booting — app has not started yet |
+| Short loop with `OUT(0x99)` + `IN(0x99)` in disassembly | VDP command polling loop — CE bit never cleared (see [Debugging the VDP](debug-vdp.md)) |
+| Short loop at fixed address, no I/O | Infinite software loop — use `emu_replay goBack` to find entry point |
+
+> **MSX-DOS programs**: breakpoints fire during BIOS/DOS boot too — see [Debugging MSX-DOS Programs](debug-dos-program.md) for the correct workflow.
+
 ## Debugging Workflow: Verify BIOS Calls
 
 1. Set breakpoint at BIOS entry (e.g. CHPUT at 0x00A2): `debug_breakpoints { command: "create", address: "0x00A2" }`
@@ -270,6 +296,42 @@ VRAM uses 20-bit addresses (5 hex digits) for MSX2 and later machines. MSX1 mach
 3. When break occurs, inspect register A for the character being output
 4. Step out to return to caller: `debug_run { command: "stepOut" }`
 5. Disassemble caller code to verify correct BIOS usage
+
+## Locating Functions Without .sym Files
+
+When debugging pre-compiled libraries (`.lib`) or third-party code, internal function symbols are not exported — only public entry points appear in `.map`/`.sym` files. To find internal functions, search for characteristic byte patterns in the compiled `.com`/`.rom` binary.
+
+**Approach: pattern search in the binary**
+
+Identify a unique sequence of bytes near the target function — its prologue, a distinctive instruction, or bytes adjacent to a known data variable — and search the binary:
+
+```python
+with open('program.com', 'rb') as f:
+    data = f.read()
+base = 0x0100  # MSX-DOS load address (ROM programs may use 0x4000)
+
+# Example: find all CP #0x3F (FE 3F) followed by JP NZ (C2)
+for i in range(len(data) - 3):
+    if data[i] == 0xFE and data[i+1] == 0x3F and data[i+2] == 0xC2:
+        print(f'Found at 0x{i+base:04X}: {data[i:i+6].hex()}')
+```
+
+**Finding a variable's address from code:**
+
+If you know a variable's address (e.g. from a previous debug session), search for instructions that reference it:
+
+```python
+target_lo, target_hi = 0x54, 0x1E  # address 0x1E54 in little-endian
+# LD A,(0x1E54) = 3A 54 1E
+for i in range(len(data) - 3):
+    if data[i] == 0x3A and data[i+1] == target_lo and data[i+2] == target_hi:
+        print(f'LD A,(0x1E54) at 0x{i+base:04X}')
+```
+
+**Tips:**
+- Run the script on the host, then use the found addresses as breakpoint targets in the emulator
+- After a code change and recompile, variable addresses may shift — always re-run the search on the new binary
+- Combine multiple distinctive instructions to narrow down to a unique match
 
 ## MSX Memory Map Reference
 

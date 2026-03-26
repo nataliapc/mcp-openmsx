@@ -6,7 +6,7 @@ disable-model-invocation: false
 user-invocable: true
 metadata:
   - authors: https://github.com/nataliapc
-  - version: "1.0.0"
+  - version: "1.1.0"
 ---
 
 # MCP-OpenMSX Usage Guide
@@ -47,7 +47,8 @@ Detailed step-by-step guides for common workflows. ALWAYS load reference files i
 - **[Programming in MSX BASIC](references/basic-programming.md)** — Write, load, run, verify, and manage BASIC programs. Includes line management, interrupting, and loading large programs.
 - **[Debugging the VDP](references/debug-vdp.md)** — Inspect/modify VDP registers, palette, VRAM, screen modes. Includes sprite debugging and screen corruption analysis workflows.
 - **[Debugging a BASIC program](references/debug-basic.md)** — Interrupt execution, inspect state, edit lines, low-level interpreter debugging, time-travel, infinite loop detection, variable inspection.
-- **[Debugging an ASM program](references/debug-asm.md)** — Breakpoints, stepping, register/memory inspection, disassembly, BIOS call verification, crash analysis.
+- **[Debugging an ASM program](references/debug-asm.md)** — Breakpoints, stepping, register/memory inspection, disassembly, BIOS call verification, crash/hang analysis, locating functions without .sym files.
+- **[Debugging MSX-DOS programs](references/debug-dos-program.md)** — Correct breakpoint workflow for MSX-DOS disk-loaded programs. Avoids boot contamination (BIOS/DOS firing breakpoints before app starts). Includes hang detection and savestate checkpointing.
 - **[Working with media (ROM, disk, tape)](references/media-management.md)** — Insert/eject ROMs, disks, tapes. Development workflows for each media type.
 - **[Time-travel debugging with replay and savestates](references/replay-savestates.md)** — Timeline navigation, frame-by-frame stepping, checkpointing, comparing execution paths.
 - **[Screen capture and visual verification](references/screen-capture.md)** — Screenshots (inline/file), screen dumps (MSX format), text reading, before/after comparison.
@@ -62,4 +63,5 @@ Detailed step-by-step guides for common workflows. ALWAYS load reference files i
 - Use `basic_programming` tools instead of `emu_keyboard.sendText` for BASIC development — they handle speed optimization and input encoding automatically.
 - Use `emu_savestates` to checkpoint progress during complex debugging sessions.
 - Addresses from `.sym`/`.map` files can be used directly with `debug_breakpoints.create` and `debug_run.runTo`.
+- **MSX-DOS programs**: never set breakpoints before confirming the app is on screen — the BIOS/DOS boot fires them first. See [Debugging MSX-DOS Programs](references/debug-dos-program.md).
 - CP437 character encoding is the nearest encoding for MSX international charmap, use it for text input/output. Be mindful of special characters.
