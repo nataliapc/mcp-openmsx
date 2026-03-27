@@ -1355,7 +1355,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command }: { command: string }) => {
-			const openmsxCommand = `screenshot -raw -prefix "${path.join(emuDirectories.OPENMSX_SCREENSHOT_DIR,'mcp_')}"`;
+			const openmsxCommand = `screenshot -raw -doublesize -prefix "${path.join(emuDirectories.OPENMSX_SCREENSHOT_DIR,'mcp_')}"`;
 			const response = await openMSXInstance.sendCommand(openmsxCommand);
 			switch (command) {
 				case "as_image":
