@@ -1,27 +1,32 @@
 ---
 name: mcp-openmsx-usage
-description: Guide for using mcp-openmsx tools to control and automate the openMSX emulator. Use when interacting with the openMSX emulator for develop/test/debug workflows or interactions that require direct control or information retrieval. Covers all MCP tools. Do NOT use for general agent tasks or when no direct openMSX interaction is required.
-compatibility: mcp-openmsx
-disable-model-invocation: false
-user-invocable: true
+description: Use this skill to learn using mcp-openmsx tools to control and automate the openMSX emulator, or when interacting with the openMSX emulator for develop/test/debug workflows or interactions that require direct control or information retrieval. Covers all MCP tools. Do NOT use for general agent tasks or when no direct openMSX interaction is required.
+compatibility: Needs openmsx, npx, and mcp-openmsx in stdio mode.
 metadata:
-  - authors: https://github.com/nataliapc
-  - version: "1.1.0"
+  authors: https://github.com/nataliapc
+  version: "1.2.0"
 ---
 
 # MCP-OpenMSX Usage Guide
 
+## Skill usage
+
+- Read this file completely.
+- Read the linked files if topic/description is relevant to your task. Always load reference files if there is even a small chance the content may be required. It's better to have the context than to miss a pattern or make a mistake.
+
 ## Overview
 
-mcp-openmsx is an MCP server that bridges AI assistants with the openMSX MSX emulator. It spawns openMSX, sending TCL commands via STDIO or HTTP transports.
+`mcp-openmsx` is an MCP server that bridges AI assistants with the openMSX MSX emulator. It spawns openMSX, sending TCL commands via STDIO or HTTP transports.
 
 **Typical workflow**: launch emulator → insert media → interact (keyboard/BASIC/debug) → capture screen → close.
 
 ## Prerequisites
 
-- `npx` installed (only for MCP launching in `stdio` mode).
-- `openMSX emulator` installed and accessible via `$PATH` (or set `OPENMSX_EXECUTABLE` env).
-- Set `OPENMSX_SHARE_DIR` env if auto-detection fails.
+Using `mcp-openmsx` in `stdio` mode requires:
+- `npx` installed.
+- `openMSX emulator` installed and accessible via `$PATH` or set `OPENMSX_EXECUTABLE` [env](skill-environment-variables.md).
+- [`mcp-openmsx` installed](skill-mcp-configuration.md).
+- Set `OPENMSX_SHARE_DIR` [env](skill-environment-variables.md) if auto-detection fails or custom folder is needed.
 
 ## Skill Index
 

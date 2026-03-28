@@ -7,7 +7,11 @@ Debug a Z80 or R800 assembly program running on the MSX using breakpoints, stepp
 ## Prerequisites
 
 - Emulator launched with the target program loaded (ROM cartridge, disk, or tape).
-- Optionally: `.sym` or `.map` files from the assembler/linker for symbol-to-address mapping.
+- Optionally: `.sym`/`.map`/`.lst` files from the assembler/linker for symbol-to-address mapping (usually in `obj` or `out` folder).
+
+## Resources
+
+Use the [resources](../skill-mcp-resources-prompts.md) and [tools](../skill-tools-documentation-search.md) for reference materials on Z80/R800 assembly language, MSX hardware architecture.
 
 ## Index
 

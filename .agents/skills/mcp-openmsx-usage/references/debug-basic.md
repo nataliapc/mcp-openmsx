@@ -7,6 +7,7 @@ Debug an MSX BASIC program by inspecting its state, stepping through execution a
 ## Index
 
 - [Prerequisites](#prerequisites)
+- [Resources](#resources)
 - [Step-by-Step: Debug a Running BASIC Program](#step-by-step-debug-a-running-basic-program)
     1. [Run the program](#1-run-the-program)
     2. [Interrupt execution](#2-interrupt-execution)
@@ -23,7 +24,11 @@ Debug an MSX BASIC program by inspecting its state, stepping through execution a
 ## Prerequisites
 
 - Machine launched with BASIC support (branded machine, NOT C-BIOS).
-- BASIC program already loaded via `basic_programming.setProgram`.
+- BASIC program already loaded via [`basic_programming.setProgram`](../skill-tools-basic-programming.md).
+
+## Resources
+
+Use the [resources](../skill-mcp-resources-prompts.md) and [tools](../skill-tools-documentation-search.md) for reference materials on MSX BASIC language features, commands, error messages, and the structure of the BASIC interpreter.
 
 ## Step-by-Step: Debug a Running BASIC Program
 
