@@ -42,6 +42,7 @@ Use the [resources](../skill-mcp-resources-prompts.md) and [tools](../skill-tool
     - [Read byte / word](#read-byte--word)
     - [Write byte / word](#write-byte--word)
     - [Verify a write](#verify-a-write)
+    - [Search for a byte pattern in RAM](#search-for-a-byte-pattern-in-ram)
 - [Modify Registers at Runtime](#modify-registers-at-runtime)
 - [VRAM Inspection (for graphics debugging)](#vram-inspection-for-graphics-debugging)
 - [Debugging Workflow: Find a Crash or Hang](#debugging-workflow-find-a-crash-or-hang)
@@ -239,6 +240,16 @@ debug_memory { command: "writeByte", address: "0xE000", value8: "0x42" }
 debug_memory { command: "readByte", address: "0xE000" }   # should contain 0x42
 ```
 
+### Search for a byte pattern in RAM
+
+Scan a memory region for a specific sequence of bytes:
+
+```
+debug_memory { command: "searchBytes", address: "0x0000", length: 65536, values: "0x00 0xFF 0x53" }
+```
+
+Returns the addresses that match, or a not-found message. Use a narrower range (`address` + `length`) to speed up the search when you know roughly where to look.
+
 ## Modify Registers at Runtime
 
 ```
@@ -307,7 +318,16 @@ When debugging pre-compiled libraries (`.lib`) or third-party code, internal fun
 
 **Approach: pattern search in the binary**
 
-Identify a unique sequence of bytes near the target function — its prologue, a distinctive instruction, or bytes adjacent to a known data variable — and search the binary:
+Identify a unique sequence of bytes near the target function — its prologue, a distinctive instruction, or bytes adjacent to a known data variable — and search directly in the running emulator's RAM:
+
+```
+# Example: find CP #0x3F (FE 3F) followed by JP NZ (C2) in the program area
+debug_memory { command: "searchBytes", address: "0x0100", length: 4096, values: "0xFE 0x3F 0xC2" }
+```
+
+This is faster than running a Python script on the binary and works on the live memory image (including self-modifying code). Narrow the range with `address` + `length` if you know the approximate location.
+
+Alternatively, search the binary file on the host:
 
 ```python
 with open('program.com', 'rb') as f:
@@ -322,7 +342,14 @@ for i in range(len(data) - 3):
 
 **Finding a variable's address from code:**
 
-If you know a variable's address (e.g. from a previous debug session), search for instructions that reference it:
+If you know a variable's address (e.g. from a previous debug session), search for instructions that reference it directly in the emulator's RAM:
+
+```
+# LD A,(0x1E54) = 3A 54 1E  (little-endian address)
+debug_memory { command: "searchBytes", address: "0x0100", length: 65535, values: "0x3A 0x54 0x1E" }
+```
+
+Or search the binary file on the host:
 
 ```python
 target_lo, target_hi = 0x54, 0x1E  # address 0x1E54 in little-endian

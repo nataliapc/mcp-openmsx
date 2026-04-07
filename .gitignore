@@ -9,6 +9,7 @@ package-lock.json
 **/.embeddings.cache.json
 *.tgz
 assets
+plan
 node_modules
 test-scripts
 vector-db/index*.json

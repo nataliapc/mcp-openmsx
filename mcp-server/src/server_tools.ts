@@ -23,6 +23,7 @@ import { resolveLaunchParams } from "./server_elicitations.js";
 
 export async function registerTools(server: McpServer, emuDirectories: EmuDirectories)
 {
+	// emu_control
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"emu_control",
@@ -209,6 +210,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			};
 		});
 
+	// emu_info
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"emu_media",
@@ -296,6 +298,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			]);
 		});
 
+	// emu_info
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"emu_info",
@@ -363,6 +366,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			};
 		});
 
+	// emu_vdp
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"emu_vdp",
@@ -498,6 +502,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			};
 		});
 
+	// debug_run
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"debug_run",
@@ -572,6 +577,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			]);
 		});
 
+	// debug_cpu
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"debug_cpu",
@@ -723,6 +729,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			};
 		});
 
+	// debug_memory
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"debug_memory",
@@ -732,7 +739,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			description: "Slots info, and Read/write from/to memory in the openMSX emulator.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord"])
+				command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord", "searchBytes"])
 					.describe(`Available commands:
 	'selectedSlots': to get a list of the currently selected memory slots.
 	'getBlock <address> [lines]': to read a block of memory from the specified address.
@@ -740,6 +747,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 	'readWord <address>': to read a WORD from the specified address.
 	'writeByte <address> <value8>': to write a BYTE to the specified address.
 	'writeWord <address> <value16>': to write a WORD to the specified address.
+	'searchBytes <address> <length> <values>': to search a sequence of bytes in memory starting from the specified address and within the specified length.
 **Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
 `),
 				address: z.string()
@@ -760,6 +768,15 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.regex(/^0x[0-9a-fA-F]{4}$/, 'Must be a 4 digits hexadecimal number')
 					.optional()
 					.describe("4 hexadecimal digits for a word value (e.g. 0xa5b1). Used by [writeWord]"),
+				values: z.string()
+					.regex(/^(\s*0x[0-9a-fA-F]{2}\s*)+$/, "Values must be a space-separated string of 2 digits hexadecimal numbers (e.g. '0x1A 0xFF 0x00')")
+					.optional()
+					.describe("Space-separated string of 2 hexadecimal digits for byte values to search (e.g. '0x1A 0xFF 0x00'). Used by [searchBytes]"),
+				length: z.number()
+					.min(1, 'Minimum search length too low. Min: 1')
+					.max(65536, 'Maximum search length too high. Max: 65536')
+					.optional()
+					.describe("Decimal number of bytes to search within. Used by [searchBytes]"),
 			},
 			// Structured output schema (MCP protocol 2025-11-25)
 			outputSchema: {
@@ -775,6 +792,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.describe("Hex dump block of memory. Present for 'getBlock'."),
 				slots: z.string().optional()
 					.describe("Currently selected memory slots info. Present for 'selectedSlots'."),
+				length: z.number().optional()
+					.describe("Length of bytes searched. Present for 'searchBytes'."),
+				values: z.string().optional()
+					.describe("Values searched for. Present for 'searchBytes'."),
 				result: z.string().optional()
 					.describe("Generic result or status message."),
 			},
@@ -786,7 +807,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
-		async ({ command, address, lines, value8, value16 }: { command: string; address?: string; lines?: number; value8?: string; value16?: string }) => {
+		async ({ command, address, lines, value8, value16, length, values }: { command: string; address?: string; lines?: number; value8?: string; value16?: string; length?: number; values?: string }) => {
 			let tclCommand: string;
 			switch (command) {
 				case "selectedSlots":
@@ -806,6 +827,23 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				case "writeWord":
 					tclCommand = `poke16 ${address} ${value16}`;
+					break;
+				case "searchBytes":
+					length = parseInt(address!, 16) + length! > 0x10000 ? 0x10000 - parseInt(address!, 16) : length;
+					tclCommand = `set pattern { ${values} }
+								set len [llength $pattern]
+								set results ""
+								for {set i ${address}} {$i \<= [expr {${address} + ${length} - $len}]} {incr i} {
+									set match 1
+									for {set j 0} {$j \< $len} {incr j} {
+										if {[peek [expr {$i + $j}]] != [lindex $pattern $j]} {
+											set match 0; break
+										}
+									}
+									if {$match} { append results [format "Found at 0x%04X\n" $i] }
+								}
+								if {$results eq ""} { return "No matches found" }
+								return $results`;
 					break;
 				default:
 					return { content: [{ type: "text" as const, text: `Error: Unknown memory command "${command}".` }], isError: true };
@@ -844,6 +882,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					structuredContent = { command, address, result: response || "Ok" };
 					break;
 				}
+				case "searchBytes": {
+					structuredContent = { command, address, length, values, result: response };
+					break;
+				}
 				default:
 					structuredContent = { command, result: response };
 			}
@@ -854,6 +896,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			};
 		});
 
+	// debug_vram
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"debug_vram",
@@ -950,6 +993,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			};
 		});
 
+	// debug_breakpoints
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"debug_breakpoints",
@@ -1047,6 +1091,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			};
 		});
 
+	// emu_savestates
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"emu_savestates",
@@ -1105,6 +1150,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			]);
 		});
 
+	// emu_replay
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"emu_replay",
@@ -1250,6 +1296,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			};
 		});
 
+	// emu_keyboard
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"emu_keyboard",
@@ -1331,6 +1378,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			]);
 		});
 
+	// screen_shot
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"screen_shot",
@@ -1398,6 +1446,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			]);
 		});
 
+	// screen_dump
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"screen_dump",
@@ -1432,6 +1481,7 @@ The parameter scrbasename is the name of the filename (without path) to save the
 			]);
 		});
 
+	// basic_programming
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"basic_programming",
@@ -1599,6 +1649,7 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		}
 	);
 
+	// vector_db_query
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"vector_db_query",
@@ -1650,6 +1701,7 @@ The response is the list of the top 10 result resources that match the query, in
 	// Register a tool to get a specific MSX documentation resource
 	// Retrieve MCP resources for MCP clients that don't support MCP resources.
 
+	// msxdocs_resource_get
 	server.registerTool(
 		// Name of the tool (used to call it)
 		"msxdocs_resource_get",
