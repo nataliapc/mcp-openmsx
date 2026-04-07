@@ -19,6 +19,7 @@ Inspect and manipulate the VDP registers, palette, VRAM content, and screen mode
     - [Hex dump of VRAM](#hex-dump-of-vram)
     - [Read single VRAM byte](#read-single-vram-byte)
     - [Write VRAM byte](#write-vram-byte)
+    - [Search for a byte pattern in VRAM](#search-for-a-byte-pattern-in-vram)
 - [Common VRAM Layouts](#common-vram-layouts)
     - [SCREEN 0 WIDTH 40 (TEXT1, 40x24 text mode)](#screen-0-width-40-text1-40x24-text-mode)
     - [SCREEN 0 WIDTH 80 (TEXT2, 80x24 text mode, V9938)](#screen-0-width-80-text2-80x24-text-mode-v9938)
@@ -35,6 +36,8 @@ Inspect and manipulate the VDP registers, palette, VRAM content, and screen mode
 - [Debugging Workflow: Verify Sprite Rendering](#debugging-workflow-verify-sprite-rendering)
 - [Debugging Workflow: Analyze Screen Corruption](#debugging-workflow-analyze-screen-corruption)
 - [Debugging Workflow: VDP Command Hang (YMMM/HMMM/HMMC)](#debugging-workflow-vdp-command-hang-ymmmhmmm-hmmc)
+- [Debugging Workflow: Find a Tile / Character Pattern in VRAM](#debugging-workflow-find-a-tile--character-pattern-in-vram)
+- [Debugging Workflow: Locate a Sprite Pattern in VRAM](#debugging-workflow-locate-a-sprite-pattern-in-vram)
 - [Useful Resources](#useful-resources)
 
 ## Background
@@ -131,6 +134,20 @@ debug_vram { command: "readByte", address: "0x01800" }
 ```
 debug_vram { command: "writeByte", address: "0x01800", value8: "0x41" }
 ```
+
+### Search for a byte pattern in VRAM
+
+Scan a VRAM region for a specific sequence of bytes. Up to 65536 bytes per call; for MSX2 (128KB VRAM) scan both halves:
+
+```
+# First 64KB (0x00000–0x0FFFF)
+debug_vram { command: "searchBytes", address: "0x00000", length: 65536, values: "0x42 0x41" }
+
+# Second 64KB — MSX2 only (0x10000–0x1FFFF)
+debug_vram { command: "searchBytes", address: "0x10000", length: 65536, values: "0x42 0x41" }
+```
+
+Returns all matching addresses, or a not-found message. Narrow the range with `address` + `length` when you know roughly where to look.
 
 ## Common VRAM Layouts
 
@@ -461,6 +478,54 @@ Bit 0 of the result = CE. If it stays `1`, the VDP command is stuck.
 1. Break during the hang and note the PC (should be in the WaitCmd loop)
 2. Use `emu_replay { command: "goBack", seconds: 1 }` to rewind to just before the hang
 3. Set breakpoint at the start of the VDP command function and inspect the command parameters in RAM before `DO_YMMM`/`DO_HMMM` is called
+
+## Debugging Workflow: Find a Tile / Character Pattern in VRAM
+
+Use this when you want to verify that a specific tile (character graphic) was loaded correctly into the pattern generator table.
+
+1. **Break execution**: `debug_run { command: "break" }`
+2. **Check screen mode and name/pattern table addresses**: `emu_vdp { command: "getRegisters" }`
+3. **Identify the expected byte pattern** for the tile (8 bytes per row for an 8×8 tile)
+4. **Search in the pattern generator table** — e.g. for SCREEN 1 (`0x00000`–`0x007FF`):
+
+```
+debug_vram { command: "searchBytes", address: "0x00000", length: 2048, values: "0x3C 0x42 0x81 0x81" }
+```
+
+5. Divide the found address by 8 → character index. Confirm it matches the name table entry:
+
+```
+debug_vram { command: "readByte", address: "0x01800" }  # name table cell (0,0) in SCREEN 1
+```
+
+6. **Take screenshot for visual confirmation**: `screen_shot { command: "as_image" }`
+
+> **Tip:** For SCREEN 2 (GRAPHIC2) the pattern generator spans `0x00000`–`0x017FF` (3 banks × 2KB). Search each bank separately with `length: 2048`.
+
+## Debugging Workflow: Locate a Sprite Pattern in VRAM
+
+Use this to verify a specific sprite bitmap was loaded into the sprite generator table.
+
+1. **Break execution**: `debug_run { command: "break" }`
+2. **Check screen mode**: `emu_vdp { command: "screenGetMode" }`
+3. **Identify the sprite generator base address** from the current screen mode's VRAM layout (e.g. `0x03800` for SCREEN 1/2)
+4. **Search for the sprite's first bytes** — an 8×8 sprite is 8 bytes; a 16×16 sprite is 32 bytes:
+
+```
+# Example: search for a specific sprite pattern near 0x03800 (SCREEN 1/2)
+debug_vram { command: "searchBytes", address: "0x03800", length: 2048, values: "0xFF 0x81 0x81 0xFF" }
+```
+
+5. Divide the found offset from the generator base by 8 (8×8) or 32 (16×16) → sprite pattern number
+6. Cross-check with the sprite attribute table to confirm it is the active sprite:
+
+```
+debug_vram { command: "getBlock", address: "0x01B00", lines: 4 }  # sprite attributes SCREEN 1/2
+```
+
+7. **Take screenshot**: `screen_shot { command: "as_image" }`
+
+> **Note:** For SCREEN 5–8 / SCREEN 4 sprites, the generator table is at different addresses — check the [Common VRAM Layouts](#common-vram-layouts) section for the correct base.
 
 ## Useful Resources
 

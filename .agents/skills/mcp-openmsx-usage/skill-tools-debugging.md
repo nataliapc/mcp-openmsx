@@ -36,7 +36,7 @@
 | `readWord` | Read 16-bit word at address. Param: `address` |
 | `writeByte` | Write byte. Params: `address`, `value8` (hex byte) |
 | `writeWord` | Write word. Params: `address`, `value16` (hex word) |
-| `searchBytes` | Search for a byte sequence in memory. Params: `address` (start), `length` (number of bytes to scan, up to 65536), `values` (space-separated hex bytes, e.g. `0x00 0xFF 0x53`). Returns the all addresses that match or not found. |
+| `searchBytes` | Search for a byte sequence in memory RAM. Params: `address` (start), `length` (number of bytes to scan, up to 65536), `values` (space-separated hex bytes, e.g. `0x00 0xFF 0x53`). Returns all the addresses that match or not found. |
 
 ## `debug_vram` — VRAM video memory operations
 
@@ -45,6 +45,7 @@
 | `getBlock` | Hex dump from VRAM address. Params: `address` (5 hex digits, 20-bit), `lines` (1–50, default 8) |
 | `readByte` | Read byte at VRAM address. Param: `address` |
 | `writeByte` | Write byte to VRAM. Params: `address`, `value8` |
+| `searchBytes` | Search for a byte sequence in memory VRAM. Params: `address` (start), `length` (number of bytes to scan, up to 65536), `values` (space-separated hex bytes, e.g. `0x42 0x41`). Returns all the addresses that match or not found. |
 
 **Note**: VRAM addresses use 5 hex digits (20-bit), e.g. `0x00000`.
 

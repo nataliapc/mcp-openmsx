@@ -266,6 +266,20 @@ debug_vram { command: "readByte", address: "0x01800" }
 debug_vram { command: "writeByte", address: "0x01800", value8: "0x41" }
 ```
 
+### Search for a byte pattern in VRAM
+
+Scan up to 65536 bytes per call. For MSX2 (128KB VRAM) scan both halves:
+
+```
+# First 64KB (0x00000–0x0FFFF)
+debug_vram { command: "searchBytes", address: "0x00000", length: 65536, values: "0x42 0x41" }
+
+# Second 64KB — MSX2 only (0x10000–0x1FFFF)
+debug_vram { command: "searchBytes", address: "0x10000", length: 65536, values: "0x42 0x41" }
+```
+
+Returns all matching addresses, or a not-found message.
+
 VRAM uses 20-bit addresses (5 hex digits) for MSX2 and later machines. MSX1 machines uses 14-bit addresses (4 hex digits). Check your machine's VRAM size and mapping.
 
 ## Debugging Workflow: Find a Crash or Hang

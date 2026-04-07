@@ -747,7 +747,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 	'readWord <address>': to read a WORD from the specified address.
 	'writeByte <address> <value8>': to write a BYTE to the specified address.
 	'writeWord <address> <value16>': to write a WORD to the specified address.
-	'searchBytes <address> <length> <values>': to search a sequence of bytes in memory starting from the specified address and within the specified length.
+	'searchBytes <address> <length> <values>': to search a sequence of bytes in RAM memory starting from the specified address and within the specified length.
 **Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
 `),
 				address: z.string()
@@ -906,11 +906,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			description: "Read or write from/to VRAM video memory from the openMSX emulator.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["getBlock", "readByte", "writeByte"])
+				command: z.enum(["getBlock", "readByte", "writeByte", "searchBytes"])
 					.describe(`Available commands:
 	'getBlock <address> [lines]': to read a block of VRAM memory from the specified address.
 	'readByte <address>': to read a BYTE from the specified VRAM address.
 	'writeByte <address> <value8>': to write a BYTE to the specified VRAM address.
+	'searchBytes <address> <length> <values>': to search a sequence of bytes in VRAM memory starting from the specified address and within the specified length.
 **Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
 `),
 				address: z.string()
@@ -924,6 +925,15 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.default(8)
 					.describe("Number of lines to obtain. Used by [getBlock]"),
 				value8: z.string().regex(/^0x[0-9a-fA-F]{2}$/).optional().describe("2 hexadecimal digits for a byte value (e.g. 0xa5). Used by [writeByte]"),
+				values: z.string()
+					.regex(/^(\s*0x[0-9a-fA-F]{2}\s*)+$/, "Values must be a space-separated string of 2 digits hexadecimal numbers (e.g. '0x1A 0xFF 0x00')")
+					.optional()
+					.describe("Space-separated string of 2 hexadecimal digits for byte values to search (e.g. '0x1A 0xFF 0x00'). Used by [searchBytes]"),
+				length: z.number()
+					.min(1, 'Minimum search length too low. Min: 1')
+					.max(65536, 'Maximum search length too high. Max: 65536')
+					.optional()
+					.describe("Decimal number of bytes to search within. Used by [searchBytes]"),
 			},
 			// Structured output schema (MCP protocol 2025-11-25)
 			outputSchema: {
@@ -937,6 +947,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.describe("VRAM byte value in hexadecimal. Present for 'readByte'."),
 				hexDump: z.string().optional()
 					.describe("Hex dump block of VRAM. Present for 'getBlock'."),
+				length: z.number().optional()
+					.describe("Length of bytes searched. Present for 'searchBytes'."),
+				values: z.string().optional()
+					.describe("Values searched for. Present for 'searchBytes'."),
 				result: z.string().optional()
 					.describe("Generic result or status message."),
 			},
@@ -948,7 +962,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
-		async ({ command, address, lines, value8 }: { command: string; address?: string; lines?: number; value8?: string }) => {
+		async ({ command, address, lines, value8, values, length }: { command: string; address?: string; lines?: number; value8?: string; values?: string;  length?: number }) => {
 			let tclCommand: string;
 			switch (command) {
 				case "getBlock":
@@ -959,6 +973,23 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				case "writeByte":
 					tclCommand = `vpoke ${address} ${value8}`;
+					break;
+				case "searchBytes":
+					length = parseInt(address!, 16) + length! > 0x20000 ? 0x20000 - parseInt(address!, 16) : length;
+					tclCommand = `set pattern { ${values} }
+								set len [llength $pattern]
+								set results ""
+								for {set i ${address}} {$i \<= [expr {${address} + ${length} - $len}]} {incr i} {
+									set match 1
+									for {set j 0} {$j \< $len} {incr j} {
+										if {[vpeek [expr {$i + $j}]] != [lindex $pattern $j]} {
+											set match 0; break
+										}
+									}
+									if {$match} { append results [format "Found at 0x%04X\n" $i] }
+								}
+								if {$results eq ""} { return "No matches found" }
+								return $results`;
 					break;
 				default:
 					return { content: [{ type: "text" as const, text: `Error: Unknown video memory command "${command}".` }], isError: true };
@@ -981,6 +1012,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				}
 				case "writeByte": {
 					structuredContent = { command, address, result: response || "Ok" };
+					break;
+				}
+				case "searchBytes": {
+					structuredContent = { command, address, length, values, result: response };
 					break;
 				}
 				default:

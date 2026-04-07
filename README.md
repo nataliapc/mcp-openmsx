@@ -106,7 +106,7 @@ The MCP server translates high-level natural language commands from your Copilot
 - `debug_run`: Control execution: _`break`, `isBreaked`, `continue`, `stepIn`, `stepOut`, `stepOver`, `stepBack`, `runTo`_.
 - `debug_cpu`: Read/write CPU registers, CPU info, Stack pile, and Disassemble code: _`getCpuRegisters`, `getRegister`, `setRegister`, `getStackPile`, `disassemble`, `getActiveCpu`_.
 - `debug_memory`: RAM memory operations: _`selectedSlots`, `getBlock`, `readByte`, `readWord`, `writeByte`, `writeWord`, `searchBytes`_.
-- `debug_vram`: VRAM operations: _`getBlock`, `readByte`, `writeByte`_.
+- `debug_vram`: VRAM operations: _`getBlock`, `readByte`, `writeByte`, `searchBytes`_.
 - `debug_breakpoints`: Breakpoint management: _`create`, `remove`, `list`_.
 
 ### Automation Tools
