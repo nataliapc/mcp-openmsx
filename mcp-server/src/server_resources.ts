@@ -146,15 +146,19 @@ export async function registerResources(server: McpServer, resourcesDir: string)
 			let resourceContent: string;
 			let mimeType: string | undefined;
 
-			// urldecode the instruction to avoid issues with special characters
-			instruction = decodeURIComponent(instruction).replaceAll(' ','_');
-			try {
-				let resourceFile: string | undefined;
-				[mimeType, resourceFile] = await addFileExtension(path.join(resourcesDir, 'programming', 'basic_wiki', instruction));
+		// urldecode the instruction to avoid issues with special characters
+		instruction = decodeURIComponent(instruction).replaceAll(' ','_');
+		// Convert Windows-invalid characters to safe equivalents for the filesystem lookup.
+		// The RAG and MCP URIs keep the canonical command name (e.g. CLOAD?),
+		// but the file on disk uses a safe name (e.g. CLOAD_Q.md).
+		const instructionFile = instruction.replaceAll('?', '_Q');
+		try {
+			let resourceFile: string | undefined;
+			[mimeType, resourceFile] = await addFileExtension(path.join(resourcesDir, 'programming', 'basic_wiki', instructionFile));
 				resourceContent = await fs.readFile(resourceFile, 'utf8');
 			} catch (error) {
 				// Throw exception (MCP protocol requirement)
-				throw new Error(`Error reading resource programming/basic_wiki/${instruction}: ${error instanceof Error ? error.message : String(error)}`);
+				throw new Error(`Error reading resource programming/basic_wiki/${instruction} (file: ${instructionFile}): ${error instanceof Error ? error.message : String(error)}`);
 			}
 			return {
 				contents: [{

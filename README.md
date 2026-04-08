@@ -241,7 +241,7 @@ Edit it to include the following JSON entry:
 
 | Variable | Description | Default Value | Example |
 |----------|-------------|---------------|---------|
-| `OPENMSX_EXECUTABLE` | Path or command to the openMSX executable | `openmsx` | `/usr/local/bin/openmsx` |
+| `OPENMSX_EXECUTABLE` | Path or command to the openMSX executable | `openmsx` (Linux/macOS) / `openmsx.exe` (Windows) | `/usr/local/bin/openmsx` or `C:\Program Files\openMSX\openmsx.exe` |
 | `OPENMSX_SHARE_DIR` | Directory containing openMSX data files (machines, extensions, etc.) | System dependent | `/home/myuser/.openmsx/share` |
 | `OPENMSX_SCREENSHOT_DIR` | Directory where screenshots will be saved | Default for openmsx | `/myproject/screenshots` |
 | `OPENMSX_SCREENDUMP_DIR` | Directory where screen dumps will be saved | Default for openmsx | `/myproject/screendumps` |
@@ -256,7 +256,7 @@ Edit it to include the following JSON entry:
 > [!IMPORTANT]  
 > This is not needed for using the MCP server, but if you want to install it manually, follow these steps.
 
-Currently, the MCP server requires Linux to be compiled. It has not been tested on Windows or macOS, although it will likely work on the latter as well.
+The MCP server runs on Linux, macOS, and Windows. Building from source requires Node.js >= 18 and TypeScript.
 
 ### Manual installation
 

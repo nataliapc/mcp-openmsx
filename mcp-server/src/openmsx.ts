@@ -181,8 +181,10 @@ export class OpenMSX {
                 try {
                     this.sendCommand('exit');
                 } catch (error) {
-                    // If writing fails, force kill
-                    this.process.kill('SIGTERM');
+                    // If writing fails, force kill.
+                    // Use no-argument kill() for cross-platform safety:
+                    // on POSIX it sends SIGTERM; on Windows it calls TerminateProcess().
+                    try { this.process.kill(); } catch (_) { /* ignore */ }
                 }
             } else {
                 this.forceClose();
@@ -369,6 +371,9 @@ export class OpenMSX {
     forceClose(): void {
         if (this.process && !this.process.killed) {
             try {
+                // 'SIGKILL' is accepted on Windows too (maps to TerminateProcess).
+                // No-argument kill() is also acceptable here, but SIGKILL makes
+                // the intent explicit: we want unconditional termination.
                 this.process.kill('SIGKILL');
             } catch (error) {
                 // Ignore errors during force close

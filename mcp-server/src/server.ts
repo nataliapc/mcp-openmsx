@@ -16,6 +16,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "node:crypto";
 import express, { Request, Response } from "express";
 import path from "path";
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'module';
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
@@ -29,8 +30,9 @@ import { registerPrompts } from "./server_prompts.js";
 const require = createRequire(import.meta.url);
 export const PACKAGE_VERSION = require('../package.json').version;
 
-const resourcesDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../resources");
-const vectorDbDir = path.join(path.dirname(new URL(import.meta.url).pathname), "../vector-db");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const resourcesDir = path.join(__dirname, "../resources");
+const vectorDbDir = path.join(__dirname, "../vector-db");
 
 // Defaults for openMSX paths
 export interface EmuDirectories {
@@ -45,7 +47,9 @@ export interface EmuDirectories {
 
 export const emuDirectories: EmuDirectories = {
 	OPENMSX_SHARE_DIR: '',
-	OPENMSX_EXECUTABLE: 'openmsx',
+	// On Windows, Node.js spawn() may not resolve 'openmsx' to 'openmsx.exe' unless it is in PATH.
+	// Using the platform-aware default reduces friction for Windows users who have openMSX in PATH.
+	OPENMSX_EXECUTABLE: process.platform === 'win32' ? 'openmsx.exe' : 'openmsx',
 	OPENMSX_REPLAYS_DIR: '',
 	OPENMSX_SCREENSHOT_DIR: '',
 	OPENMSX_SCREENDUMP_DIR: '',

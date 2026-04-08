@@ -1,10 +1,10 @@
 ---
 name: mcp-openmsx-usage
 description: Use this skill to learn using mcp-openmsx tools to control and automate the openMSX emulator, or when interacting with the openMSX emulator for develop/test/debug workflows or interactions that require direct control or information retrieval. Covers all MCP tools. Do NOT use for general agent tasks or when no direct openMSX interaction is required.
-compatibility: Needs openmsx, npx, and mcp-openmsx in stdio mode.
+compatibility: Needs openMSX, Node.js/npx, and mcp-openmsx. Supports stdio (default) and HTTP transport modes.
 metadata:
   authors: https://github.com/nataliapc
-  version: "1.2.0"
+  version: "1.2.1"
 ---
 
 # MCP-OpenMSX Usage Guide
@@ -22,11 +22,14 @@ metadata:
 
 ## Prerequisites
 
-Using `mcp-openmsx` in `stdio` mode requires:
-- `npx` installed.
-- `openMSX emulator` installed and accessible via `$PATH` or set `OPENMSX_EXECUTABLE` [env](skill-environment-variables.md).
-- [`mcp-openmsx` installed](skill-mcp-configuration.md).
-- Set `OPENMSX_SHARE_DIR` [env](skill-environment-variables.md) if auto-detection fails or custom folder is needed.
+- **Node.js >= 18** with `npx`:
+  - Windows: install via [nodejs.org](https://nodejs.org/) or `winget install OpenJS.NodeJS`
+  - macOS: `brew install node` or the official installer
+  - Linux: use your distro package manager or [nvm](https://github.com/nvm-sh/nvm)
+- **openMSX emulator** installed and accessible (see [MCP Configuration](skill-mcp-configuration.md) for per-OS paths).
+  Set `OPENMSX_EXECUTABLE` [env](skill-environment-variables.md) if not in PATH.
+- [`mcp-openmsx` configured](skill-mcp-configuration.md) in your MCP client.
+- Set `OPENMSX_SHARE_DIR` [env](skill-environment-variables.md) if auto-detection fails or a custom folder is needed.
 
 ## Skill Index
 

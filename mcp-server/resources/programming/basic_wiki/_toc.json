@@ -119,7 +119,7 @@
         },
         {
             "title": "CLOAD? - Verify Cassette Load",
-            "uri": "msxdocs://basic_wiki/CLOAD?",
+            "uri": "msxdocs://basic_wiki/CLOAD_Q",
             "description": "Verifies a BASIC program on cassette tape against the program in memory."
         },
         {
