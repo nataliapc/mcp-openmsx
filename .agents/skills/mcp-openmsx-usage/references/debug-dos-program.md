@@ -45,6 +45,7 @@ screen_shot { command: "as_image" }
 ```
 debug_run { command: "break" }
 debug_cpu { command: "getCpuRegisters" }
+debug_memory { command: "selectedSlots" }
 ```
 
 **Interpreting the result:**
@@ -79,6 +80,7 @@ When the breakpoint fires, always confirm PC is in the expected range before int
 
 ```
 debug_cpu { command: "getCpuRegisters" }
+debug_memory { command: "selectedSlots" }
 ```
 
 If PC is not where expected, the breakpoint may have fired on a system call that happens to pass through the same address. Continue and wait for the real hit.
@@ -122,6 +124,7 @@ emu_keyboard { command: "sendText", text: "\r" } # trigger the code path if need
 emu_control  { command: "wait", seconds: 3 }
 debug_run    { command: "isBreaked" }            # should return 1
 debug_cpu    { command: "getCpuRegisters" }
+debug_memory { command: "selectedSlots" }
 ```
 
 ---
@@ -141,6 +144,7 @@ debug_run   { command: "break" }
 debug_cpu   { command: "getCpuRegisters" }
 debug_cpu   { command: "disassemble" }
 debug_cpu   { command: "getStackPile" }
+debug_memory { command: "selectedSlots" }
 ```
 
 5. Diagnose using the signals in [Debugging an ASM Program — Hang Diagnostics](debug-asm.md#debugging-workflow-find-a-crash-or-hang)
