@@ -17,6 +17,33 @@ import os from "os";
 
 
 /**
+ * Detect the openMSX executable path for the current platform.
+ *
+ * - Linux:   'openmsx' (expected in PATH after package install)
+ * - Windows: 'openmsx.exe' (Node spawn() needs the .exe extension on Windows)
+ * - macOS:   probes the standard .app bundle path first; falls back to 'openmsx'
+ *            in case the user has it in PATH (e.g. via Homebrew or manual install).
+ *
+ * The standard macOS bundle path is /Applications/openMSX.app/Contents/MacOS/openmsx.
+ * This is the path documented by the openMSX project (and its Catapult launcher).
+ */
+export function detectOpenMSXExecutable(): string {
+	if (process.platform === 'win32') {
+		return 'openmsx.exe';
+	}
+	if (process.platform === 'darwin') {
+		const appBundlePath = '/Applications/openMSX.app/Contents/MacOS/openmsx';
+		if (existsSync(appBundlePath)) {
+			return appBundlePath;
+		}
+		// Fallback: user may have openMSX in PATH (e.g. via Homebrew)
+		return 'openmsx';
+	}
+	// Linux / other POSIX
+	return 'openmsx';
+}
+
+/**
  * Detect the openMSX share directory by checking various methods
  * @returns string - The detected share directory or an empty string if not found
  */

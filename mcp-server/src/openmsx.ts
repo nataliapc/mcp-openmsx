@@ -7,19 +7,42 @@
 import fs from "fs/promises";
 import { extractDescriptionFromXML, decodeHtmlEntities, encodeHtmlEntities } from "./utils.js";
 import { spawn, ChildProcess } from 'child_process';
+import { createWriteStream, WriteStream } from 'fs';
 import path from 'path';
+
+/** True when running on Windows. Evaluated once at module load. */
+const IS_WINDOWS = process.platform === 'win32';
 
 
 /**
- * OpenMSX class for controlling the openMSX emulator via TCL commands over TCP socket
+ * OpenMSX class for controlling the openMSX emulator via TCL commands over stdio (Linux/macOS)
+ * or a Windows named pipe (Windows).
+ *
+ * Protocol summary (same XML protocol on all platforms):
+ *   openMSX → stdout  : XML output including <openmsx-output>, <reply>, <log>, <update>
+ *   controller → openMSX : XML commands via stdin (stdio mode) or named pipe (pipe mode)
+ *
+ * On Linux/macOS: openmsx -control stdio
+ *   Commands are sent via the child process stdin; replies come on stdout.
+ *
+ * On Windows: openmsx -control pipe:<pipename>
+ *   openMSX reads commands from \\.\pipe\<pipename> (a Windows named pipe).
+ *   Replies/output are still written to stdout (captured by Node's stdio pipes).
+ *   We write commands to the named pipe using a WriteStream opened on the pipe path.
+ *
+ * Reference: https://openmsx.org/manual/openmsx-control.html
  */
 export class OpenMSX {
     private lastMachine: string | null = null;
     private process: ChildProcess | null = null;
     private isConnected: boolean = false;
 
+    // Windows named pipe write stream (only used on Windows with -control pipe)
+    private pipeWriter: WriteStream | null = null;
+
     /**
-     * Launch the openMSX emulator in stdio control mode
+     * Launch the openMSX emulator in stdio control mode (Linux/macOS)
+     * or pipe control mode (Windows).
      * @param machine - MSX machine to emulate (e.g., 'Panasonic_FS-A1GT', 'C-BIOS_MSX2+')
      * @param extensions - Array of extensions to load (e.g., ['fmpac', 'ide'])
      * @returns Promise that resolves when the emulator is ready
@@ -44,8 +67,23 @@ export class OpenMSX {
                     return;
                 }
 
-                // Build command line arguments
-                const args: string[] = ['-control', 'stdio'];
+                // Clean up any leftover pipe writer from a previous session
+                // (e.g. if the process crashed and the exit handler didn't run)
+                this.closePipeWriter();
+
+                // Build command line arguments.
+                // On Windows, openMSX -control stdio has a known issue: the stdin reader
+                // thread blocks on read() and never unblocks cleanly when the pipe closes,
+                // causing openMSX to hang on exit. The correct mode for Windows is
+                // -control pipe:<name>, which uses a Windows named pipe for input and
+                // still writes replies/output to stdout.
+                // On Linux/macOS, -control stdio is correct and uses stdin/stdout directly.
+                // On Windows, use a unique pipe name based on PID to avoid collisions
+                // when multiple MCP server instances run simultaneously.
+                const pipeName = IS_WINDOWS ? `openmsx-mcp-${process.pid}` : '';
+                const controlArg = IS_WINDOWS ? `pipe:${pipeName}` : 'stdio';
+
+                const args: string[] = ['-control', controlArg];
                 // Add machine parameter if specified
                 if (machine) {
                     this.lastMachine = machine; // Store last machine for future reference
@@ -58,12 +96,19 @@ export class OpenMSX {
                     });
                 }
 
-                // Launch openMSX with stdio control
+                // Launch openMSX.
+                // On both modes, stdout/stderr are piped so we can read replies and errors.
+                // On stdio mode, stdin is also piped (we write commands there).
+                // On pipe mode, stdin is ignored ('ignore') — openMSX reads from the named pipe.
                 this.process = spawn(executable, args, {
-                    stdio: ['pipe', 'pipe', 'pipe']
+                    stdio: IS_WINDOWS ? ['ignore', 'pipe', 'pipe'] : ['pipe', 'pipe', 'pipe']
                 });
-                if (!this.process.stdin || !this.process.stdout || !this.process.stderr) {
+                if (!this.process.stdout || !this.process.stderr) {
                     safeResolve('Error: Failed to create stdio pipes');
+                    return;
+                }
+                if (!IS_WINDOWS && !this.process.stdin) {
+                    safeResolve('Error: Failed to create stdin pipe');
                     return;
                 }
                 // Check if process was launched successfully
@@ -76,13 +121,24 @@ export class OpenMSX {
                 }
 
                 // Handle process events
-                this.process.on('error', (error) => {
+                this.process.on('error', (error: NodeJS.ErrnoException) => {
                     console.error('openMSX process error:', error);
-                    safeResolve(`Error: ${error.message}`);
+                    if (error.code === 'ENOENT') {
+                        safeResolve(
+                            `Error: openMSX executable not found: "${executable}". ` +
+                            `Set the OPENMSX_EXECUTABLE environment variable to the full path of the openMSX binary. ` +
+                            `On macOS the standard path is /Applications/openMSX.app/Contents/MacOS/openmsx; ` +
+                            `on Windows it is typically C:\\Program Files\\openMSX\\openmsx.exe; ` +
+                            `on Linux it is usually 'openmsx' (in PATH after package install).`
+                        );
+                    } else {
+                        safeResolve(`Error: ${error.message}`);
+                    }
                 });
                 this.process.on('exit', (code, signal) => {
                     this.isConnected = false;
                     this.process = null;
+                    this.closePipeWriter();
                 });
 
                 // Wait for the opening XML tag to confirm connection
@@ -93,10 +149,17 @@ export class OpenMSX {
                         connectionTime = Date.now();
                         
                         // Don't resolve immediately, wait for potential fatal errors
-                        setTimeout(() => {
+                        setTimeout(async () => {
                             // Only resolve if no fatal error occurred during grace period
                             if (!resolved) {
                                 try {
+                                    // On Windows, open the named pipe for writing commands.
+                                    // openMSX has already created the pipe server side by now.
+                                    if (IS_WINDOWS) {
+                                        const pipePath = `\\\\.\\pipe\\${pipeName}`;
+                                        await this.openWindowsPipe(pipePath);
+                                    }
+
                                     this.writeData('<openmsx-control>\n');
                                     // Set save settings on exit off
                                     this.sendCommand('set save_settings_on_exit off');
@@ -155,6 +218,41 @@ export class OpenMSX {
     }
 
     /**
+     * Open a Windows named pipe for writing commands to openMSX.
+     * openMSX creates the pipe server when launched with -control pipe:<name>.
+     * We connect as a client (write-only) after openMSX signals it's ready.
+     * @param pipePath - Full Windows named pipe path, e.g. \\.\pipe\openmsx-mcp-1234
+     */
+    private openWindowsPipe(pipePath: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            try {
+                // Node.js fs.createWriteStream supports Windows named pipe paths.
+                // The pipe must already exist (created by openMSX) at this point.
+                const writer = createWriteStream(pipePath, { flags: 'r+' });
+                writer.on('open', () => {
+                    this.pipeWriter = writer;
+                    resolve();
+                });
+                writer.on('error', (err) => {
+                    reject(new Error(`Failed to open Windows named pipe "${pipePath}": ${err.message}`));
+                });
+            } catch (err) {
+                reject(new Error(`Failed to create Windows named pipe writer: ${err instanceof Error ? err.message : err}`));
+            }
+        });
+    }
+
+    /**
+     * Close and destroy the Windows named pipe writer if open.
+     */
+    private closePipeWriter(): void {
+        if (this.pipeWriter) {
+            try { this.pipeWriter.destroy(); } catch (_) { /* ignore */ }
+            this.pipeWriter = null;
+        }
+    }
+
+    /**
      * Close the openMSX emulator process
      * @returns Promise that resolves when the process is closed
      */
@@ -169,6 +267,7 @@ export class OpenMSX {
                 this.lastMachine = null; // Clear last machine on exit
                 this.isConnected = false;
                 this.process = null;
+                this.closePipeWriter();
                 resolve("Ok: Emulator process closed successfully");
             });
 
@@ -326,14 +425,28 @@ export class OpenMSX {
     }
 
     /**
-     * Write data to the openMSX process stdin
+     * Write data to openMSX.
+     * On Linux/macOS: writes to the child process stdin.
+     * On Windows: writes to the named pipe (pipeWriter).
      * @param data - XML command or data to send
      */
     writeData(data: string): void {
-        if (!this.process || !this.process.stdin || !this.isConnected) {
+        if (!this.process || !this.isConnected) {
             throw new Error('openMSX process not running or not connected');
         }
-        this.process.stdin.write(data);
+        if (IS_WINDOWS) {
+            // Windows: send via named pipe
+            if (!this.pipeWriter || this.pipeWriter.destroyed) {
+                throw new Error('Windows named pipe not open');
+            }
+            this.pipeWriter.write(data);
+        } else {
+            // Linux/macOS: send via child process stdin
+            if (!this.process.stdin) {
+                throw new Error('openMSX stdin not available');
+            }
+            this.process.stdin.write(data);
+        }
     }
 
     /**
@@ -381,6 +494,7 @@ export class OpenMSX {
             this.process = null;
             this.isConnected = false;
         }
+        this.closePipeWriter();
     }
 
 }

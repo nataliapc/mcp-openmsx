@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'module';
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { detectOpenMSXShareDir } from "./utils.js";
+import { detectOpenMSXExecutable, detectOpenMSXShareDir } from "./utils.js";
 import { registerTools } from "./server_tools.js";
 import { registerResources } from "./server_resources.js";
 import { registerPrompts } from "./server_prompts.js";
@@ -47,9 +47,7 @@ export interface EmuDirectories {
 
 export const emuDirectories: EmuDirectories = {
 	OPENMSX_SHARE_DIR: '',
-	// On Windows, Node.js spawn() may not resolve 'openmsx' to 'openmsx.exe' unless it is in PATH.
-	// Using the platform-aware default reduces friction for Windows users who have openMSX in PATH.
-	OPENMSX_EXECUTABLE: process.platform === 'win32' ? 'openmsx.exe' : 'openmsx',
+	OPENMSX_EXECUTABLE: detectOpenMSXExecutable(),
 	OPENMSX_REPLAYS_DIR: '',
 	OPENMSX_SCREENSHOT_DIR: '',
 	OPENMSX_SCREENDUMP_DIR: '',

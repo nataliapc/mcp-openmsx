@@ -241,7 +241,7 @@ Edit it to include the following JSON entry:
 
 | Variable | Description | Default Value | Example |
 |----------|-------------|---------------|---------|
-| `OPENMSX_EXECUTABLE` | Path or command to the openMSX executable | `openmsx` (Linux/macOS) / `openmsx.exe` (Windows) | `/usr/local/bin/openmsx` or `C:\Program Files\openMSX\openmsx.exe` |
+| `OPENMSX_EXECUTABLE` | Path or command to the openMSX executable | Auto-detected: `openmsx` (Linux), `/Applications/openMSX.app/Contents/MacOS/openmsx` (macOS), `openmsx.exe` (Windows) | `/usr/local/bin/openmsx` or `C:\Program Files\openMSX\openmsx.exe` |
 | `OPENMSX_SHARE_DIR` | Directory containing openMSX data files (machines, extensions, etc.) | System dependent | `/home/myuser/.openmsx/share` |
 | `OPENMSX_SCREENSHOT_DIR` | Directory where screenshots will be saved | Default for openmsx | `/myproject/screenshots` |
 | `OPENMSX_SCREENDUMP_DIR` | Directory where screen dumps will be saved | Default for openmsx | `/myproject/screendumps` |
