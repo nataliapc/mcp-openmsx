@@ -4,7 +4,7 @@ description: Use this skill to learn using mcp-openmsx tools to control and auto
 compatibility: Needs openMSX, Node.js/npx, and mcp-openmsx. Supports stdio (default) and HTTP transport modes.
 metadata:
   authors: https://github.com/nataliapc
-  version: "1.2.1"
+  version: "1.2.2"
 ---
 
 # MCP-OpenMSX Usage Guide
@@ -63,6 +63,8 @@ Detailed step-by-step guides for common workflows. ALWAYS load reference files i
 
 ## Tips & Best Practices
 
+- Use always `\r` (CR) as line terminators in BASIC programs. Avoid `\n` (LF) or `\r\n` (CRLF) to prevent parsing issues.
+- Always fetch the documentation of every BASIC command you use with the BASIC Wiki resource or `vector_db_query` to ensure correct syntax, parameters, and behaviors.
 - All addresses and values use hexadecimal format (e.g. `0x4000`, `0xA5`).
 - Always `emu_control.wait` a few seconds after `launch` to let the machine fully boot before interacting.
 - Use `screen_shot.as_image` to visually verify emulator state at any point.
