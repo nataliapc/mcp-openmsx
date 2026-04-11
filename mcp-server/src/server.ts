@@ -269,6 +269,15 @@ async function main()
 	}
 	emuDirectories.MACHINES_DIR = path.join(emuDirectories.OPENMSX_SHARE_DIR, 'machines');
 	emuDirectories.EXTENSIONS_DIR = path.join(emuDirectories.OPENMSX_SHARE_DIR, 'extensions');
+	if (!emuDirectories.OPENMSX_SCREENSHOT_DIR) {
+		emuDirectories.OPENMSX_SCREENSHOT_DIR = path.join(emuDirectories.OPENMSX_SHARE_DIR, 'screenshots');
+	}
+	if (!emuDirectories.OPENMSX_SCREENDUMP_DIR) {
+		emuDirectories.OPENMSX_SCREENDUMP_DIR = path.join(emuDirectories.OPENMSX_SHARE_DIR, 'screenshots');
+	}
+	if (!emuDirectories.OPENMSX_REPLAYS_DIR) {
+		emuDirectories.OPENMSX_REPLAYS_DIR = path.join(emuDirectories.OPENMSX_SHARE_DIR, 'replays');
+	}
 
 	VectorDB.setIndexDirectory(vectorDbDir);
 

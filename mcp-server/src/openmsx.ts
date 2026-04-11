@@ -5,53 +5,84 @@
  * @license GPL2
  */
 import fs from "fs/promises";
+import fsSync from "fs";
 import { extractDescriptionFromXML, decodeHtmlEntities, encodeHtmlEntities } from "./utils.js";
 import { spawn, ChildProcess } from 'child_process';
-import { createWriteStream, WriteStream } from 'fs';
+import net from 'net';
+import os from 'os';
 import path from 'path';
 
 /** True when running on Windows. Evaluated once at module load. */
 const IS_WINDOWS = process.platform === 'win32';
 
-
 /**
- * OpenMSX class for controlling the openMSX emulator via TCL commands over stdio (Linux/macOS)
- * or a Windows named pipe (Windows).
+ * OpenMSX class for controlling the openMSX emulator via TCL commands.
  *
- * Protocol summary (same XML protocol on all platforms):
- *   openMSX → stdout  : XML output including <openmsx-output>, <reply>, <log>, <update>
- *   controller → openMSX : XML commands via stdin (stdio mode) or named pipe (pipe mode)
+ * ## Protocol
  *
- * On Linux/macOS: openmsx -control stdio
- *   Commands are sent via the child process stdin; replies come on stdout.
+ * ### Linux/macOS
+ *   `openmsx -control stdio` — commands via stdin, responses via stdout.
  *
- * On Windows: openmsx -control pipe:<pipename>
- *   openMSX reads commands from \\.\pipe\<pipename> (a Windows named pipe).
- *   Replies/output are still written to stdout (captured by Node's stdio pipes).
- *   We write commands to the named pipe using a WriteStream opened on the pipe path.
+ * ### Windows
+ *   openMSX is compiled as /SUBSYSTEM:WINDOWS. Passing `stdio:'pipe'` to
+ *   Node.js spawn breaks the renderer (GUI subsystem app ignores pipe handles).
+ *   We spawn with `stdio: ['ignore', 'ignore', 'pipe']` so openMSX starts
+ *   normally with its own window.
  *
- * Reference: https://openmsx.org/manual/openmsx-control.html
+ *   openMSX always creates a TCP socket file at:
+ *     %TEMP%\openmsx-default\socket.<pid>
+ *   containing a port number (9938-9958). However, since openMSX 0.7.1 the
+ *   TCP socket requires **SSPI (Negotiate/NTLM) authentication** before it
+ *   accepts any XML commands. Without authentication, openMSX closes the
+ *   connection immediately (ECONNRESET).
+ *
+ *   SSPI handshake (variable rounds, loop until SEC_E_OK — typically 3):
+ *     each round: client → [4-byte BE length][SSPI token]
+ *                 server → [4-byte BE length][SSPI response]  (if SEC_I_CONTINUE_NEEDED)
+ *   Then XML protocol (no server read after SEC_E_OK):
+ *     client → `<openmsx-control>\n`
+ *     server → `<openmsx-output>\n`   (confirms session open)
+ *     client ↔ server: `<command>…</command>` / `<reply …>…</reply>`
+ *
+ *   npm package: node-expose-sspi (optional, Windows-only)
+ *   Reference: openMSX debugger ConnectDialog.cpp + DeZog openmsxremote.ts
+ *              https://openmsx.org/manual/openmsx-control.html
  */
+/** Callbacks shared between emu_launch and platform-specific connection methods. */
+interface LaunchCallbacks {
+    diag: (msg: string) => void;
+    safeResolve: (msg: string) => void;
+    isResolved: () => boolean;
+    onReady: (sendControlTag: boolean) => Promise<void>;
+}
+
 export class OpenMSX {
     private lastMachine: string | null = null;
     private process: ChildProcess | null = null;
     private isConnected: boolean = false;
 
-    // Windows named pipe write stream (only used on Windows with -control pipe)
-    private pipeWriter: WriteStream | null = null;
+    // Windows TCP socket — bidirectional after SSPI auth
+    private tcpSocket: net.Socket | null = null;
+    // Accumulated I/O data for readData() — shared by both platforms (never coexist)
+    private ioBuffer: string = '';
+    // Notify callback: fired when new I/O data arrives — shared by both platforms
+    private ioNotify: (() => void) | null = null;
+    // Serial command queue — ensures sendCommand calls never overlap on any platform
+    private commandQueue: Promise<string> = Promise.resolve('');
 
     /**
-     * Launch the openMSX emulator in stdio control mode (Linux/macOS)
-     * or pipe control mode (Windows).
-     * @param machine - MSX machine to emulate (e.g., 'Panasonic_FS-A1GT', 'C-BIOS_MSX2+')
-     * @param extensions - Array of extensions to load (e.g., ['fmpac', 'ide'])
-     * @returns Promise that resolves when the emulator is ready
+     * Launch the openMSX emulator.
+     * Linux/macOS: -control stdio via stdin/stdout pipes.
+     * Windows: spawn with ignore+ignore+pipe, TCP socket + SSPI auth.
      */
     async emu_launch(executable: string, machine: string, extensions: string[]): Promise<string> {
         return new Promise((resolve) => {
             let resolved = false;
-            let connectionTime: number | null = null;
-            const FATAL_ERROR_GRACE_PERIOD = 500; // 1/2 second grace period after connection
+            const diagLog: string[] = [];
+            const diag = (msg: string) => {
+                console.error(`[mcp-openmsx] ${msg}`);
+                diagLog.push(msg);
+            };
 
             const safeResolve = (message: string) => {
                 if (!resolved) {
@@ -61,155 +92,132 @@ export class OpenMSX {
             };
 
             try {
-                // Check if emulator is already running
                 if (this.process && !this.process.killed) {
-                    safeResolve(`Error: openMSX emulator instance is already running (currrent machine: ${this.lastMachine}). Close it first before launching a new one.`);
+                    safeResolve(`Error: openMSX emulator instance is already running (current machine: ${this.lastMachine}). Close it first.`);
                     return;
                 }
+                this.resetIO();
+                this.commandQueue = Promise.resolve(''); // reset queue for new session
 
-                // Clean up any leftover pipe writer from a previous session
-                // (e.g. if the process crashed and the exit handler didn't run)
-                this.closePipeWriter();
-
-                // Build command line arguments.
-                // On Windows, openMSX -control stdio has a known issue: the stdin reader
-                // thread blocks on read() and never unblocks cleanly when the pipe closes,
-                // causing openMSX to hang on exit. The correct mode for Windows is
-                // -control pipe:<name>, which uses a Windows named pipe for input and
-                // still writes replies/output to stdout.
-                // On Linux/macOS, -control stdio is correct and uses stdin/stdout directly.
-                // On Windows, use a unique pipe name based on PID to avoid collisions
-                // when multiple MCP server instances run simultaneously.
-                const pipeName = IS_WINDOWS ? `openmsx-mcp-${process.pid}` : '';
-                const controlArg = IS_WINDOWS ? `pipe:${pipeName}` : 'stdio';
-
-                const args: string[] = ['-control', controlArg];
-                // Add machine parameter if specified
+                // Build args
+                const args: string[] = [];
+                if (!IS_WINDOWS) {
+                    args.push('-control', 'stdio');
+                }
                 if (machine) {
-                    this.lastMachine = machine; // Store last machine for future reference
+                    this.lastMachine = machine;
                     args.push('-machine', machine);
                 }
-                // Add extensions if specified
-                if (extensions && extensions.length > 0) {
-                    extensions.forEach(ext => {
-                        args.push('-ext', ext);
-                    });
+                if (extensions?.length > 0) {
+                    extensions.forEach(ext => args.push('-ext', ext));
                 }
 
-                // Launch openMSX.
-                // On both modes, stdout/stderr are piped so we can read replies and errors.
-                // On stdio mode, stdin is also piped (we write commands there).
-                // On pipe mode, stdin is ignored ('ignore') — openMSX reads from the named pipe.
+                diag(`platform=${process.platform} IS_WINDOWS=${IS_WINDOWS}`);
+                diag(`spawn: "${executable}" ${args.join(' ')}`);
+
+                // Windows: stdin+stdout ignored (GUI subsystem — pipes don't work).
+                // Linux/macOS: all three streams piped.
                 this.process = spawn(executable, args, {
-                    stdio: IS_WINDOWS ? ['ignore', 'pipe', 'pipe'] : ['pipe', 'pipe', 'pipe']
+                    stdio: IS_WINDOWS ? ['ignore', 'ignore', 'pipe'] : ['pipe', 'pipe', 'pipe'],
+                    windowsHide: false
                 });
-                if (!this.process.stdout || !this.process.stderr) {
+
+                if (IS_WINDOWS && !this.process.stderr) {
+                    safeResolve('Error: Failed to create stderr pipe');
+                    return;
+                }
+                if (!IS_WINDOWS && (!this.process.stdout || !this.process.stderr || !this.process.stdin)) {
                     safeResolve('Error: Failed to create stdio pipes');
                     return;
                 }
-                if (!IS_WINDOWS && !this.process.stdin) {
-                    safeResolve('Error: Failed to create stdin pipe');
-                    return;
-                }
-                // Check if process was launched successfully
                 if (!this.process.pid || this.process.killed) {
-                    const stderrMessage = this.process.stderr.read()?.toString() || 'Failed to launch openMSX process';
-                    this.process = null; // Reset process to null on failure
-                    this.isConnected = false;
-                    safeResolve(`Error: ${stderrMessage}`);
+                    this.process = null;
+                    safeResolve('Error: Failed to launch openMSX process');
                     return;
                 }
+                diag(`process spawned PID=${this.process.pid}`);
 
-                // Handle process events
                 this.process.on('error', (error: NodeJS.ErrnoException) => {
-                    console.error('openMSX process error:', error);
+                    diag(`process error: code=${error.code} ${error.message}`);
                     if (error.code === 'ENOENT') {
                         safeResolve(
                             `Error: openMSX executable not found: "${executable}". ` +
-                            `Set the OPENMSX_EXECUTABLE environment variable to the full path of the openMSX binary. ` +
-                            `On macOS the standard path is /Applications/openMSX.app/Contents/MacOS/openmsx; ` +
-                            `on Windows it is typically C:\\Program Files\\openMSX\\openmsx.exe; ` +
-                            `on Linux it is usually 'openmsx' (in PATH after package install).`
+                            `Set OPENMSX_EXECUTABLE to the full path. ` +
+                            `On Windows: C:\\Users\\<user>\\openMSX\\openmsx.exe or ` +
+                            `C:\\Program Files\\openMSX\\openmsx.exe; ` +
+                            `on macOS: /Applications/openMSX.app/Contents/MacOS/openmsx; ` +
+                            `on Linux: openmsx (in PATH).`
                         );
                     } else {
                         safeResolve(`Error: ${error.message}`);
                     }
                 });
+
                 this.process.on('exit', (code, signal) => {
+                    diag(`process exit: code=${code} signal=${signal} isConnected=${this.isConnected}`);
+                    if (!resolved) {
+                        safeResolve(
+                            `Error: openMSX process exited unexpectedly (code=${code}, signal=${signal}). ` +
+                            `Diagnostics: ${diagLog.join(' | ')}`
+                        );
+                    }
                     this.isConnected = false;
                     this.process = null;
-                    this.closePipeWriter();
+                    this.resetIO();
                 });
 
-                // Wait for the opening XML tag to confirm connection
-                this.process.stdout.on('data', (data) => {
-                    const output = data.toString();
-                    if (output.includes('<openmsx-output>')) {
-                        this.isConnected = true;
-                        connectionTime = Date.now();
-                        
-                        // Don't resolve immediately, wait for potential fatal errors
-                        setTimeout(async () => {
-                            // Only resolve if no fatal error occurred during grace period
-                            if (!resolved) {
-                                try {
-                                    // On Windows, open the named pipe for writing commands.
-                                    // openMSX has already created the pipe server side by now.
-                                    if (IS_WINDOWS) {
-                                        const pipePath = `\\\\.\\pipe\\${pipeName}`;
-                                        await this.openWindowsPipe(pipePath);
-                                    }
-
-                                    this.writeData('<openmsx-control>\n');
-                                    // Set save settings on exit off
-                                    this.sendCommand('set save_settings_on_exit off');
-                                    // Set renderer to SDL
-                                    this.sendCommand('set renderer SDLGL-PP');
-                                    // set machine on
-                                    this.sendCommand('set power on');
-                                    // start reverse replay mode
-                                    this.sendCommand('reverse start');
-                                    // Return success message
-                                    let result = 'Ok: openMSX emulator launched successfully';
-                                    if (machine) {
-                                        result += ` with machine "${machine}"`;
-                                    }
-                                    if (extensions && extensions.length > 0) {
-                                        if (machine) {
-                                            result += ' and';
-                                        }
-                                        result += ` with extensions: "${extensions.join('", "')}"`;
-                                    }
-                                    result += ', is powered on, and replay mode is started.';
-                                    safeResolve(result);
-                                } catch (error) {
-                                    safeResolve(`Error: Failed to send control commands - ${error instanceof Error ? error.message : 'Unknown error'}`);
-                                }
-                            }
-                        }, FATAL_ERROR_GRACE_PERIOD);
-                    }
-                });
-
-                // Handle stderr - check for fatal errors during grace period
-                this.process.stderr.on('data', (data) => {
-                    const errorOutput = data.toString();
-                    
-                    // Check for fatal errors before connection or during grace period
-                    const isInGracePeriod = connectionTime && (Date.now() - connectionTime) < FATAL_ERROR_GRACE_PERIOD;
-                    if (errorOutput.includes('Fatal error:') && (!this.isConnected || isInGracePeriod)) {
+                this.process.stderr!.on('data', (data: Buffer) => {
+                    const msg = data.toString().trim();
+                    if (!this.isConnected) diag(`stderr: ${msg.substring(0, 300)}`);
+                    if (msg.includes('Fatal error:') && !this.isConnected) {
                         this.forceClose();
-                        safeResolve(`Error: ${errorOutput.trim()}`);
-                        return;
+                        safeResolve(`Error: ${msg}`);
                     }
                 });
 
-                // Set timeout for connection
+                const onOpenMSXReady = async (sendControlTag: boolean) => {
+                    diag('onOpenMSXReady: sending initial commands');
+                    // On Linux/macOS: we receive <openmsx-output> first unprompted,
+                    // then we must send <openmsx-control> to start the session.
+                    // On Windows: we already sent <openmsx-control> to trigger <openmsx-output>,
+                    // so we must NOT send it again.
+                    if (sendControlTag) {
+                        this.writeData('<openmsx-control>\n');
+                    }
+                    // await each command so replies are consumed in order and don't
+                    // contaminate ioBuffer for subsequent user commands
+                    await this.sendCommand('set save_settings_on_exit off');
+                    await this.sendCommand('set renderer SDLGL-PP');
+                    await this.sendCommand('set power on');
+                    await this.sendCommand('reverse start');
+                    let result = 'Ok: openMSX emulator launched successfully';
+                    if (machine) result += ` with machine "${machine}"`;
+                    if (extensions?.length > 0) {
+                        if (machine) result += ' and';
+                        result += ` with extensions: "${extensions.join('", "')}"`;
+                    }
+                    result += ', is powered on, and replay mode is started.';
+                    safeResolve(result);
+                };
+
+                const ctx: LaunchCallbacks = {
+                    diag, safeResolve,
+                    isResolved: () => resolved,
+                    onReady: onOpenMSXReady,
+                };
+                if (IS_WINDOWS) {
+                    this.launchConnectWindows(ctx);
+                } else {
+                    this.launchConnectLinux(ctx);
+                }
+
+                // Global timeout — 20s to allow for SSPI auth + slow VMs
                 setTimeout(() => {
                     if (!this.isConnected) {
                         this.emu_close();
-                        safeResolve('Error: Timeout waiting for openMSX to start');
+                        safeResolve(`Error: Timeout waiting for openMSX to start. Diagnostics: ${diagLog.join(' | ')}`);
                     }
-                }, 5000); // 5 second timeout
+                }, 20000);
 
             } catch (error) {
                 safeResolve(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -218,110 +226,343 @@ export class OpenMSX {
     }
 
     /**
-     * Open a Windows named pipe for writing commands to openMSX.
-     * openMSX creates the pipe server when launched with -control pipe:<name>.
-     * We connect as a client (write-only) after openMSX signals it's ready.
-     * @param pipePath - Full Windows named pipe path, e.g. \\.\pipe\openmsx-mcp-1234
+     * Windows connection: TCP socket + SSPI authentication.
+     * Polls for the socket file, connects, authenticates, and starts the XML session.
      */
-    private openWindowsPipe(pipePath: string): Promise<void> {
-        return new Promise((resolve, reject) => {
+    private launchConnectWindows(ctx: LaunchCallbacks): void {
+        const tmpDir = process.env.TEMP ?? process.env.TMP ??
+                       path.join(os.homedir(), 'AppData', 'Local', 'Temp');
+        const socketFile = path.join(tmpDir, 'openmsx-default', `socket.${this.process!.pid}`);
+        ctx.diag(`waiting for socket file: ${socketFile}`);
+
+        this.connectWindowsTCP(socketFile).then(async ({ socket, port }) => {
+            ctx.diag(`TCP connected on port ${port}`);
+            this.tcpSocket = socket;
+            this.ioBuffer = '';
+
+            socket.on('error', e => {
+                ctx.diag(`TCP socket error: ${e.message}`);
+                if (!ctx.isResolved()) ctx.safeResolve(`Error: TCP socket error: ${e.message}`);
+            });
+            socket.on('close', () => {
+                ctx.diag('TCP socket closed');
+                this.tcpSocket = null;
+                this.isConnected = false;
+            });
+
+            // Register the main data handler BEFORE performSspiAuth.
+            // This prevents any gap where data could be discarded:
+            // performSspiAuth adds its own 'data' listener that runs in
+            // parallel — both handlers receive data, but:
+            //  - during SSPI: ioBuffer accumulates binary SSPI tokens
+            //    (harmless, won't contain '<openmsx-output>')
+            //  - after SSPI: ioBuffer is cleared, then <openmsx-control>
+            //    is sent, and <openmsx-output> is detected normally.
+            socket.on('data', (data: Buffer) => {
+                const chunk = data.toString();
+
+                // Accumulate all incoming data
+                this.ioBuffer += chunk;
+
+                // Signal readData() that new data arrived (notify pattern)
+                if (this.ioNotify) {
+                    const notify = this.ioNotify;
+                    this.ioNotify = null;
+                    notify();
+                }
+
+                // During launch: detect <openmsx-output> in the accumulated stream
+                if (!this.isConnected && this.ioBuffer.includes('<openmsx-output>')) {
+                    this.isConnected = true;
+                    // Discard everything up to and including <openmsx-output>
+                    this.ioBuffer = this.ioBuffer.substring(
+                        this.ioBuffer.indexOf('<openmsx-output>') + '<openmsx-output>'.length
+                    );
+                    setTimeout(async () => {
+                        if (!ctx.isResolved()) {
+                            try { await ctx.onReady(false); }  // Windows: don't resend <openmsx-control>
+                            catch (e) { ctx.safeResolve(`Error: Failed to send control commands - ${e instanceof Error ? e.message : e}`); }
+                        }
+                    }, 300);
+                }
+            });
+
+            // SSPI authentication (adds its own parallel 'data' listener internally)
             try {
-                // Node.js fs.createWriteStream supports Windows named pipe paths.
-                // The pipe must already exist (created by openMSX) at this point.
-                const writer = createWriteStream(pipePath, { flags: 'r+' });
-                writer.on('open', () => {
-                    this.pipeWriter = writer;
-                    resolve();
-                });
-                writer.on('error', (err) => {
-                    reject(new Error(`Failed to open Windows named pipe "${pipePath}": ${err.message}`));
-                });
-            } catch (err) {
-                reject(new Error(`Failed to create Windows named pipe writer: ${err instanceof Error ? err.message : err}`));
+                ctx.diag('starting SSPI authentication...');
+                await this.performSspiAuth(socket);
+                ctx.diag('SSPI authentication successful');
+            } catch (e) {
+                ctx.safeResolve(
+                    `Error: SSPI authentication failed: ${e instanceof Error ? e.message : e}. ` +
+                    `Make sure 'node-expose-sspi' is installed: npm install node-expose-sspi`
+                );
+                return;
+            }
+
+            // Clear SSPI binary garbage from ioBuffer before XML session
+            this.ioBuffer = '';
+
+            // Send <openmsx-control> to initiate the XML session.
+            // On Windows/TCP, openMSX sends <openmsx-output> in response.
+            ctx.diag('sending <openmsx-control> to start XML session');
+            socket.write('<openmsx-control>\n');
+
+        }).catch(err => {
+            ctx.diag(`connectWindowsTCP failed: ${err.message}`);
+            ctx.safeResolve(`Error: ${err.message}`);
+        });
+    }
+
+    /**
+     * Linux/macOS connection: stdio pipes.
+     * Registers stdout handler for ioBuffer accumulation and <openmsx-output> detection.
+     */
+    private launchConnectLinux(ctx: LaunchCallbacks): void {
+        const FATAL_ERROR_GRACE_PERIOD = 500;
+        let connectionTime: number | null = null;
+
+        this.process!.stdout!.on('data', (data: Buffer) => {
+            const output = data.toString();
+            if (!this.isConnected) {
+                if (output.includes('<openmsx-output>')) {
+                    ctx.diag('<openmsx-output> detected on stdout');
+                    this.isConnected = true;
+                    this.ioBuffer = '';
+                    connectionTime = Date.now();
+                    setTimeout(async () => {
+                        if (!ctx.isResolved()) {
+                            try { await ctx.onReady(true); }  // Linux/macOS: must send <openmsx-control>
+                            catch (e) { ctx.safeResolve(`Error: Failed to send control commands - ${e instanceof Error ? e.message : e}`); }
+                        }
+                    }, FATAL_ERROR_GRACE_PERIOD);
+                }
+            } else {
+                // Accumulate for readData() — persistent shared ioBuffer
+                this.ioBuffer += output;
+                if (this.ioNotify) {
+                    const notify = this.ioNotify;
+                    this.ioNotify = null;
+                    notify();
+                }
+            }
+        });
+
+        this.process!.stderr!.on('data', (data: Buffer) => {
+            const msg = data.toString().trim();
+            const isInGracePeriod = connectionTime && (Date.now() - connectionTime) < FATAL_ERROR_GRACE_PERIOD;
+            if (msg.includes('Fatal error:') && (!this.isConnected || isInGracePeriod)) {
+                this.forceClose();
+                ctx.safeResolve(`Error: ${msg}`);
             }
         });
     }
 
     /**
-     * Close and destroy the Windows named pipe writer if open.
+     * SSPI (Negotiate/NTLM) authentication handshake — Windows only.
+     * Required since openMSX 0.7.1 for TCP socket connections.
+     * Uses `node-expose-sspi` v0.1.x optional npm package.
+     *
+     * Reference C++ implementation: openMSX debugger SspiNegotiateClient.cpp
+     * Protocol: loop until SEC_E_OK — each round:
+     *   client → [4-byte BE length][SSPI token]
+     *   server → [4-byte BE length][SSPI response]  (if SEC_I_CONTINUE_NEEDED)
+     * After SEC_E_OK: no server read — proceed directly with XML protocol.
      */
-    private closePipeWriter(): void {
-        if (this.pipeWriter) {
-            try { this.pipeWriter.destroy(); } catch (_) { /* ignore */ }
-            this.pipeWriter = null;
+    private async performSspiAuth(socket: net.Socket): Promise<void> {
+        let nes: any;
+        try {
+            const { createRequire } = await import('module');
+            const req = createRequire(import.meta.url);
+            nes = req('node-expose-sspi');
+        } catch (e) {
+            throw new Error(
+                `node-expose-sspi not available (${e instanceof Error ? e.message : e}). ` +
+                `Install with: npm install node-expose-sspi`
+            );
+        }
+
+        // Accumulate TCP data for length-prefixed reads during SSPI phase.
+        // Pattern: onSspiData appends to buffer and NOTIFIES (does not clear).
+        // readLengthPrefixed checks the buffer size after each notification.
+        let sspiBuffer = Buffer.alloc(0);
+        let sspiNotify: (() => void) | null = null;
+        const onSspiData = (chunk: Buffer) => {
+            sspiBuffer = Buffer.concat([sspiBuffer, chunk]);
+            if (sspiNotify) {
+                const notify = sspiNotify;
+                sspiNotify = null;
+                notify();  // just signal — buffer stays intact
+            }
+        };
+        socket.on('data', onSspiData);
+
+        // Wait until new data arrives (doesn't clear the buffer)
+        const waitMore = (): Promise<void> => new Promise(resolve => {
+            sspiNotify = resolve;
+        });
+
+        const readLengthPrefixed = async (): Promise<Buffer> => {
+            // Wait until we have at least the 4-byte length prefix
+            while (sspiBuffer.length < 4) await waitMore();
+            const len = sspiBuffer.readUInt32BE(0);
+            const total = 4 + len;
+            // Wait until the full payload has arrived
+            while (sspiBuffer.length < total) await waitMore();
+            const result = sspiBuffer.slice(4, total);
+            sspiBuffer = sspiBuffer.slice(total);  // consume only what we read
+            return result;
+        };
+
+        const sendToken = (token: ArrayBuffer): void => {
+            const buf = Buffer.from(token);
+            const lenBuf = Buffer.alloc(4);
+            lenBuf.writeUInt32BE(buf.length, 0);
+            socket.write(lenBuf);
+            socket.write(buf);
+        };
+
+        try {
+            // node-expose-sspi v0.1.x API:
+            //   AcquireCredentialsHandle → CredentialWithExpiry { credential, tsExpiry }
+            //   InitializeSecurityContextInput.credential = CredHandle (the .credential property)
+            //   InitializeSecurityContextInput.SecBufferDesc = server's token (NOT serverSecurityContext)
+            //   InitializeSecurityContextInput.contextReq = string[] of ISC_REQ_* flags
+            //   Flags from openMSX C++ ref: ISC_REQ_ALLOCATE_MEMORY | ISC_REQ_CONNECTION | ISC_REQ_STREAM
+            const credWithExpiry = nes.sspi.AcquireCredentialsHandle({
+                packageName: 'Negotiate',
+                credentialUse: 'SECPKG_CRED_OUTBOUND',
+            });
+            const credential = credWithExpiry.credential;
+            const packageInfo = nes.sspi.QuerySecurityPackageInfo('Negotiate');
+            const ISC_FLAGS = ['ISC_REQ_ALLOCATE_MEMORY', 'ISC_REQ_CONNECTION', 'ISC_REQ_STREAM'];
+
+            let contextHandle: any = undefined;
+            let serverSecBufDesc: any = undefined;
+
+            // Loop until SEC_E_OK (mirrors C++ reference implementation)
+            while (true) {
+                const ctxInput: any = {
+                    credential,
+                    targetName: '',
+                    cbMaxToken: packageInfo.cbMaxToken,
+                    contextReq: ISC_FLAGS,
+                    targetDataRep: 'SECURITY_NETWORK_DREP',
+                };
+                if (contextHandle !== undefined) ctxInput.contextHandle = contextHandle;
+                if (serverSecBufDesc !== undefined) ctxInput.SecBufferDesc = serverSecBufDesc;
+
+                const clientCtx = nes.sspi.InitializeSecurityContext(ctxInput);
+                contextHandle = clientCtx.contextHandle;
+
+                // Send our token to the server (if non-empty)
+                const tokenBuf = clientCtx.SecBufferDesc?.buffers?.[0];
+                if (tokenBuf && (tokenBuf as ArrayBuffer).byteLength > 0) {
+                    sendToken(tokenBuf as ArrayBuffer);
+                }
+
+                if (clientCtx.SECURITY_STATUS === 'SEC_E_OK') {
+                    // Auth complete — no final read from server, proceed to XML
+                    break;
+                }
+                if (clientCtx.SECURITY_STATUS !== 'SEC_I_CONTINUE_NEEDED') {
+                    throw new Error(`SSPI error: ${clientCtx.SECURITY_STATUS}`);
+                }
+
+                // Read server's response token
+                const response = await readLengthPrefixed();
+                const responseAB = response.buffer.slice(
+                    response.byteOffset,
+                    response.byteOffset + response.byteLength
+                );
+                serverSecBufDesc = { ulVersion: 0, buffers: [responseAB] };
+            }
+        } finally {
+            // Remove SSPI data handler — main handler will be added after this returns
+            socket.removeListener('data', onSspiData);
         }
     }
 
     /**
-     * Close the openMSX emulator process
-     * @returns Promise that resolves when the process is closed
+     * Poll for the TCP socket file, read the port, connect.
      */
-    async emu_close(): Promise<string> {
-        return new Promise((resolve) => {
-            if (!this.process) {
-                resolve("Error: No emulator process running");
-                return;
-            }
-
-            this.process.on('exit', () => {
-                this.lastMachine = null; // Clear last machine on exit
-                this.isConnected = false;
-                this.process = null;
-                this.closePipeWriter();
-                resolve("Ok: Emulator process closed successfully");
-            });
-
-            this.process.on('error', (error: Error) => {
-                resolve(`Error: error closing emulator: ${error.message}`);
-            });
-
-            // Try graceful shutdown first
-            if (this.isConnected) {
-                try {
-                    this.sendCommand('exit');
-                } catch (error) {
-                    // If writing fails, force kill.
-                    // Use no-argument kill() for cross-platform safety:
-                    // on POSIX it sends SIGTERM; on Windows it calls TerminateProcess().
-                    try { this.process.kill(); } catch (_) { /* ignore */ }
+    private connectWindowsTCP(socketFile: string): Promise<{ socket: net.Socket; port: number }> {
+        return new Promise((resolve, reject) => {
+            const maxWaitMs = 8000;
+            const pollMs = 200;
+            let elapsed = 0;
+            const poll = () => {
+                if (fsSync.existsSync(socketFile)) {
+                    let port: number;
+                    try { port = parseInt(fsSync.readFileSync(socketFile, 'utf8').trim(), 10); }
+                    catch (e) { return reject(new Error(`Cannot read socket file: ${e}`)); }
+                    if (!port || isNaN(port)) return reject(new Error(`Invalid port in socket file`));
+                    const sock = net.createConnection(port, '127.0.0.1');
+                    sock.once('connect', () => resolve({ socket: sock, port }));
+                    sock.once('error', err => { sock.destroy(); reject(new Error(`TCP connect to ${port} failed: ${err.message}`)); });
+                } else {
+                    elapsed += pollMs;
+                    if (elapsed >= maxWaitMs) {
+                        reject(new Error(`openMSX socket file not found after ${maxWaitMs}ms: ${socketFile}`));
+                    } else {
+                        setTimeout(poll, pollMs);
+                    }
                 }
-            } else {
-                this.forceClose();
-                resolve("Error: Emulator process had to be force killed");
-            }
-
-            // Force kill after timeout
-            setTimeout(() => {
-                this.forceClose();
-                resolve("Error: Timeout. Emulator process had to be force killed");
-            }, 1000);
+            };
+            poll();
         });
     }
 
-    /**
-     * Get the status of the openMSX emulator using machine_info command
-     * @returns Promise<string> - JSON string with machine information or error message
-     */
+    private resetIO(): void {
+        if (this.tcpSocket) {
+            try { this.tcpSocket.destroy(); } catch (_) { /* ignore */ }
+            this.tcpSocket = null;
+        }
+        this.ioBuffer = '';
+        this.ioNotify = null;
+    }
+
+    async emu_close(): Promise<string> {
+        return new Promise((resolve) => {
+            let resolved = false;
+            const safeResolve = (message: string) => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(message);
+                }
+            };
+            if (!this.process) { safeResolve("Error: No emulator process running"); return; }
+            this.process.on('exit', () => {
+                this.lastMachine = null;
+                this.isConnected = false;
+                this.process = null;
+                this.resetIO();
+                safeResolve("Ok: Emulator process closed successfully");
+            });
+            this.process.on('error', (error: Error) => safeResolve(`Error: error closing emulator: ${error.message}`));
+            if (this.isConnected) {
+                this.sendCommand('exit').catch(() => {
+                    try { this.process?.kill(); } catch (_) { /* ignore */ }
+                });
+            } else {
+                this.forceClose();
+                safeResolve("Error: Emulator process had to be force killed");
+            }
+            setTimeout(() => { this.forceClose(); safeResolve("Error: Timeout. Emulator process had to be force killed"); }, 1000);
+        });
+    }
+
     async emu_status(): Promise<string> {
         try {
             const response = await this.sendCommand('machine_info');
-            if (response.startsWith('Error:')) {
-                return response;
-            }
-            // Parse machine_info output into key-value pairs
+            if (response.startsWith('Error:')) return response;
             const skipInfo = ['issubslotted', 'input_port', 'slot', 'isexternalslot', 'output_port'];
             const parameters = response.trim().split(' ');
             const machineInfo: Record<string, string> = {};
             for (const param of parameters) {
-                const trimmedLine = param.trim();
-                // Skip certain parameters that are not useful
-                if (skipInfo.includes(trimmedLine)) {
-                    continue;
-                }
-                if (trimmedLine) {
-                    const value = await this.sendCommand(`machine_info ${trimmedLine}`);
-                    machineInfo[trimmedLine] = value.trim();
-                }
+                const trimmed = param.trim();
+                if (skipInfo.includes(trimmed) || !trimmed) continue;
+                machineInfo[trimmed] = (await this.sendCommand(`machine_info ${trimmed}`)).trim();
             }
             return JSON.stringify(machineInfo, null, 2);
         } catch (error) {
@@ -332,174 +573,117 @@ export class OpenMSX {
     async emu_isInBasic(): Promise<boolean> {
         try {
             const response = await this.sendCommand('slotselect');
-            return response.includes('0000: slot 0') && response.includes('4000: slot 0')
-        } catch (error) {
-            return false;
-        }
+            return response.includes('0000: slot 0') && response.includes('4000: slot 0');
+        } catch (_) { return false; }
     }
 
-    /**
-     * Get the list of machines available in the openMSX emulator
-     * @returns Promise<object> - object with machine names and descriptions or error message
-     */
     async getMachineList(machinesDirectory: string): Promise<string> {
-        // Read the machines directory
-        let machines: { name: string; description: string }[] = [];
-        let machinesList = "Error: No machines found.";
+        return this.getXMLList(machinesDirectory, 'machines');
+    }
+
+    async getExtensionList(extensionDirectory: string): Promise<string> {
+        return this.getXMLList(extensionDirectory, 'extensions');
+    }
+
+    private async getXMLList(directory: string, entityName: string): Promise<string> {
         try {
-            const allFiles = await fs.readdir(machinesDirectory);
-            machines = await Promise.all(
-                allFiles
-                    .filter((file: string) => file.endsWith('.xml'))
-                    .map(async (file: string) => {
-                        return {
-                            name: file.replace('.xml', ''),
-                            description: await extractDescriptionFromXML(path.join(machinesDirectory, file))
-                        };
-                    })
+            const allFiles = await fs.readdir(directory);
+            const items = await Promise.all(
+                allFiles.filter(f => f.endsWith('.xml')).map(async f => ({
+                    name: f.replace('.xml', ''),
+                    description: await extractDescriptionFromXML(path.join(directory, f))
+                }))
             );
-            if (machines.length !== 0) {
-                machinesList = JSON.stringify(machines, null, 2);
-            }
-            return machinesList;
+            return items.length ? JSON.stringify(items, null, 2) : `Error: No ${entityName} found.`;
         } catch (error) {
-            return `Error: error reading machines directory - ${error instanceof Error ? error.message : error}`;
+            return `Error: error reading ${entityName} directory - ${error instanceof Error ? error.message : error}`;
         }
     }
 
     /**
-     * Get the list of extensions available in the openMSX emulator
-     * @returns Promise<object> - object with extension names and descriptions or error message
-     */
-    async getExtensionList(extensionDirectory: string): Promise<string> {
-        // Read the extensions directory
-        let extensions: { name: string; description: string }[] = [];
-        let extensionsList = "Error: No extensions found.";
-        try {
-            const allFiles = await fs.readdir(extensionDirectory);
-            extensions = await Promise.all(
-                allFiles
-                    .filter((file: string) => file.endsWith('.xml'))
-                    .map(async (file: string) => {
-                        return {
-                            name: file.replace('.xml', ''),
-                            description: await extractDescriptionFromXML(path.join(extensionDirectory, file))
-                        };
-                    })
-            );
-            if (extensions.length !== 0) {
-                extensionsList = JSON.stringify(extensions, null, 2);
-            }
-            return extensionsList;
-        } catch (error) {
-            return `Error: error reading extensions directory - ${error instanceof Error ? error.message : error}`;
-        }
-    };
-
-    /**
-     * Send a command to the openMSX emulator and return the response
-     * @param command - XML command to send to the emulator
-     * @returns string - resulting response from the emulator or an error message
+     * Send a TCL command to openMSX and return the response.
+     *
+     * Internally serialized via a promise queue so concurrent callers (with or
+     * without `await`) never overlap — each command waits for the previous one
+     * to complete before writing to the channel and reading the reply.
+     * This is safe on all platforms (Linux/macOS stdio and Windows TCP).
      */
     async sendCommand(command: string): Promise<string> {
-        try {
-            // Send command
-            this.writeData(`<command>${encodeHtmlEntities(command)}</command>\n`);
-            // Read response using readData()
-            const output = (await this.readData()).trim();
-            // Look for reply tags in the output
-            const replyMatch = output.match(/<reply result="(ok|nok)"[^>]*>(.*?)<\/reply>/s);
-            if (replyMatch) {
-                const outputContent = decodeHtmlEntities(replyMatch[2].trim());
-                if (replyMatch[1] === 'ok') {
-                    return outputContent;
-                } else {
-                    return `Error: ${outputContent}`;
+        const execute = async (): Promise<string> => {
+            try {
+                this.writeData(`<command>${encodeHtmlEntities(command)}</command>\n`);
+                const output = (await this.readData()).trim();
+                const replyMatch = output.match(/<reply result="(ok|nok)"[^>]*>(.*?)<\/reply>/s);
+                if (replyMatch) {
+                    const content = decodeHtmlEntities(replyMatch[2].trim());
+                    return replyMatch[1] === 'ok' ? content : `Error: ${content}`;
                 }
+                return decodeHtmlEntities(output);
+            } catch (error) {
+                return `Error: ${error instanceof Error ? error.message : error}`;
             }
-            // Return raw output with HTML entities decoded
-            return decodeHtmlEntities(output.trim());
-        } catch (error) {
-            return `Error: ${error instanceof Error ? error.message : error}`;
-        }
+        };
+        // Chain onto the queue: wait for the previous command to finish, then run
+        const result = this.commandQueue.then(execute, execute);
+        // Update the queue tail — swallow errors so the chain never breaks
+        this.commandQueue = result.then(() => '', () => '');
+        return result;
     }
 
-    /**
-     * Write data to openMSX.
-     * On Linux/macOS: writes to the child process stdin.
-     * On Windows: writes to the named pipe (pipeWriter).
-     * @param data - XML command or data to send
-     */
-    writeData(data: string): void {
-        if (!this.process || !this.isConnected) {
-            throw new Error('openMSX process not running or not connected');
-        }
+    private writeData(data: string): void {
+        if (!this.process || !this.isConnected) throw new Error('openMSX process not running or not connected');
         if (IS_WINDOWS) {
-            // Windows: send via named pipe
-            if (!this.pipeWriter || this.pipeWriter.destroyed) {
-                throw new Error('Windows named pipe not open');
-            }
-            this.pipeWriter.write(data);
+            if (!this.tcpSocket || this.tcpSocket.destroyed) throw new Error('Windows TCP socket not open');
+            this.tcpSocket.write(data);
         } else {
-            // Linux/macOS: send via child process stdin
-            if (!this.process.stdin) {
-                throw new Error('openMSX stdin not available');
-            }
+            if (!this.process.stdin) throw new Error('openMSX stdin not available');
             this.process.stdin.write(data);
         }
     }
 
-    /**
-     * Read data from openMSX process stdout
-     * @returns Promise<string> - The data received from stdout
-     */
     private readData(): Promise<string> {
         return new Promise((resolve, reject) => {
-            if (!this.process || !this.process.stdout || !this.isConnected) {
-                reject(new Error('openMSX process not running or not connected'));
-                return;
+            if (!this.isConnected) { reject(new Error('openMSX process not running or not connected')); return; }
+            if (IS_WINDOWS) {
+                if (!this.tcpSocket || this.tcpSocket.destroyed) { reject(new Error('Windows TCP socket not open')); return; }
+            } else {
+                if (!this.process?.stdout) { reject(new Error('openMSX stdout not available')); return; }
             }
-            const onData = (data: Buffer) => {
-                this.process!.stdout!.removeListener('data', onData);
-                resolve(data.toString());
+            // Unified for both platforms: accumulate in ioBuffer until a complete
+            // <reply>…</reply> block, then extract and return it.
+            const RESPONSE_TIMEOUT = 10000;
+            const timer = setTimeout(() => {
+                this.ioNotify = null;
+                this.ioBuffer = '';
+                reject(new Error('Timeout waiting for openMSX response'));
+            }, RESPONSE_TIMEOUT);
+            const tryExtractReply = () => {
+                const end = this.ioBuffer.indexOf('</reply>');
+                if (end !== -1) {
+                    clearTimeout(timer);
+                    const full = this.ioBuffer.substring(0, end + '</reply>'.length);
+                    this.ioBuffer = this.ioBuffer.substring(end + '</reply>'.length);
+                    resolve(full);
+                } else {
+                    this.ioNotify = tryExtractReply;
+                }
             };
-            this.process.stdout.on('data', onData);
+            tryExtractReply();
         });
     }
 
-    /**
-     * Destructor - Clean up resources and close emulator if running
-     * This method should be called when the instance is no longer needed
-     */
     async destroy(): Promise<void> {
-        if (this.process && !this.process.killed) {
-            await this.emu_close();
-        }
+        if (this.process && !this.process.killed) await this.emu_close();
     }
 
-    /**
-     * Force close the emulator immediately (synchronous)
-     * Used for emergency shutdown when async methods may not work
-     */
     forceClose(): void {
         if (this.process && !this.process.killed) {
-            try {
-                // 'SIGKILL' is accepted on Windows too (maps to TerminateProcess).
-                // No-argument kill() is also acceptable here, but SIGKILL makes
-                // the intent explicit: we want unconditional termination.
-                this.process.kill('SIGKILL');
-            } catch (error) {
-                // Ignore errors during force close
-            }
+            try { this.process.kill('SIGKILL'); } catch (_) { /* ignore */ }
             this.process = null;
             this.isConnected = false;
         }
-        this.closePipeWriter();
+        this.resetIO();
     }
-
 }
 
-/**
- * Global instance of OpenMSX for emulator control
- */
 export const openMSXInstance = new OpenMSX();

@@ -11,7 +11,7 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus, sleepWithAbort } from "./utils.js";
+import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus, sleepWithAbort, ensureDirectoryExists, tclPath } from "./utils.js";
 import { EmuDirectories } from "./server.js";
 import { RegResource, getRegisteredResourcesList } from "./server_resources.js";
 import { resolveLaunchParams } from "./server_elicitations.js";
@@ -1286,11 +1286,17 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = `reverse_frame ${frames}`;
 					break;
 				case "saveReplay":
-					if (filename) filename = path.join(emuDirectories.OPENMSX_REPLAYS_DIR, filename);
+					if (filename) {
+						if (!filename.endsWith('.omr')) filename += '.omr';
+						filename = tclPath(path.join(emuDirectories.OPENMSX_REPLAYS_DIR, filename));
+					}
 					tclCommand = `reverse savereplay ${filename || ''}`;
 					break;
 				case "loadReplay":
-					if (filename) filename = path.join(emuDirectories.OPENMSX_REPLAYS_DIR, filename);
+					if (filename) {
+						if (!filename.endsWith('.omr')) filename += '.omr';
+						filename = tclPath(path.join(emuDirectories.OPENMSX_REPLAYS_DIR, filename));
+					}
 					tclCommand = `reverse loadreplay ${filename}`;
 					break;
 				default:
@@ -1438,20 +1444,45 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ command }: { command: string }) => {
-			const openmsxCommand = `screenshot -raw -doublesize -prefix "${path.join(emuDirectories.OPENMSX_SCREENSHOT_DIR,'mcp_')}"`;
+			// Ensure the screenshot directory exists before saving
+			const screenshotDirError = await ensureDirectoryExists(emuDirectories.OPENMSX_SCREENSHOT_DIR);
+			if (screenshotDirError) {
+				return getResponseContent([`Error: ${screenshotDirError}`], true);
+			}
+			// Use a unique prefix so we can locate the file even if openMSX
+			// doesn't return the filename (some versions return empty on success).
+			const uniqueId = `mcp_${Date.now()}_`;
+			const screenshotPrefix = tclPath(path.join(emuDirectories.OPENMSX_SCREENSHOT_DIR, uniqueId));
+			const openmsxCommand = `screenshot -raw -doublesize -prefix "${screenshotPrefix}"`;
 			const response = await openMSXInstance.sendCommand(openmsxCommand);
+			if (isErrorResponse(response)) {
+				return getResponseContent([response], true);
+			}
+			// Resolve the screenshot file path: use the response if it contains
+			// a valid path, otherwise scan the directory for the generated file.
+			let screenshotPath = response;
+			if (!screenshotPath || !screenshotPath.endsWith('.png')) {
+				try {
+					const files = await fs.readdir(emuDirectories.OPENMSX_SCREENSHOT_DIR);
+					const match = files.find(f => f.startsWith(uniqueId) && f.endsWith('.png'));
+					if (match) {
+						screenshotPath = path.join(emuDirectories.OPENMSX_SCREENSHOT_DIR, match);
+					}
+				} catch (_) { /* directory read failed, screenshotPath stays empty */ }
+			}
+			if (!screenshotPath || !screenshotPath.endsWith('.png')) {
+				return getResponseContent([
+					`Error: Screenshot command succeeded but no file was found (prefix: "${uniqueId}")`,
+				], true);
+			}
 			switch (command) {
 				case "as_image":
 					try {
-						// Check if the response is a file path
-						if (!response || !response.startsWith(emuDirectories.OPENMSX_SCREENSHOT_DIR) || !response.endsWith('.png')) {
-							throw new Error(`Invalid screenshot "${response}"`);
-						}
 						// Read the screenshot file
-						const imageBuffer = await fs.readFile(response);
+						const imageBuffer = await fs.readFile(screenshotPath);
 						const base64image = imageBuffer.toString('base64');
 						// Remove the file after reading it
-						await fs.unlink(response);
+						await fs.unlink(screenshotPath);
 						// Return the image in the response
 						return {
 							content: [{
@@ -1465,7 +1496,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 						};
 					} catch (error) {
 						return getResponseContent([
-								'Error creating screenshot: '+response,
+								'Error reading screenshot file: ' + screenshotPath,
 								error instanceof Error ? error.message : String(error),
 							],
 							true
@@ -1473,7 +1504,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					}
 				case "to_file":
 					return getResponseContent([
-						isErrorResponse(response) ? response : 'Screenshot taken in file: '+response
+						'Screenshot taken in file: ' + screenshotPath
 					]);
 			}
 			return getResponseContent([
@@ -1508,7 +1539,12 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		},
 		// Handler for the tool (function to be executed when the tool is called)
 		async ({ scrbasename }: { scrbasename: string }) => {
-			const openmsxCommand = `save_msx_screen "${path.join(emuDirectories.OPENMSX_SCREENDUMP_DIR,scrbasename)}"`;
+			// Ensure the screendump directory exists before saving
+			const screendumpDirError = await ensureDirectoryExists(emuDirectories.OPENMSX_SCREENDUMP_DIR);
+			if (screendumpDirError) {
+				return getResponseContent([`Error: ${screendumpDirError}`], true);
+			}
+			const openmsxCommand = `save_msx_screen "${tclPath(path.join(emuDirectories.OPENMSX_SCREENDUMP_DIR, scrbasename))}"`;
 			const response = await openMSXInstance.sendCommand(openmsxCommand);
 			return getResponseContent([
 				isErrorResponse(response) ? 'Fail:' : 'Screendump file saved as:',

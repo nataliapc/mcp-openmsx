@@ -55,9 +55,13 @@ export function detectOpenMSXShareDir(): string {
 			path.join(os.homedir(), '.openMSX', 'share'),
 			'/usr/local/share/openmsx',
 			'/usr/share/openmsx',
-			// Windows paths
+			// Windows paths (appdata, documents, program files, portable)
+			...(process.env.APPDATA ? [path.join(process.env.APPDATA, 'openMSX', 'share')] : []),
+			...(process.env.LOCALAPPDATA ? [path.join(process.env.LOCALAPPDATA, 'openMSX', 'share')] : []),
 			path.join(os.homedir(), 'Documents', 'openMSX', 'share'),
+			path.join(os.homedir(), 'openMSX', 'share'),
 			path.join(process.env.PROGRAMFILES || 'C:\\Program Files', 'openMSX', 'share'),
+			...(process.env['PROGRAMFILES(X86)'] ? [path.join(process.env['PROGRAMFILES(X86)'], 'openMSX', 'share')] : []),
 			// macOS paths
 			path.join(os.homedir(), 'Library', 'Application Support', 'openMSX', 'share'),
 			'/Applications/openMSX.app/Contents/Resources/share',
@@ -522,6 +526,32 @@ export function parseReplayStatus(response: string): { enabled: boolean; begin: 
 		current: currentMatch ? parseFloat(currentMatch[1]) : 0,
 		snapshotCount,
 	};
+}
+
+/**
+ * Ensure a directory exists, creating it (and any parents) if necessary.
+ * @param dirPath - Absolute path to the directory
+ * @returns null on success, or an error message string if creation failed
+ */
+export async function ensureDirectoryExists(dirPath: string): Promise<string | null> {
+	try {
+		await fs.mkdir(dirPath, { recursive: true });
+		return null;
+	} catch (error) {
+		return `Cannot create directory "${dirPath}": ` +
+			(error instanceof Error ? error.message : String(error));
+	}
+}
+
+/**
+ * Normalize a file path for use inside openMSX TCL commands.
+ * Converts Windows backslashes to forward slashes, which TCL accepts on all platforms.
+ * On Linux/macOS this is a no-op (no backslashes to replace).
+ * @param filePath - File path to normalize
+ * @returns Path with forward slashes only
+ */
+export function tclPath(filePath: string): string {
+	return filePath.replace(/\\/g, '/');
 }
 
 /*
