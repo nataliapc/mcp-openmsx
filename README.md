@@ -14,7 +14,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io/introduction) (MCP) s
 This server provides comprehensive tools for MSX software development, testing, and automation through standardized MCP protocols.
 
 
-> 🎁🎁 _If you find this project useful, please consider making a donation: [PAYPAL Link](https://www.paypal.com/donate/?hosted_button_id=9X268YDDS9SYC)_
+> 🎁🎁 _If you find this project useful, please consider making a donation by [PAYPAL Link](https://www.paypal.com/donate/?hosted_button_id=9X268YDDS9SYC) or [GitHub Sponsors](https://github.com/sponsors/nataliapc)_
 
 ---
 
