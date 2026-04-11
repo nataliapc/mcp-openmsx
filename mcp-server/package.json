@@ -35,7 +35,9 @@
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
     "prepublishOnly": "npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "optionalDependencies": {
     "node-expose-sspi": "^0.1.60",
@@ -64,8 +66,10 @@
     "@modelcontextprotocol/inspector": "^0.20.0",
     "@types/node": "^25.2.3",
     "@types/sanitize-html": "^2.16.0",
+    "@vitest/coverage-v8": "^4.1.4",
     "shx": "^0.4.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.4"
   },
   "files": [
     "dist/**/*",

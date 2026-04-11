@@ -4,9 +4,11 @@
 .gemini
 .opencode
 .agents
+.claude
 package-lock.json
 **/.env
 **/.embeddings.cache.json
+**/coverage
 *.tgz
 assets
 plan

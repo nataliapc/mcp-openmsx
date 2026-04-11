@@ -11,6 +11,10 @@ tsconfig.json
 node_modules/
 npm-debug.log*
 .nyc_output/
-coverage/
 .vscode/
 .embeddings.cache.json
+coverage/
+tests/
+vitest.config.ts
+pnpm-*.yaml
+**/lyx2md.py
