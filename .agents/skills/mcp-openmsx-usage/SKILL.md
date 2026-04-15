@@ -1,6 +1,6 @@
 ---
 name: mcp-openmsx-usage
-description: Control and automate the openMSX emulator for MSX / MSX2 retro development. Covers Z80 and R800 assembly debugging, Z80 CPU inspection, VDP (V9938/V9958) programming, PSG sound, MSX-BASIC development, ROM/disk/tape media management, screen capture, breakpoints, memory inspection, and SDCC C development workflows. Use when direct openMSX emulator interaction is required or MSX technical information is needes.
+description: Control and automate the openMSX emulator for MSX / MSX2 retro development. Covers Z80 and R800 assembly debugging, Z80 CPU inspection, VDP (V9938/V9958) programming, PSG sound, MSX-BASIC development, ROM/disk/tape media management, screen capture, breakpoints, memory inspection, and SDCC C development workflows. Use when direct openMSX emulator interaction is required or MSX technical information is needed.
 metadata:
   authors: https://github.com/nataliapc
   version: "1.2.3"
