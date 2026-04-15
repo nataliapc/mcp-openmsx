@@ -1,7 +1,6 @@
 ---
 name: mcp-openmsx-usage
-description: Use this skill to learn using mcp-openmsx tools to control and automate the openMSX emulator, or when interacting with the openMSX emulator for develop/test/debug workflows or interactions that require direct control or information retrieval. Covers all MCP tools. Do NOT use for general agent tasks or when no direct openMSX interaction is required.
-compatibility: Needs openMSX, Node.js/npx, and mcp-openmsx. Supports stdio (default) and HTTP transport modes.
+description: Control and automate the openMSX emulator for MSX / MSX2 retro development. Covers Z80 and R800 assembly debugging, Z80 CPU inspection, VDP (V9938/V9958) programming, PSG sound, MSX-BASIC development, ROM/disk/tape media management, screen capture, breakpoints, memory inspection, and SDCC C development workflows. Use when direct openMSX emulator interaction is required.
 metadata:
   authors: https://github.com/nataliapc
   version: "1.2.2"
