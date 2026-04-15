@@ -1,6 +1,6 @@
 {
   "name": "@nataliapc/mcp-openmsx",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "description": "Model context protocol server for openMSX automation and control",
   "main": "dist/server.js",
   "type": "module",
@@ -40,8 +40,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "optionalDependencies": {
-    "node-expose-sspi": "^0.1.60",
-    "sharp": ">=0.32.0"
+    "node-expose-sspi": "^0.1.60"
   },
   "pnpm": {
     "overrides": {
@@ -58,6 +57,7 @@
     "express": "^5.2.1",
     "mime-types": "^3.0.2",
     "sanitize-html": "^2.17.0",
+    "sharp": "^0.34.5",
     "tsx": "^4.21.0",
     "vectra": "^0.11.1",
     "zod": "^3.25.76"
