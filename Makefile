@@ -7,6 +7,7 @@ COL_RESET = \e[0m
 
 SERVER_DIR = mcp-server
 MAKE = make -s --no-print-directory -C $(SERVER_DIR)
+NPM = pnpm
 
 VECTOR_DIR = vector-db
 MAKE_VECTOR = make -s --no-print-directory -C $(VECTOR_DIR)

@@ -1,6 +1,8 @@
 # Makefile for MCP-openMSX project
 .PHONY: all clean
 
+NPM = pnpm
+
 COL_WHITE = \e[1;37m
 COL_ORANGE = \e[1;38:5:208m
 COL_RESET = \e[0m
@@ -8,12 +10,12 @@ COL_RESET = \e[0m
 
 npm_install:
 	@echo "$(COL_WHITE)#### Installing npm dependencies...$(COL_RESET)"
-	npm install
+	$(NPM) install
 
 build: npm_install
 	@echo "$(COL_WHITE)#### Building MCP-openMSX project...$(COL_RESET)"
-	npm ci
-	npm run build
+	$(NPM) ci
+	$(NPM) run build
 
 run_stdio: build
 	@echo "$(COL_WHITE)#### Running MCP-openMSX project with stdio...$(COL_RESET)"
@@ -27,7 +29,7 @@ pack: build
 	@echo "$(COL_WHITE)#### Packing MCP-openMSX project...$(COL_RESET)"
 	cp ../README.md .
 	cp ../LICENSE .
-	npm pack
+	$(NPM) pack
 
 inspector: build
 	@echo "$(COL_WHITE)#### Inspecting MCP-openMSX project...$(COL_RESET)"
@@ -35,13 +37,13 @@ inspector: build
 
 publish: build pack
 	@echo "$(COL_WHITE)#### Publishing MCP-openMSX project...$(COL_RESET)"
-	npm pack --dryrun
-	npm publish --access public
-	npm version patch
+	$(NPM) pack --dryrun
+	$(NPM) publish --access public
+	$(NPM) version patch
 
 info:
 	@echo "$(COL_WHITE)#### MCP-openMSX published packet information$(COL_RESET)"
-	npm view @nataliapc/mcp-openmsx
+	$(NPM) view @nataliapc/mcp-openmsx
 
 clean:
 	rm -rf node_modules
@@ -59,7 +61,7 @@ depcheck:
 
 outdated:
 	@echo "$(COL_ORANGE)## npm outdated...$(COL_RESET)"
-	@npm outdated || true
+	@$(NPM) outdated || true
 
 npq:
 	@echo "$(COL_ORANGE)## npq...$(COL_RESET)"

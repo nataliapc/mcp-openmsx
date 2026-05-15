@@ -1,6 +1,8 @@
 # Makefile for MCP-openMSX project
 .PHONY: all install embeddings
 
+NPM = pnpm
+
 COL_WHITE = \e[1;37m
 COL_ORANGE = \e[1;38:5:208m
 COL_RESET = \e[0m
@@ -9,7 +11,7 @@ SERVER_DIR = mcp-server
 MAKE = make -s --no-print-directory -C $(SERVER_DIR)
 
 install:
-	@npm ci
+	@$(NPM) ci
 
 embeddings:
 	@echo "$(COL_WHITE)#### Creating embeddings...$(COL_RESET)"
@@ -30,7 +32,7 @@ depcheck:
 
 outdated:
 	@echo "$(COL_ORANGE)## npm outdated...$(COL_RESET)"
-	@npm outdated || true
+	@$(NPM) outdated || true
 
 npq:
 	@echo "$(COL_ORANGE)## npq...$(COL_RESET)"
