@@ -5,13 +5,10 @@
  * @license GPL2
  */
 import fs from "fs/promises";
-import fsSync from "fs";
 import { extractDescriptionFromXML, decodeHtmlEntities, encodeHtmlEntities } from "./utils.js";
 import { spawn, ChildProcess } from 'child_process';
-import net from 'net';
-import os from 'os';
 import path from 'path';
-import { OpenMsxWindowsConnector, WindowsControlConnection, WindowsControlMode } from "./openmsx_windows_connector.js";
+import { OpenMsxWindowsConnector, WindowsControlConnection, WindowsControlMode } from "./openmsx_windows.js";
 
 /** True when running on Windows. Evaluated once at module load. */
 const IS_WINDOWS = process.platform === 'win32';
@@ -21,33 +18,18 @@ const IS_WINDOWS = process.platform === 'win32';
  *
  * ## Protocol
  *
- * ### Linux/macOS
- *   `openmsx -control stdio` — commands via stdin, responses via stdout.
+ * The XML control protocol is platform-agnostic: the client opens its command
+ * stream with `<openmsx-control>`, openMSX replies with `<openmsx-output>`, then
+ * `<command>…</command>` / `<reply …>…</reply>` exchanges follow. This class owns
+ * that protocol, the serial command queue and the shared I/O buffer.
  *
- * ### Windows
- *   openMSX is compiled as /SUBSYSTEM:WINDOWS. Passing `stdio:'pipe'` to
- *   Node.js spawn breaks the renderer (GUI subsystem app ignores pipe handles).
- *   We spawn with `stdio: ['ignore', 'ignore', 'pipe']` so openMSX starts
- *   normally with its own window.
- *
- *   openMSX always creates a TCP socket file at:
- *     %TEMP%\openmsx-default\socket.<pid>
- *   containing a port number (9938-9958). However, since openMSX 0.7.1 the
- *   TCP socket requires **SSPI (Negotiate/NTLM) authentication** before it
- *   accepts any XML commands. Without authentication, openMSX closes the
- *   connection immediately (ECONNRESET).
- *
- *   SSPI handshake (variable rounds, loop until SEC_E_OK — typically 3):
- *     each round: client → [4-byte BE length][SSPI token]
- *                 server → [4-byte BE length][SSPI response]  (if SEC_I_CONTINUE_NEEDED)
- *   Then XML protocol (no server read after SEC_E_OK):
- *     client → `<openmsx-control>\n`
- *     server → `<openmsx-output>\n`   (confirms session open)
- *     client ↔ server: `<command>…</command>` / `<reply …>…</reply>`
- *
- *   npm package: node-expose-sspi (optional, Windows-only)
- *   Reference: openMSX debugger ConnectDialog.cpp + DeZog openmsxremote.ts
- *              https://openmsx.org/manual/openmsx-control.html
+ * The transport differs per platform:
+ *   - **Linux/macOS**: `openmsx -control stdio` — commands via stdin, responses
+ *     via stdout (see {@link launchConnectLinux}).
+ *   - **Windows**: openMSX is a /SUBSYSTEM:WINDOWS GUI app whose TCP control
+ *     socket needs SSPI auth. All of that (mode selection, socket-file polling,
+ *     TCP+SSPI, or the stdio proxy) lives in `openmsx_windows.ts`; this class
+ *     just consumes the {@link WindowsControlConnection} it returns.
  */
 /** Callbacks shared between emu_launch and platform-specific connection methods. */
 interface LaunchCallbacks {
@@ -62,15 +44,11 @@ export class OpenMSX {
     private process: ChildProcess | null = null;
     private isConnected: boolean = false;
 
-    // Windows TCP socket — bidirectional after SSPI auth (direct-sspi mode)
-    private tcpSocket: net.Socket | null = null;
-    // Active writable control channel: process.stdin (Linux), tcpSocket
-    // (Windows direct-sspi) or proxy.stdin (Windows stdio-proxy).
+    // Active writable control channel: process.stdin (Linux/macOS) or the
+    // Windows connection's input (TCP socket / SSPI proxy stdin).
     private controlWritable: NodeJS.WritableStream | null = null;
-    // SSPI proxy process (Windows stdio-proxy mode only) — separate from the
-    // openMSX GUI process held in `this.process`.
-    private controlProcess: ChildProcess | null = null;
-    // Uniform control connection (Windows stdio-proxy mode only).
+    // Windows-only control connection (TCP+SSPI or stdio proxy). Owns the
+    // transport and its teardown; null on Linux/macOS. See openmsx_windows.ts.
     private controlConnection: WindowsControlConnection | null = null;
     // Accumulated I/O data for readData() — shared by all transports (never coexist)
     private ioBuffer: string = '';
@@ -189,7 +167,6 @@ export class OpenMSX {
                     }
                     this.isConnected = false;
                     this.process = null;
-                    this.killControlProcess();
                     this.resetIO();
                 });
 
@@ -233,11 +210,7 @@ export class OpenMSX {
                     onReady: onOpenMSXReady,
                 };
                 if (IS_WINDOWS) {
-                    if (windowsMode === 'stdio-proxy') {
-                        this.launchConnectWindowsStdioProxy(ctx);
-                    } else {
-                        this.launchConnectWindows(ctx); // direct-sspi (legacy fallback)
-                    }
+                    this.launchConnectWindows(ctx);
                 } else {
                     this.launchConnectLinux(ctx);
                 }
@@ -257,104 +230,14 @@ export class OpenMSX {
     }
 
     /**
-     * Windows connection: TCP socket + SSPI authentication.
-     * Polls for the socket file, connects, authenticates, and starts the XML session.
+     * Windows connection (both modes). All transport — socket-file polling, TCP
+     * connect, SSPI, or proxy launch — is delegated to {@link OpenMsxWindowsConnector},
+     * which returns a uniform connection with SSPI already done. Here we only
+     * attach the generic XML stream handlers and open the session. Both Windows
+     * modes use the TCP semantics: we send `<openmsx-control>` and openMSX replies
+     * with `<openmsx-output>`.
      */
     private launchConnectWindows(ctx: LaunchCallbacks): void {
-        const tmpDir = process.env.TEMP ?? process.env.TMP ??
-                       path.join(os.homedir(), 'AppData', 'Local', 'Temp');
-        const socketFile = path.join(tmpDir, 'openmsx-default', `socket.${this.process!.pid}`);
-        ctx.diag(`waiting for socket file: ${socketFile}`);
-
-        this.connectWindowsTCP(socketFile).then(async ({ socket, port }) => {
-            ctx.diag(`TCP connected on port ${port}`);
-            this.tcpSocket = socket;
-            this.controlWritable = socket;
-            this.ioBuffer = '';
-
-            socket.on('error', e => {
-                ctx.diag(`TCP socket error: ${e.message}`);
-                if (!ctx.isResolved()) ctx.safeResolve(`Error: TCP socket error: ${e.message}`);
-            });
-            socket.on('close', () => {
-                ctx.diag('TCP socket closed');
-                this.tcpSocket = null;
-                this.isConnected = false;
-            });
-
-            // Register the main data handler BEFORE performSspiAuth.
-            // This prevents any gap where data could be discarded:
-            // performSspiAuth adds its own 'data' listener that runs in
-            // parallel — both handlers receive data, but:
-            //  - during SSPI: ioBuffer accumulates binary SSPI tokens
-            //    (harmless, won't contain '<openmsx-output>')
-            //  - after SSPI: ioBuffer is cleared, then <openmsx-control>
-            //    is sent, and <openmsx-output> is detected normally.
-            socket.on('data', (data: Buffer) => {
-                const chunk = data.toString();
-
-                // Accumulate all incoming data
-                this.ioBuffer += chunk;
-
-                // Signal readData() that new data arrived (notify pattern)
-                if (this.ioNotify) {
-                    const notify = this.ioNotify;
-                    this.ioNotify = null;
-                    notify();
-                }
-
-                // During launch: detect <openmsx-output> in the accumulated stream
-                if (!this.isConnected && this.ioBuffer.includes('<openmsx-output>')) {
-                    this.isConnected = true;
-                    // Discard everything up to and including <openmsx-output>
-                    this.ioBuffer = this.ioBuffer.substring(
-                        this.ioBuffer.indexOf('<openmsx-output>') + '<openmsx-output>'.length
-                    );
-                    setTimeout(async () => {
-                        if (!ctx.isResolved()) {
-                            try { await ctx.onReady(false); }  // Windows: don't resend <openmsx-control>
-                            catch (e) { ctx.safeResolve(`Error: Failed to send control commands - ${e instanceof Error ? e.message : e}`); }
-                        }
-                    }, 300);
-                }
-            });
-
-            // SSPI authentication (adds its own parallel 'data' listener internally)
-            try {
-                ctx.diag('starting SSPI authentication...');
-                await this.performSspiAuth(socket);
-                ctx.diag('SSPI authentication successful');
-            } catch (e) {
-                ctx.safeResolve(
-                    `Error: SSPI authentication failed: ${e instanceof Error ? e.message : e}. ` +
-                    `Make sure 'node-expose-sspi' is installed: npm install node-expose-sspi`
-                );
-                return;
-            }
-
-            // Clear SSPI binary garbage from ioBuffer before XML session
-            this.ioBuffer = '';
-
-            // Send <openmsx-control> to initiate the XML session.
-            // On Windows/TCP, openMSX sends <openmsx-output> in response.
-            ctx.diag('sending <openmsx-control> to start XML session');
-            socket.write('<openmsx-control>\n');
-
-        }).catch(err => {
-            ctx.diag(`connectWindowsTCP failed: ${err.message}`);
-            ctx.safeResolve(`Error: ${err.message}`);
-        });
-    }
-
-    /**
-     * Windows connection: `stdio-proxy` mode (default).
-     * Delegates transport to {@link OpenMsxWindowsConnector}, which waits for the
-     * openMSX control port, launches the bundled .NET SSPI proxy and exposes a
-     * clean XML stdio channel. From here the flow mirrors the Windows TCP path:
-     * we send `<openmsx-control>` (the proxy forwards it after SSPI) and wait for
-     * `<openmsx-output>`. SSPI never touches Node.
-     */
-    private launchConnectWindowsStdioProxy(ctx: LaunchCallbacks): void {
         const connector = new OpenMsxWindowsConnector({
             openmsxProcess: this.process!,
             diag: ctx.diag,
@@ -362,58 +245,72 @@ export class OpenMSX {
 
         connector.connect().then((connection) => {
             this.controlConnection = connection;
-            this.controlProcess = connection.controlProcess;
             this.controlWritable = connection.input;
             this.ioBuffer = '';
 
-            // Proxy diagnostics (SSPI status, errors) — stderr only, never stdout.
+            // Diagnostics from the SSPI proxy (stderr only — never stdout).
             connection.errorOutput?.on('data', (data: Buffer) => {
                 const msg = data.toString().trim();
-                if (msg && !this.isConnected) ctx.diag(`proxy stderr: ${msg.substring(0, 300)}`);
+                if (msg && !this.isConnected) ctx.diag(`control stderr: ${msg.substring(0, 300)}`);
             });
-
-            // Proxy exiting before we connect means SSPI/connection failed.
+            // stdio-proxy: proxy exiting before we connect means SSPI/connect failed.
             connection.controlProcess?.on('exit', (code, signal) => {
-                ctx.diag(`proxy exit: code=${code} signal=${signal} isConnected=${this.isConnected}`);
+                ctx.diag(`control process exit: code=${code} signal=${signal} isConnected=${this.isConnected}`);
                 if (!this.isConnected && !ctx.isResolved()) {
-                    ctx.safeResolve(
-                        `Error: SSPI proxy exited before connecting (code=${code}, signal=${signal}). ` +
-                        `Check that openMSX is running and the proxy executable is valid.`
-                    );
+                    ctx.safeResolve(`Error: control process exited before connecting (code=${code}, signal=${signal}).`);
                 }
             });
-
-            // openMSX output (via the proxy) — accumulate and detect <openmsx-output>.
-            connection.output.on('data', (data: Buffer) => {
-                const chunk = data.toString();
-                this.ioBuffer += chunk;
-                if (this.ioNotify) {
-                    const notify = this.ioNotify;
-                    this.ioNotify = null;
-                    notify();
-                }
-                if (!this.isConnected && this.ioBuffer.includes('<openmsx-output>')) {
-                    this.isConnected = true;
-                    this.ioBuffer = this.ioBuffer.substring(
-                        this.ioBuffer.indexOf('<openmsx-output>') + '<openmsx-output>'.length
-                    );
-                    setTimeout(async () => {
-                        if (!ctx.isResolved()) {
-                            try { await ctx.onReady(false); }  // <openmsx-control> already sent below
-                            catch (e) { ctx.safeResolve(`Error: Failed to send control commands - ${e instanceof Error ? e.message : e}`); }
-                        }
-                    }, 300);
-                }
+            // direct-sspi: TCP socket errors / close.
+            connection.tcpSocket?.on('error', e => {
+                ctx.diag(`TCP socket error: ${e.message}`);
+                if (!ctx.isResolved()) ctx.safeResolve(`Error: TCP socket error: ${e.message}`);
             });
-            connection.output.on('error', (e: Error) => ctx.diag(`proxy stdout error: ${e.message}`));
+            connection.tcpSocket?.on('close', () => {
+                ctx.diag('TCP socket closed');
+                this.isConnected = false;
+            });
+            connection.output.on('error', (e: Error) => ctx.diag(`control stream error: ${e.message}`));
 
-            // Open the XML session. The proxy buffers this until SSPI completes,
-            // then forwards it to openMSX, which replies with <openmsx-output>.
-            ctx.diag('sending <openmsx-control> to start XML session (stdio-proxy)');
+            this.attachOutputHandler(connection.output, ctx);
+
+            // Open the XML session: we send <openmsx-control>; openMSX replies with
+            // <openmsx-output>. (In stdio-proxy the proxy forwards it after SSPI.)
+            ctx.diag('sending <openmsx-control> to start XML session');
             connection.input.write('<openmsx-control>\n');
         }).catch((err: Error) => {
-            ctx.diag(`stdio-proxy connect failed: ${err.message}`);
+            ctx.diag(`windows connect failed: ${err.message}`);
             ctx.safeResolve(`Error: ${err.message}`);
+        });
+    }
+
+    /**
+     * Shared output handler for both Windows modes (proxy stdout or TCP socket):
+     * accumulate into `ioBuffer`, wake any pending `readData()`, and on the first
+     * `<openmsx-output>` mark connected and trigger the initial command sequence
+     * with `onReady(false)` (we already sent `<openmsx-control>`). Linux/macOS uses
+     * its own variant in {@link launchConnectLinux} (openMSX emits the tag unprompted).
+     */
+    private attachOutputHandler(output: NodeJS.ReadableStream, ctx: LaunchCallbacks): void {
+        output.on('data', (data: Buffer) => {
+            const chunk = data.toString();
+            this.ioBuffer += chunk;
+            if (this.ioNotify) {
+                const notify = this.ioNotify;
+                this.ioNotify = null;
+                notify();
+            }
+            if (!this.isConnected && this.ioBuffer.includes('<openmsx-output>')) {
+                this.isConnected = true;
+                this.ioBuffer = this.ioBuffer.substring(
+                    this.ioBuffer.indexOf('<openmsx-output>') + '<openmsx-output>'.length
+                );
+                setTimeout(async () => {
+                    if (!ctx.isResolved()) {
+                        try { await ctx.onReady(false); }  // <openmsx-control> already sent
+                        catch (e) { ctx.safeResolve(`Error: Failed to send control commands - ${e instanceof Error ? e.message : e}`); }
+                    }
+                }, 300);
+            }
         });
     }
 
@@ -463,178 +360,16 @@ export class OpenMSX {
         });
     }
 
-    /**
-     * SSPI (Negotiate/NTLM) authentication handshake — Windows only.
-     * Required since openMSX 0.7.1 for TCP socket connections.
-     * Uses `node-expose-sspi` v0.1.x optional npm package.
-     *
-     * Reference C++ implementation: openMSX debugger SspiNegotiateClient.cpp
-     * Protocol: loop until SEC_E_OK — each round:
-     *   client → [4-byte BE length][SSPI token]
-     *   server → [4-byte BE length][SSPI response]  (if SEC_I_CONTINUE_NEEDED)
-     * After SEC_E_OK: no server read — proceed directly with XML protocol.
-     */
-    private async performSspiAuth(socket: net.Socket): Promise<void> {
-        let nes: any;
-        try {
-            const { createRequire } = await import('module');
-            const req = createRequire(import.meta.url);
-            nes = req('node-expose-sspi');
-        } catch (e) {
-            throw new Error(
-                `node-expose-sspi not available (${e instanceof Error ? e.message : e}). ` +
-                `Install with: npm install node-expose-sspi`
-            );
-        }
-
-        // Accumulate TCP data for length-prefixed reads during SSPI phase.
-        // Pattern: onSspiData appends to buffer and NOTIFIES (does not clear).
-        // readLengthPrefixed checks the buffer size after each notification.
-        let sspiBuffer = Buffer.alloc(0);
-        let sspiNotify: (() => void) | null = null;
-        const onSspiData = (chunk: Buffer) => {
-            sspiBuffer = Buffer.concat([sspiBuffer, chunk]);
-            if (sspiNotify) {
-                const notify = sspiNotify;
-                sspiNotify = null;
-                notify();  // just signal — buffer stays intact
-            }
-        };
-        socket.on('data', onSspiData);
-
-        // Wait until new data arrives (doesn't clear the buffer)
-        const waitMore = (): Promise<void> => new Promise(resolve => {
-            sspiNotify = resolve;
-        });
-
-        const readLengthPrefixed = async (): Promise<Buffer> => {
-            // Wait until we have at least the 4-byte length prefix
-            while (sspiBuffer.length < 4) await waitMore();
-            const len = sspiBuffer.readUInt32BE(0);
-            const total = 4 + len;
-            // Wait until the full payload has arrived
-            while (sspiBuffer.length < total) await waitMore();
-            const result = sspiBuffer.slice(4, total);
-            sspiBuffer = sspiBuffer.slice(total);  // consume only what we read
-            return result;
-        };
-
-        const sendToken = (token: ArrayBuffer): void => {
-            const buf = Buffer.from(token);
-            const lenBuf = Buffer.alloc(4);
-            lenBuf.writeUInt32BE(buf.length, 0);
-            socket.write(lenBuf);
-            socket.write(buf);
-        };
-
-        try {
-            // node-expose-sspi v0.1.x API:
-            //   AcquireCredentialsHandle → CredentialWithExpiry { credential, tsExpiry }
-            //   InitializeSecurityContextInput.credential = CredHandle (the .credential property)
-            //   InitializeSecurityContextInput.SecBufferDesc = server's token (NOT serverSecurityContext)
-            //   InitializeSecurityContextInput.contextReq = string[] of ISC_REQ_* flags
-            //   Flags from openMSX C++ ref: ISC_REQ_ALLOCATE_MEMORY | ISC_REQ_CONNECTION | ISC_REQ_STREAM
-            const credWithExpiry = nes.sspi.AcquireCredentialsHandle({
-                packageName: 'Negotiate',
-                credentialUse: 'SECPKG_CRED_OUTBOUND',
-            });
-            const credential = credWithExpiry.credential;
-            const packageInfo = nes.sspi.QuerySecurityPackageInfo('Negotiate');
-            const ISC_FLAGS = ['ISC_REQ_ALLOCATE_MEMORY', 'ISC_REQ_CONNECTION', 'ISC_REQ_STREAM'];
-
-            let contextHandle: any = undefined;
-            let serverSecBufDesc: any = undefined;
-
-            // Loop until SEC_E_OK (mirrors C++ reference implementation)
-            while (true) {
-                const ctxInput: any = {
-                    credential,
-                    targetName: '',
-                    cbMaxToken: packageInfo.cbMaxToken,
-                    contextReq: ISC_FLAGS,
-                    targetDataRep: 'SECURITY_NETWORK_DREP',
-                };
-                if (contextHandle !== undefined) ctxInput.contextHandle = contextHandle;
-                if (serverSecBufDesc !== undefined) ctxInput.SecBufferDesc = serverSecBufDesc;
-
-                const clientCtx = nes.sspi.InitializeSecurityContext(ctxInput);
-                contextHandle = clientCtx.contextHandle;
-
-                // Send our token to the server (if non-empty)
-                const tokenBuf = clientCtx.SecBufferDesc?.buffers?.[0];
-                if (tokenBuf && (tokenBuf as ArrayBuffer).byteLength > 0) {
-                    sendToken(tokenBuf as ArrayBuffer);
-                }
-
-                if (clientCtx.SECURITY_STATUS === 'SEC_E_OK') {
-                    // Auth complete — no final read from server, proceed to XML
-                    break;
-                }
-                if (clientCtx.SECURITY_STATUS !== 'SEC_I_CONTINUE_NEEDED') {
-                    throw new Error(`SSPI error: ${clientCtx.SECURITY_STATUS}`);
-                }
-
-                // Read server's response token
-                const response = await readLengthPrefixed();
-                const responseAB = response.buffer.slice(
-                    response.byteOffset,
-                    response.byteOffset + response.byteLength
-                );
-                serverSecBufDesc = { ulVersion: 0, buffers: [responseAB] };
-            }
-        } finally {
-            // Remove SSPI data handler — main handler will be added after this returns
-            socket.removeListener('data', onSspiData);
-        }
-    }
-
-    /**
-     * Poll for the TCP socket file, read the port, connect.
-     */
-    private connectWindowsTCP(socketFile: string): Promise<{ socket: net.Socket; port: number }> {
-        return new Promise((resolve, reject) => {
-            const maxWaitMs = 8000;
-            const pollMs = 200;
-            let elapsed = 0;
-            const poll = () => {
-                if (fsSync.existsSync(socketFile)) {
-                    let port: number;
-                    try { port = parseInt(fsSync.readFileSync(socketFile, 'utf8').trim(), 10); }
-                    catch (e) { return reject(new Error(`Cannot read socket file: ${e}`)); }
-                    if (!port || isNaN(port)) return reject(new Error(`Invalid port in socket file`));
-                    const sock = net.createConnection(port, '127.0.0.1');
-                    sock.once('connect', () => resolve({ socket: sock, port }));
-                    sock.once('error', err => { sock.destroy(); reject(new Error(`TCP connect to ${port} failed: ${err.message}`)); });
-                } else {
-                    elapsed += pollMs;
-                    if (elapsed >= maxWaitMs) {
-                        reject(new Error(`openMSX socket file not found after ${maxWaitMs}ms: ${socketFile}`));
-                    } else {
-                        setTimeout(poll, pollMs);
-                    }
-                }
-            };
-            poll();
-        });
-    }
-
     private resetIO(): void {
-        if (this.tcpSocket) {
-            try { this.tcpSocket.destroy(); } catch (_) { /* ignore */ }
-            this.tcpSocket = null;
+        // Tear down the Windows control connection (TCP socket / SSPI proxy).
+        // No-op on Linux/macOS where controlConnection is null.
+        if (this.controlConnection) {
+            try { this.controlConnection.forceClose(); } catch (_) { /* ignore */ }
+            this.controlConnection = null;
         }
         this.controlWritable = null;
         this.ioBuffer = '';
         this.ioNotify = null;
-    }
-
-    /** Kill the SSPI proxy process (Windows stdio-proxy mode), if any. */
-    private killControlProcess(): void {
-        if (this.controlProcess && !this.controlProcess.killed) {
-            try { this.controlProcess.kill('SIGKILL'); } catch (_) { /* ignore */ }
-        }
-        this.controlProcess = null;
-        this.controlConnection = null;
     }
 
     async emu_close(): Promise<string> {
@@ -651,8 +386,7 @@ export class OpenMSX {
                 this.lastMachine = null;
                 this.isConnected = false;
                 this.process = null;
-                // The emulator is gone — tear down the SSPI proxy too (stdio-proxy mode).
-                this.killControlProcess();
+                // resetIO() also tears down the Windows control connection (proxy/socket).
                 this.resetIO();
                 safeResolve("Ok: Emulator process closed successfully");
             });
@@ -786,13 +520,13 @@ export class OpenMSX {
     }
 
     forceClose(): void {
-        // Kill both the openMSX emulator and the SSPI proxy (if separate processes).
+        // Kill the openMSX emulator; resetIO() force-closes the control connection
+        // (TCP socket / SSPI proxy) on Windows.
         if (this.process && !this.process.killed) {
             try { this.process.kill('SIGKILL'); } catch (_) { /* ignore */ }
         }
         this.process = null;
         this.isConnected = false;
-        this.killControlProcess();
         this.resetIO();
     }
 }

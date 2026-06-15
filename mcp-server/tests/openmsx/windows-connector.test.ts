@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import fsSync from 'fs';
 import path from 'path';
-import { OpenMsxWindowsConnector } from '../../src/openmsx_windows_connector.js';
+import { OpenMsxWindowsConnector } from '../../src/openmsx_windows.js';
 
 /**
  * Tests for OpenMsxWindowsConnector: control-mode resolution, proxy executable

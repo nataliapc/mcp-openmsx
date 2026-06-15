@@ -72,18 +72,16 @@ describe('forceClose', () => {
     expect(mockProcess.kill).not.toHaveBeenCalled();
   });
 
-  it('kills both the emulator and the SSPI proxy when they are distinct processes', () => {
+  it('kills the emulator and force-closes the Windows control connection', () => {
     const { instance, mockProcess } = setupConnected();
-    const mockProxy = createMockProcess();
+    const forceClose = vi.fn();
     const priv = instance as any;
-    priv.controlProcess = mockProxy;
-    priv.controlConnection = { mode: 'stdio-proxy' };
+    priv.controlConnection = { mode: 'stdio-proxy', forceClose };
 
     instance.forceClose();
 
     expect(mockProcess.kill).toHaveBeenCalledWith('SIGKILL');
-    expect(mockProxy.kill).toHaveBeenCalledWith('SIGKILL');
-    expect(priv.controlProcess).toBeNull();
+    expect(forceClose).toHaveBeenCalled();
     expect(priv.controlConnection).toBeNull();
   });
 });
@@ -99,21 +97,21 @@ describe('resetIO', () => {
     expect(priv.ioNotify).toBeNull();
   });
 
-  it('destroys TCP socket if present', () => {
+  it('force-closes the Windows control connection if present', () => {
     const instance = new OpenMSX();
     const priv = instance as any;
-    const mockSocket = { destroy: vi.fn(), destroyed: false };
-    priv.tcpSocket = mockSocket;
+    const forceClose = vi.fn();
+    priv.controlConnection = { mode: 'direct-sspi', forceClose };
     priv.ioBuffer = 'data';
     priv.resetIO();
-    expect(mockSocket.destroy).toHaveBeenCalled();
-    expect(priv.tcpSocket).toBeNull();
+    expect(forceClose).toHaveBeenCalled();
+    expect(priv.controlConnection).toBeNull();
   });
 
-  it('is safe when no TCP socket exists', () => {
+  it('is safe when no control connection exists', () => {
     const instance = new OpenMSX();
     const priv = instance as any;
-    priv.tcpSocket = null;
+    priv.controlConnection = null;
     expect(() => priv.resetIO()).not.toThrow();
   });
 });
@@ -193,11 +191,11 @@ describe('emu_close', () => {
     expect(result).toBe('Ok: Emulator process closed successfully');
   });
 
-  it('tears down the SSPI proxy when the emulator exits (stdio-proxy)', async () => {
+  it('tears down the Windows control connection when the emulator exits', async () => {
     const { instance, mockProcess } = setupConnected();
-    const mockProxy = createMockProcess();
+    const forceClose = vi.fn();
     const priv = instance as any;
-    priv.controlProcess = mockProxy;
+    priv.controlConnection = { mode: 'stdio-proxy', forceClose };
     vi.spyOn(instance, 'sendCommand').mockResolvedValue('');
 
     const promise = instance.emu_close();
@@ -205,8 +203,8 @@ describe('emu_close', () => {
     mockProcess.emit('exit', 0, null);
     await promise;
 
-    expect(mockProxy.kill).toHaveBeenCalledWith('SIGKILL');
-    expect(priv.controlProcess).toBeNull();
+    expect(forceClose).toHaveBeenCalled();
+    expect(priv.controlConnection).toBeNull();
   });
 
   it('handles process error event', async () => {
