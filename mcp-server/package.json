@@ -1,6 +1,6 @@
 {
   "name": "@nataliapc/mcp-openmsx",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "Model context protocol server for openMSX automation and control",
   "main": "dist/server.js",
   "type": "module",
@@ -37,15 +37,16 @@
     "prepublishOnly": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "build:proxy:win-x64": "dotnet publish helpers/openmsx-sspi-proxy/OpenMsxSspiProxy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=true -p:TrimMode=partial -p:EnableCompressionInSingleFile=true -o bin/win-x64",
+    "build:proxy:win-x64:docker": "docker run --rm --user $(id -u):$(id -g) -e HOME=/tmp -e DOTNET_CLI_HOME=/tmp -v \"$PWD\":/work -w /work mcr.microsoft.com/dotnet/sdk:8.0 dotnet publish helpers/openmsx-sspi-proxy/OpenMsxSspiProxy.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=true -p:TrimMode=partial -p:EnableCompressionInSingleFile=true -o bin/win-x64",
+    "build:all": "pnpm build && pnpm build:proxy:win-x64:docker"
   },
   "optionalDependencies": {
     "node-expose-sspi": "^0.1.60"
   },
-  "pnpm": {
-    "overrides": {
-      "sharp": "$sharp"
-    }
+  "overrides": {
+    "sharp": "^0.34.5"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
@@ -75,6 +76,7 @@
     "dist/**/*",
     "resources/**/*",
     "vector-db/**/*",
+    "bin/win-x64/**/*",
     "README.md",
     "LICENSE"
   ],

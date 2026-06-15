@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    stdio ↔ openMSX TCP+SSPI proxy for Windows.
+    SSPI uses System.Net.Security.NegotiateAuthentication (BCL, .NET 7+),
+    so there is NO external package dependency and the project cross-builds
+    for win-x64 from a Linux Docker container with plain net8.0.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>mcp-openmsx-sspi-proxy</AssemblyName>
+    <RootNamespace>McpOpenMsx.SspiProxy</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- No debug symbols in the published artifact (keeps the npm package lean). -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+</Project>

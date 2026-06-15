@@ -17,6 +17,9 @@ test-scripts
 vector-db/index*.json
 mcp-server/dist
 mcp-server/node_modules
+mcp-server/bin
+mcp-server/helpers/**/obj
+mcp-server/helpers/**/bin
 mcp-output.log
 mcp-server/README.md
 mcp-server/LICENSE

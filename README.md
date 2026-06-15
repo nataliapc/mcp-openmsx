@@ -249,6 +249,27 @@ Edit it to include the following JSON entry:
 | `MCP_TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` | `http` |
 | `MCP_HTTP_PORT` | Port number for HTTP transport mode | `3000` | `8080` |
 | `MCP_ALLOWED_ORIGINS` | Comma-separated list of allowed origins for HTTP transport | Empty for all allowed | `http://localhost,http://mydomain.com` |
+| `OPENMSX_WINDOWS_CONTROL` | **Windows only.** How the server talks to openMSX's control socket (see below) | `stdio-proxy` | `direct-sspi` |
+| `OPENMSX_WINDOWS_PROXY_EXECUTABLE` | **Windows only.** Override path to the SSPI proxy helper (development) | Bundled `bin/win-x64/mcp-openmsx-sspi-proxy.exe` | `C:\path\to\mcp-openmsx-sspi-proxy.exe` |
+
+#### Windows control modes (`OPENMSX_WINDOWS_CONTROL`)
+
+On Windows, openMSX is a GUI app whose TCP control socket requires SSPI (Negotiate/NTLM) authentication. The server supports several transports:
+
+| Value | Description |
+|-------|-------------|
+| `stdio-proxy` | **Default.** Launches a self-contained .NET helper that performs SSPI and exposes a clean XML stdio channel — the most robust path. |
+| `direct-sspi` | Authenticates from Node via the optional `node-expose-sspi` package. Fallback / debugging. |
+| `socket` | Legacy alias of `direct-sspi`. |
+
+Linux and macOS are unaffected (`openmsx -control stdio`).
+
+The bundled proxy is built from `helpers/openmsx-sspi-proxy` and can be rebuilt reproducibly from Linux with Docker (no local .NET required):
+
+```bash
+cd mcp-server
+pnpm build:proxy:win-x64:docker   # → bin/win-x64/mcp-openmsx-sspi-proxy.exe
+```
 
 
 ## Advanced Manual Usage

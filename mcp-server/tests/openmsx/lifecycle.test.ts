@@ -71,6 +71,21 @@ describe('forceClose', () => {
     instance.forceClose();
     expect(mockProcess.kill).not.toHaveBeenCalled();
   });
+
+  it('kills both the emulator and the SSPI proxy when they are distinct processes', () => {
+    const { instance, mockProcess } = setupConnected();
+    const mockProxy = createMockProcess();
+    const priv = instance as any;
+    priv.controlProcess = mockProxy;
+    priv.controlConnection = { mode: 'stdio-proxy' };
+
+    instance.forceClose();
+
+    expect(mockProcess.kill).toHaveBeenCalledWith('SIGKILL');
+    expect(mockProxy.kill).toHaveBeenCalledWith('SIGKILL');
+    expect(priv.controlProcess).toBeNull();
+    expect(priv.controlConnection).toBeNull();
+  });
 });
 
 // ─── resetIO ─────────────────────────────────────────────────────────────────
@@ -176,6 +191,22 @@ describe('emu_close', () => {
 
     const result = await promise;
     expect(result).toBe('Ok: Emulator process closed successfully');
+  });
+
+  it('tears down the SSPI proxy when the emulator exits (stdio-proxy)', async () => {
+    const { instance, mockProcess } = setupConnected();
+    const mockProxy = createMockProcess();
+    const priv = instance as any;
+    priv.controlProcess = mockProxy;
+    vi.spyOn(instance, 'sendCommand').mockResolvedValue('');
+
+    const promise = instance.emu_close();
+    await vi.advanceTimersByTimeAsync(0);
+    mockProcess.emit('exit', 0, null);
+    await promise;
+
+    expect(mockProxy.kill).toHaveBeenCalledWith('SIGKILL');
+    expect(priv.controlProcess).toBeNull();
   });
 
   it('handles process error event', async () => {

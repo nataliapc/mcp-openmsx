@@ -32,6 +32,7 @@ function setupInstance(): { instance: OpenMSX; mockProcess: ReturnType<typeof cr
   const priv = instance as any;
   priv.process = mockProcess;
   priv.isConnected = true;
+  priv.controlWritable = mockProcess.stdin; // active control channel (Linux: process.stdin)
   priv.ioBuffer = '';
   priv.ioNotify = null;
   priv.commandQueue = Promise.resolve('');

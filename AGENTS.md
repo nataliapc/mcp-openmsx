@@ -23,12 +23,16 @@ mcp-openmsx/
 │   │   ├── server_prompts.ts      # Prompt management
 │   │   ├── server_elicitations.ts # Interactive machine/extension resolution
 │   │   ├── server_sampling.ts     # LLM-based matching for machine names
-│   │   ├── openmsx.ts             # OpenMSX wrapper (spawn, TCP/SSPI, stdio, command queue)
+│   │   ├── openmsx.ts             # OpenMSX wrapper (spawn, stdio/TCP/SSPI, command queue)
+│   │   ├── openmsx_windows_connector.ts # Windows control transport (stdio-proxy mode, socket port polling)
 │   │   ├── utils.ts               # Pure utilities (parsers, encoding, path helpers)
 │   │   └── vectordb.ts            # Vector DB wrapper for documentation search
+│   ├── helpers/
+│   │   └── openmsx-sspi-proxy/    # .NET SSPI stdio proxy (Windows) — C# source
+│   ├── bin/win-x64/               # Built proxy executable (gitignored; published in npm package)
 │   ├── tests/                     # Vitest unit tests
 │   │   ├── utils/                 # Pure function tests (parsing, encoding, validation, etc.)
-│   │   ├── openmsx/               # OpenMSX class tests (command queue, lifecycle)
+│   │   ├── openmsx/               # OpenMSX class tests (command queue, lifecycle, windows-connector)
 │   │   └── tools/                 # Tool handler logic tests (screenshot, replay, keyboard)
 │   ├── resources/                 # MSX documentation (BASIC, audio, VDP, SDCC, etc.)
 │   ├── vitest.config.ts           # Test configuration
@@ -46,24 +50,36 @@ mcp-openmsx/
 The `OpenMSX` class (`openmsx.ts`) handles platform-specific emulator communication:
 
 - **Linux/macOS**: `openmsx -control stdio` — commands via stdin, responses via stdout
-- **Windows**: TCP socket with SSPI (Negotiate/NTLM) authentication
+- **Windows**: openMSX's TCP control socket needs SSPI (Negotiate/NTLM) auth. Two modes, selected by `OPENMSX_WINDOWS_CONTROL` (see below); `stdio-proxy` is the default.
 
-All commands are serialized via a promise queue (`commandQueue`) to prevent overlap. Responses are accumulated in a persistent `ioBuffer` and extracted when `</reply>` is found.
+All commands are serialized via a promise queue (`commandQueue`) to prevent overlap. Responses are accumulated in a persistent `ioBuffer` and extracted when `</reply>` is found. The active write channel is held in `controlWritable` (process stdin, TCP socket, or proxy stdin) so `writeData`/`readData` are transport-agnostic.
 
 ### Windows launch protocol
 
-openMSX on Windows is compiled as `/SUBSYSTEM:WINDOWS` (GUI app). Piping stdin/stdout breaks the renderer, so a different approach is required:
+openMSX on Windows is compiled as `/SUBSYSTEM:WINDOWS` (GUI app). Piping stdin/stdout breaks the renderer, and its TCP control socket requires SSPI auth since openMSX 0.7.1. `OPENMSX_WINDOWS_CONTROL` selects the transport (resolved by `OpenMsxWindowsConnector.getControlMode`):
 
-1. **Spawn** with `stdio: ['ignore', 'ignore', 'pipe']` — only stderr is piped (for error detection). No `-control stdio` flag.
-2. **Poll** for the TCP socket file at `%TEMP%\openmsx-default\socket.<pid>` (200ms interval, up to 8s). The file contains a port number (range 9938–9958).
-3. **TCP connect** to `127.0.0.1:<port>`.
-4. **SSPI authentication** — required since openMSX 0.7.1. Uses `node-expose-sspi` (optional dependency). Protocol: loop until `SEC_E_OK`, each round exchanges `[4-byte BE length][SSPI token]` with the server. No final read after `SEC_E_OK`.
-5. **XML session** — send `<openmsx-control>\n`, wait for `<openmsx-output>` in the TCP stream.
-6. **Ready** — send initial configuration commands (`set renderer`, `set power on`, `reverse start`).
+| Value | Description |
+|-------|-------------|
+| `stdio-proxy` | **Default.** Bundled .NET helper does SSPI and exposes clean XML stdio. |
+| `direct-sspi` | Node does SSPI via `node-expose-sspi`. Fallback. |
+| `socket` | Legacy alias of `direct-sspi`. |
+| `pipe` | Reserved, not implemented (returns a clear error). |
 
-The main TCP data handler is registered **before** SSPI auth to avoid missing data. During SSPI, binary tokens accumulate harmlessly in `ioBuffer` and are cleared before the XML session starts.
+**Default (`stdio-proxy`)** — handled by `OpenMsxWindowsConnector` (`openmsx_windows_connector.ts`):
 
-Reference implementations: openMSX debugger `SspiNegotiateClient.cpp`, DeZog `openmsxremote.ts`.
+1. **Spawn** openMSX GUI with `stdio: ['ignore', 'ignore', 'pipe']`. No `-control stdio` flag.
+2. **Poll** `%TEMP%\openmsx-default\socket.<pid>` for the TCP port (`waitForWindowsSocketPort`).
+3. **Launch** `bin/win-x64/mcp-openmsx-sspi-proxy.exe <port>` (the .NET helper). It connects to `127.0.0.1:<port>`, does the SSPI handshake (via `System.Net.Security.NegotiateAuthentication`, no external dependency), and pipes raw bytes between its stdin/stdout and openMSX.
+4. **XML session** — the server sends `<openmsx-control>\n` through the proxy's stdin and waits for `<openmsx-output>` on its stdout, exactly like the Linux/macOS flow. The proxy never injects anything into stdout.
+5. **Ready** — send initial configuration commands (`set renderer`, `set power on`, `reverse start`).
+
+The openMSX GUI and the proxy are **separate processes** (`this.process` vs `this.controlProcess`); `emu_close`/`forceClose` tear down both.
+
+**Fallback (`direct-sspi`)** — kept inline in `openmsx.ts` (`launchConnectWindows` + `performSspiAuth`): TCP connect + SSPI via `node-expose-sspi` (optional dependency). The main TCP data handler is registered **before** SSPI auth; binary tokens accumulate harmlessly in `ioBuffer` and are cleared before the XML session.
+
+The proxy source lives in `helpers/openmsx-sspi-proxy/`; rebuild with `pnpm build:proxy:win-x64:docker`.
+
+Reference implementations: openMSX debugger `SspiNegotiateClient.cpp`, DeZog `openmsxremote.ts`, and the reference C# proxy (`Program.cs`) the helper is adapted from.
 
 ---
 
@@ -71,7 +87,9 @@ Reference implementations: openMSX debugger `SspiNegotiateClient.cpp`, DeZog `op
 
 | File | Purpose |
 |------|---------|
-| `openmsx.ts` | Process lifecycle, platform-specific I/O, command queue, SSPI auth |
+| `openmsx.ts` | Process lifecycle, platform-agnostic I/O (`controlWritable`), command queue, Windows `direct-sspi` fallback |
+| `openmsx_windows_connector.ts` | Windows `stdio-proxy` transport: control-mode resolution, proxy path resolution, socket-port polling, proxy launch |
+| `helpers/openmsx-sspi-proxy/Program.cs` | .NET stdio↔TCP+SSPI proxy (`NegotiateAuthentication`); built to `bin/win-x64/` via `pnpm build:proxy:win-x64:docker` |
 | `utils.ts` | Pure functions: parsers (`parseCpuRegs`, `parseVdpRegs`, `parsePalette`, `parseBreakpoints`, `parseReplayStatus`), encoding (`encodeHtmlEntities`, `decodeHtmlEntities`, `encodeTypeText`), helpers (`tclPath`, `buildKeyComboCommand`, `isErrorResponse`, `ensureDirectoryExists`) |
 | `server_tools.ts` | 17 tools: `emu_control`, `emu_info`, `emu_media`, `emu_vdp`, `emu_keyboard`, `emu_savestates`, `emu_replay`, `screen_shot`, `screen_dump`, `debug_run`, `debug_cpu`, `debug_memory`, `debug_vram`, `debug_breakpoints`, `basic_programming`, `msxdocs_resource_get`, `vector_db_query` |
 | `server.ts` | MCP server bootstrap, environment variable handling, directory auto-detection |
@@ -87,6 +105,19 @@ npm run build          # TypeScript → dist/
 npm start              # Run the MCP server
 npm run dev            # Run with tsx (no build needed)
 ```
+
+### Windows SSPI proxy (.NET helper)
+
+The proxy is **not** built by the normal `build` (it needs Docker or a local .NET SDK). Build it explicitly with `pnpm`:
+
+```bash
+cd mcp-server
+pnpm build:proxy:win-x64:docker   # reproducible cross-build from Linux via Docker
+# or, with a local .NET 8 SDK:
+pnpm build:proxy:win-x64
+```
+
+Output: `bin/win-x64/mcp-openmsx-sspi-proxy.exe` (self-contained, included in the published npm package via `package.json` `files`).
 
 ---
 
@@ -136,7 +167,8 @@ tests/
 
 - Paths in TCL commands must use forward slashes on all platforms. Use `tclPath()` from `utils.ts` to normalize.
 - `sharp` is an optional dependency (transitive from `@xenova/transformers`). It may fail to compile on Windows without C++ build tools — this is safe to ignore.
-- `node-expose-sspi` is optional — only needed on Windows for SSPI authentication.
+- `node-expose-sspi` is optional — only needed on Windows for the `direct-sspi` fallback. The default `stdio-proxy` mode does not use it.
+- The bundled `bin/win-x64/mcp-openmsx-sspi-proxy.exe` is a self-contained .NET binary; it runs on Windows without a .NET runtime installed.
 
 ---
 

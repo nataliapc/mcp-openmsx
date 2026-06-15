@@ -1,3 +1,12 @@
+nodeLinker: hoisted
+
+# Force a single, modern sharp across the whole tree (incl. @xenova/transformers,
+# which declares ^0.32.0). sharp 0.32.x has no prebuilt for Node 24 on Windows and
+# fails to build from source; 0.34.x uses the maintained @img/sharp-* prebuilt
+# packages that support Node 24. pnpm 11 reads overrides from here, not package.json.
+overrides:
+  sharp: ^0.34.5
+
 allowBuilds:
   esbuild: true
   protobufjs: true
