@@ -37,8 +37,8 @@ inspector: build
 
 publish: build pack
 	@echo "$(COL_WHITE)#### Publishing MCP-openMSX project...$(COL_RESET)"
-	$(NPM) pack --dryrun
-	$(NPM) publish --access public
+	$(NPM) pack --dry-run
+	$(NPM) publish --access public --no-git-checks
 	$(NPM) version patch
 
 info:

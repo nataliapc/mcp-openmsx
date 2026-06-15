@@ -30,8 +30,8 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "node_modules/.bin/tsc && shx chmod +x dist/server.js",
-    "watch": "node_modules/.bin/tsc --watch",
+    "build": "shx rm -rf dist && tsc && shx chmod +x dist/server.js",
+    "watch": "tsc --watch",
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
     "prepublishOnly": "npm run build",
