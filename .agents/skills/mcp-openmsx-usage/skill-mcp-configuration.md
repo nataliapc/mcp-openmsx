@@ -25,6 +25,8 @@ Example of `mcp.json` for launching with `stdio` transport in a VS Code workspac
 
 **macOS / Linux:** adjust the [`OPENMSX_SHARE_DIR`](skill-environment-variables.md) path format accordingly (forward slashes, no drive letter). Ensure `npx` and `openMSX` are installed and accessible in your environment.
 
+**Windows:** If you experience permission issues, change the `command` field to `npx.cmd`.
+
 ### Codex (OpenAI CLI)
 
 Codex does not automatically detect VS Code workspace MCP configurations. You must register the server globally:

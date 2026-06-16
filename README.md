@@ -195,6 +195,9 @@ Steps to install the MCP server in VSCode:
 ```
 
 > [!NOTE]  
+> In Windows you can change the `command` field to `npx.cmd` if you experience permission issues.
+
+> [!NOTE]  
 > Environment variables are optional. Customize them as you need.
 
 ### Streamed HTTP mode (more advanced)
