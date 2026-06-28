@@ -3,10 +3,52 @@
     "description": "",
     "toc": [
         {
-            "title": "SDCC Compiler User Guide",
-            "uri": "msxdocs://sdcc/sdccman",
+            "title": "SDCC Compiler User Guide: Introduction",
+            "uri": "msxdocs://sdcc/1_instroduction",
             "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
             "description": "Comprehensive user guide for SDCC (Small Device C Compiler), a free open source ISO C11/C17 compiler suite targeting 8-bit microcontrollers including 8051, Z80, R800, STM8, and PIC architectures. This manual provides essential information about compiler installation, usage, programming techniques, data types, memory models, optimization strategies, and MCU-specific development practices for embedded systems programming."
+        },
+        {
+            "title": "SDCC Compiler User Guide: Installing SDCC",
+            "uri": "msxdocs://sdcc/2_Installing_SDCC",
+            "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
+            "description": "Installation guide covering building SDCC on Linux/Unix and Windows. Details configure options, install paths, port enable/disable flags, and compiler version selection."
+        },
+        {
+            "title": "SDCC Compiler User Guide: Using SDCC",
+            "uri": "msxdocs://sdcc/3_Using_SDCC",
+            "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
+            "description": "Practical usage guide covering C standard compliance, command-line options, data types, storage classes, memory models, and per-port deviations. Explains compiler/linker invocation and source-level features for embedded targets."
+        },
+        {
+            "title": "SDCC Compiler User Guide: Notes on supported Processors",
+            "uri": "msxdocs://sdcc/4_Notes_on_supported_Processors",
+            "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
+            "description": "Processor-specific notes for the MCS51, Z80/Z180, and other supported ports. Covers SFR access, bankswitching, startup code, and per-architecture features and limitations."
+        },
+        {
+            "title": "SDCC Compiler User Guide: Debugging",
+            "uri": "msxdocs://sdcc/5_Debugging",
+            "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
+            "description": "Overview of debugging strategies for embedded code, from simulators and on-target monitors to ICEs and hardware debuggers. Details the SDCDB source-level debugger and the --debug build flow with .adb/.cdb files."
+        },
+        {
+            "title": "SDCC Compiler User Guide: Tips and Support",
+            "uri": "msxdocs://sdcc/6_Tips_and_Support",
+            "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
+            "description": "Practical tips for generating efficient code, including data-type selection, integer promotion pitfalls, and porting code between compilers. Includes support resources and good embedded programming practices."
+        },
+        {
+            "title": "SDCC Compiler User Guide: SDCC Technical Data",
+            "uri": "msxdocs://sdcc/7_SDCC_Technical_Data",
+            "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
+            "description": "Technical reference on SDCC's standard and MCU-specific optimizations, such as common subexpression elimination, dead-code elimination, and loop optimizations. Covers register allocation and code-generation internals."
+        },
+        {
+            "title": "SDCC Compiler User Guide: Compiler internals",
+            "uri": "msxdocs://sdcc/8_Compiler_internals",
+            "external_url": "https://sourceforge.net/p/sdcc/code/HEAD/tree/trunk/sdcc/doc/sdccman.lyx?format=raw",
+            "description": "Walkthrough of the compiler architecture: parsing to AST, iCode intermediate generation, optimizations, live-range analysis, register allocation, and code generation. Explains how SDCC retargets to 8-bit MCUs like 8051 and Z80."
         },
         {
             "title": "SDCC 4.5.0 Release Notes",

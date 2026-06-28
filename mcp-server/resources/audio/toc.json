@@ -9,6 +9,18 @@
             "description": "Complete reference for MSX PSG (Programmable Sound Generator) registers covering all 16 registers including frequency control, white noise control, voice and I/O port control, amplitude and volume control, envelope form and period control, and I/O parallel port registers. Includes BIOS routines WRTPSG, RDPSG, and GICINI for PSG access and initialization."
         },
         {
+            "title": "FM-PAC / MSX-MUSIC (Yamaha YM-2413)",
+            "uri": "msxdocs://audio/chipsfmpacpr1_en",
+            "external_url": "https://gitlab.com/moltsxalats/learning-fusion-c-programs/-/raw/9e9c4a754657db095a39cfdfc5659756cc8797e3/chipsfmpacpr1_en.txt",
+            "description": "Direct programming guide for the Yamaha YM-2413 (FM-PAC/MSX-MUSIC) chip via I/O ports 07Ch/07Dh. Covers all 43 write-only registers including frequency, octave, key control, volume, instrument selection, drum channels, and software instrument programming via FM synthesis operators."
+        },
+        {
+            "title": "MSX-MUSIC Registers",
+            "uri": "msxdocs://audio/chipsfmpacpr2_en",
+            "external_url": "https://gitlab.com/moltsxalats/learning-fusion-c-programs/-/raw/9e9c4a754657db095a39cfdfc5659756cc8797e3/chipsfmpacpr2_en.txt",
+            "description": "Register reference for the MSX-MUSIC OPLL chip (FM-PAC, FM-Stereo-Pak, MSX2+, TurboR) accessed via write-only ports &H7C/&H7D. Details OPLL custom instrument registers 0–7, instrument/frequency/octave/volume control registers, 15 preset FM instruments, rhythm/drum register layout, BASIC register defaults, and note frequency tables."
+        },
+        {
             "title": "Konami SCC Sound Chip",
             "uri": "msxdocs://audio/sound_cartridge_scc",
             "external_url": "http://bifi.msxnet.org/msxnet/tech/scc",

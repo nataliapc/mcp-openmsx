@@ -4,9 +4,44 @@
     "external_url": "https://github.com/gseidler/The-MSX-Red-Book",
     "toc": [
         {
-            "title": "The MSX Red Book (full book)",
-            "uri": "msxdocs://book--the-msx-red-book/the_msx_red_book",
-            "description": "The MSX Red Book provides a detailed technical overview of MSX computers, focusing on hardware and software components. It is designed for advanced users, particularly machine code programmers, offering insights into the MSX standard and its programmable components."
+            "title": "Introduction",
+            "uri": "msxdocs://book--the-msx-red-book/Introduction",
+            "description": "The aim of this book is to provide a description of the standard MSX hardware and software at a level of detail sufficient to satisfy that most demanding of users, the machine code programmer."
+        },
+        {
+            "title": "Chapter1. Programmable Peripheral Interface",
+            "uri": "msxdocs://book--the-msx-red-book/Chapter1_Programmable_Peripheral_Interface",
+            "description": "Chapter1, Chapter2 and Chapter3 describe the operation of the Programmable Peripheral Interface, Video Display Processor and Programmable Sound Generator respectively. These three devices provide the interface between the Z80 and the peripheral hardware on a standard MSX machine. All occupy positions on the Z80 I/O (Input/Output) Bus."
+        },
+        {
+            "title": "Chapter2. Video Display Processor",
+            "uri": "msxdocs://book--the-msx-red-book/Chapter2_Video_Display_Processor",
+            "description": "Chapter1, Chapter2 and Chapter3 describe the operation of the Programmable Peripheral Interface, Video Display Processor and Programmable Sound Generator respectively. These three devices provide the interface between the Z80 and the peripheral hardware on a standard MSX machine. All occupy positions on the Z80 I/O (Input/Output) Bus."
+        },
+        {
+            "title": "Chapter3. Programmable Sound Generator",
+            "uri": "msxdocs://book--the-msx-red-book/Chapter3_Programmable_Sound_Generator",
+            "description": "Chapter1, Chapter2 and Chapter3 describe the operation of the Programmable Peripheral Interface, Video Display Processor and Programmable Sound Generator respectively. These three devices provide the interface between the Z80 and the peripheral hardware on a standard MSX machine. All occupy positions on the Z80 I/O (Input/Output) Bus."
+        },
+        {
+            "title": "Chapter4. ROM BIOS",
+            "uri": "msxdocs://book--the-msx-red-book/Chapter4_ROM_BIOS",
+            "description": "Chapter4 covers the software contained in the first part of the MSX ROM. This section of the ROM is concerned with controlling the machine hardware at the fine detail level and is known as the ROM BIOS (Basic Input Output System). It is structured in such a way that most of the functions a machine code programmer requires, such as keyboard and video drivers, are readily available."
+        },
+        {
+            "title": "Chapter5. ROM BASIC Interpreter",
+            "uri": "msxdocs://book--the-msx-red-book/Chapter5_ROM_BASIC_Interpreter",
+            "description": "Chapter5 describes the software contained in the remainder of the ROM, the Microsoft MSX BASIC Interpreter. Although this is largely a text-driven program, and consequently of less use to the programmer, a close examination reveals many points not documented by manufacturers."
+        },
+        {
+            "title": "Chapter6. Memory Map",
+            "uri": "msxdocs://book--the-msx-red-book/Chapter6_Memory_Map",
+            "description": "Chapter6 is concerned with the organization of system memory. Particular attention is paid to the Workspace Area, that section of RAM from F380H to FFFFH, as this is used as a scratchpad by the BIOS and the BASIC Interpreter and contains much information of use to any application program."
+        },
+        {
+            "title": "Chapter7. Machine Code Programming",
+            "uri": "msxdocs://book--the-msx-red-book/Chapter7_Machine_Code_Programming",
+            "description": "Chapter7 gives some examples of machine code programs that make use of ROM features to minimize design effort."
         }
     ]
 }
