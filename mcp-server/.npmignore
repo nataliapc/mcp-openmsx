@@ -18,3 +18,4 @@ tests/
 vitest.config.ts
 pnpm-*.yaml
 **/lyx2md.py
+vector-db/__manifest

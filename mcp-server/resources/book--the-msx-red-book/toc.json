@@ -39,8 +39,8 @@
             "description": "Chapter6 is concerned with the organization of system memory. Particular attention is paid to the Workspace Area, that section of RAM from F380H to FFFFH, as this is used as a scratchpad by the BIOS and the BASIC Interpreter and contains much information of use to any application program."
         },
         {
-            "title": "Chapter7. Machine Code Programming",
-            "uri": "msxdocs://book--the-msx-red-book/Chapter7_Machine_Code_Programming",
+            "title": "Chapter7. Machine Code Programs",
+            "uri": "msxdocs://book--the-msx-red-book/Chapter7_Machine_Code_Programs",
             "description": "Chapter7 gives some examples of machine code programs that make use of ROM features to minimize design effort."
         }
     ]

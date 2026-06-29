@@ -14,15 +14,15 @@ install:
 	@$(NPM) ci
 
 embeddings:
-	@echo "$(COL_WHITE)#### Creating embeddings...$(COL_RESET)"
-	npx tsx generate_embeddings.ts
+	@echo "$(COL_WHITE)#### Creating embeddings (GPU if available, else CPU)...$(COL_RESET)"
+	OPENMSX_EMBED_PROVIDER=cuda npx tsx generate_embeddings.ts
 
 query:
 	@echo "$(COL_WHITE)#### Querying VectorDB...$(COL_RESET)"
 	#request the user to enter a query
 	@read -p "Enter your query: " query; \
 	echo "Query: $$query"; \
-	npx tsx query_vectra.ts "$$query"
+	npx tsx query_lancedb.ts "$$query"
 
 # Checks
 

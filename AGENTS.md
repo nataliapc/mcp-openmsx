@@ -26,19 +26,23 @@ mcp-openmsx/
 │   │   ├── openmsx.ts             # OpenMSX wrapper (spawn, stdio/TCP/SSPI, command queue)
 │   │   ├── openmsx_windows_connector.ts # Windows control transport (stdio-proxy mode, socket port polling)
 │   │   ├── utils.ts               # Pure utilities (parsers, encoding, path helpers)
-│   │   └── vectordb.ts            # Vector DB wrapper for documentation search
+│   │   ├── embedder.ts            # Local embedding engine (onnxruntime-node + tokenizer, mean pooling)
+│   │   ├── chunker.ts             # Local semantic chunker (paragraph similarity) + fixed-size fallback
+│   │   └── vectordb.ts            # LanceDB hybrid search (vector + BM25 + RRF)
 │   ├── helpers/
 │   │   └── openmsx-sspi-proxy/    # .NET SSPI stdio proxy (Windows) — C# source
 │   ├── bin/win-x64/               # Built proxy executable (gitignored; published in npm package)
+│   ├── vector-db/msxdocs.lance/   # Distributed LanceDB index (versioned; published in npm package)
 │   ├── tests/                     # Vitest unit tests
-│   │   ├── utils/                 # Pure function tests (parsing, encoding, validation, etc.)
+│   │   ├── utils/                 # Pure function tests (parsing, encoding, validation, chunker, etc.)
 │   │   ├── openmsx/               # OpenMSX class tests (command queue, lifecycle, windows-connector)
+│   │   ├── vectordb/              # Hybrid search tests (RRF fusion, query mapping)
 │   │   └── tools/                 # Tool handler logic tests (screenshot, replay, keyboard)
 │   ├── resources/                 # MSX documentation (BASIC, audio, VDP, SDCC, etc.)
 │   ├── vitest.config.ts           # Test configuration
 │   ├── tsconfig.json              # TypeScript config (ES2022, Node16 modules, strict)
 │   └── package.json
-├── vector-db/                     # Embedding generation for documentation RAG
+├── vector-db/                     # Local index generator (generate_embeddings.ts, chunker via mcp-server)
 ├── .agents/skills/                # Agent skills for MCP usage guidance
 └── AGENTS.md                      # This file
 ```
@@ -91,6 +95,9 @@ Reference implementations: openMSX debugger `SspiNegotiateClient.cpp`, DeZog `op
 | `openmsx_windows_connector.ts` | Windows `stdio-proxy` transport: control-mode resolution, proxy path resolution, socket-port polling, proxy launch |
 | `helpers/openmsx-sspi-proxy/Program.cs` | .NET stdio↔TCP+SSPI proxy (`NegotiateAuthentication`); built to `bin/win-x64/` via `pnpm build:proxy:win-x64:docker` |
 | `utils.ts` | Pure functions: parsers (`parseCpuRegs`, `parseVdpRegs`, `parsePalette`, `parseBreakpoints`, `parseReplayStatus`), encoding (`encodeHtmlEntities`, `decodeHtmlEntities`, `encodeTypeText`), helpers (`tclPath`, `buildKeyComboCommand`, `isErrorResponse`, `ensureDirectoryExists`) |
+| `embedder.ts` | Local embedding engine: `onnxruntime-node` + `@anush008/tokenizers`, `multilingual-e5-small` (384d, 512-token context), **mean pooling** + L2 normalize, batched inference (multi-thread), e5 `query:`/`passage:` prefixes (`embedQuery`/`embedPassage`/`embedPassageBatch`), on-demand model download to cache. Provider is **CPU/int8 by default and only switchable via `setEmbedProvider('cuda')`** — called solely by the index generator (reads `OPENMSX_EMBED_PROVIDER`); the server never calls it, so it always uses int8 and never downloads the fp32 model. CUDA is probed with the int8 model before the fp32 download. fp32(index)/int8(query) are interchangeable (same ranking). Single source of truth for embeddings (server + generator) |
+| `chunker.ts` | `semanticChunk` (paragraph-level, groups by embedding cosine similarity into ≤~400-token chunks) + `chunkText` (deterministic fixed-size fallback / hard-split) |
+| `vectordb.ts` | LanceDB hybrid search: vector (`nearestTo`) + BM25 (`nearestToText`) fused with `fuseRRF` (exported, testable) |
 | `server_tools.ts` | 17 tools: `emu_control`, `emu_info`, `emu_media`, `emu_vdp`, `emu_keyboard`, `emu_savestates`, `emu_replay`, `screen_shot`, `screen_dump`, `debug_run`, `debug_cpu`, `debug_memory`, `debug_vram`, `debug_breakpoints`, `basic_programming`, `msxdocs_resource_get`, `vector_db_query` |
 | `server.ts` | MCP server bootstrap, environment variable handling, directory auto-detection |
 
@@ -148,6 +155,9 @@ tests/
 ├── openmsx/
 │   ├── command-queue.test.ts # sendCommand serialization, reply parsing, timeout, ioBuffer handling
 │   └── lifecycle.test.ts     # emu_close, forceClose, resetIO, destroy, emu_isInBasic, emu_status
+├── vectordb/
+│   ├── rrf.test.ts           # fuseRRF (Reciprocal Rank Fusion) pure function
+│   └── query-mapping.test.ts # VectorDB.query mapping (embed + lancedb mocked)
 └── tools/
     ├── screenshot.test.ts    # Path resolution, directory scan fallback, as_image, TCL command construction
     ├── replay.test.ts        # Command construction, .omr extension, path normalization, status parsing
@@ -166,7 +176,7 @@ tests/
 ## Cross-Platform Notes
 
 - Paths in TCL commands must use forward slashes on all platforms. Use `tclPath()` from `utils.ts` to normalize.
-- `sharp` is an optional dependency (transitive from `@xenova/transformers`). It may fail to compile on Windows without C++ build tools — this is safe to ignore.
+- The embedding/search stack uses prebuilt native binaries (`onnxruntime-node`, `@anush008/tokenizers`, `@lancedb/lancedb`) — no C++/Rust toolchain needed. `sharp` is no longer a dependency. (`@anush008/tokenizers` ships `win32-x64` but not `win32-arm64`.)
 - `node-expose-sspi` is optional — only needed on Windows for the `direct-sspi` fallback. The default `stdio-proxy` mode does not use it.
 - The bundled `bin/win-x64/mcp-openmsx-sspi-proxy.exe` is a self-contained .NET binary; it runs on Windows without a .NET runtime installed.
 

@@ -14,7 +14,8 @@ assets
 plan
 node_modules
 test-scripts
-vector-db/index*.json
+vector-db/*.lance
+mcp-server/vector-db/__manifest
 mcp-server/dist
 mcp-server/node_modules
 mcp-server/bin

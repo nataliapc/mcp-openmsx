@@ -46,7 +46,7 @@ This project creates a bridge between modern AI-assisted development (e.g. GitHu
 - **Video Control**: VDP register manipulation and screen capture.
 - **Memory Operations**: Read/write RAM, VRAM, and I/O port access.
 - **Automation**: Keyboard input simulation and savestate management.
-- **Vector DB Integration**: Query an embedded vector database with MSX resources for development support.
+- **Hybrid Documentation Search**: Query an embedded local index of MSX resources combining semantic (multilingual embeddings) and keyword (BM25) search, runs fully offline.
 - **Hybrid Mode**: This MCP server supports hybrid access mode (_STDIO_ and _HTTP_ transports).
 
 ## Architecture
@@ -117,7 +117,7 @@ The MCP server translates high-level natural language commands from your Copilot
 - `msxdocs_resource_get`: Retrieve MCP resources for MCP clients that don't support MCP resources.
 
 ### Documentation Tools
-- `vector_db_query`: Query the Vector DB resources to obtain information about MSX systems, cartridges, and other development resources.
+- `vector_db_query`: Hybrid search (semantic embeddings + BM25) over the local MSX documentation index, for information about MSX systems, cartridges, programming, and other development resources.
 - `msxdocs_resource_get`: Retrieve MCP resources for MCP clients that don't support MCP resources.
 
 ## Available MCP Resources
@@ -254,6 +254,21 @@ Edit it to include the following JSON entry:
 | `MCP_ALLOWED_ORIGINS` | Comma-separated list of allowed origins for HTTP transport | Empty for all allowed | `http://localhost,http://mydomain.com` |
 | `OPENMSX_WINDOWS_CONTROL` | **Windows only.** How the server talks to openMSX's control socket (see below) | `stdio-proxy` | `direct-sspi` |
 | `OPENMSX_WINDOWS_PROXY_EXECUTABLE` | **Windows only.** Override path to the SSPI proxy helper (development) | Bundled `bin/win-x64/mcp-openmsx-sspi-proxy.exe` | `C:\path\to\mcp-openmsx-sspi-proxy.exe` |
+| `OPENMSX_MODELS_CACHE` | Directory where the embedding model is cached (also honors `HF_HOME` / `TRANSFORMERS_CACHE`) | `~/.cache/mcp-openmsx` | `/opt/models` |
+| `OPENMSX_EMBED_PROVIDER` | **Index generator only.** `cuda` uses the GPU (fp32 model) to regenerate the index, falling back to CPU if CUDA is unavailable. The MCP server itself always uses CPU/int8 and ignores this variable. | (generator: `cpu`) | `cuda` |
+
+#### Documentation search model
+
+The `vector_db_query` tool runs a local hybrid search (semantic embeddings + BM25). The embedding model
+(`multilingual-e5-small`, ONNX quantized, ~118 MB, 512-token context, multilingual) is **downloaded once**
+from the HuggingFace Hub on the first query and cached on disk (see `OPENMSX_MODELS_CACHE` above). After that
+it runs fully offline. No API key is required. To pre-populate the cache for air-gapped environments, run one
+query on a networked machine and copy the cache directory.
+
+Regenerating the index (rare) embeds the whole corpus. On CPU this is slow; on an NVIDIA GPU set
+`OPENMSX_EMBED_PROVIDER=cuda` for the generator to use it (requires CUDA 13 runtime libraries + cuDNN 9),
+which is ~50× faster. The GPU path uses the larger fp32 model; the server keeps using the int8 model and
+the two are interchangeable for search (same ranking). End users never download the fp32 model.
 
 #### Windows control modes (`OPENMSX_WINDOWS_CONTROL`)
 

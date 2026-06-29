@@ -1,119 +1,80 @@
 // generate_embeddings.ts
 // ===============================================================
-// Generates a portable **Vectra** embedded vector database from .md, .txt, .html files
-// Vectra stores everything locally in files, perfect for MCP server embedding
+// Generates a portable LanceDB vector index from .md/.txt/.html resources
+// for the mcp-openmsx server. 100% local: embeddings via
+// ../mcp-server/src/embedder.ts (onnxruntime-node + tokenizer, mean pooling),
+// chunking via ../mcp-server/src/chunker.ts. No external API.
 // ---------------------------------------------------------------
-//  npm install vectra openai dotenv fast-glob remove-markdown cheerio gray-matter sanitize-html
-// ---------------------------------------------------------------
+//  Requires mcp-server deps installed (onnxruntime-node, @anush008/tokenizers):
+//    cd ../mcp-server && pnpm install
+//    cd ../vector-db   && pnpm install
 //  Usage:
-//    npx tsx generate_embeddings.ts --src ./docs --collection openmsx-docs --chunk 300 --overlap 50
+//    npx tsx generate_embeddings.ts --src ../mcp-server/resources/ --out ../mcp-server/vector-db
 //  Options:
-//    --src <path>        Source directory to scan (default: ./mcp-server/resources/)
-//    --collection <name> Collection name (default: msxdocs)
-//    --chunk <size>      Chunk size in characters (default: 400)
-//    --overlap <size>    Overlap size between chunks (default: 50)
-// ---------------------------------------------------------------
-//  Required environment variables:
-//    OPENAI_API_KEY   → your API key
-//    EMBED_MODEL      → optional (default text-embedding-3-small)
+//    --src <path>        Source directory to scan (default: ../mcp-server/resources/)
+//    --out <path>        LanceDB output directory (default: ../mcp-server/vector-db)
+//    --collection <name> Table name (default: msxdocs)
+//    --chunk <size>      Chunk size in characters (default: 450)
+//    --overlap <size>    Overlap size between chunks (default: 80)
 // ===============================================================
 
-import { LocalIndex } from 'vectra';
-import OpenAI from 'openai';
-import embeddings from '@themaximalist/embeddings.js';
+import * as lancedb from '@lancedb/lancedb';
 import fg from 'fast-glob';
 import * as fs from 'fs/promises';
-import * as fssync from 'fs';
 import * as path from 'path';
 import removeMd from 'remove-markdown';
 import * as cheerio from 'cheerio';
 import matter from 'gray-matter';
 import sanitizeHtml from 'sanitize-html';
-import 'dotenv/config';
-import { OpenAIEmbedding, chunkit } from '@elpassion/semantic-chunking';
-import { encoding_for_model } from 'tiktoken';
 
+import { embedPassageBatch, setEmbedProvider } from '../mcp-server/src/embedder.js';
+import { semanticChunk } from '../mcp-server/src/chunker.js';
+
+// GPU is opt-in for the generator only (the server never touches this).
+// OPENMSX_EMBED_PROVIDER=cuda uses the GPU (fp32) if available, else falls back
+// to CPU (int8) without downloading the large model.
+setEmbedProvider(process.env.OPENMSX_EMBED_PROVIDER === 'cuda' ? 'cuda' : 'cpu');
 
 // ---------- CLI args ----------
-const args = Object.fromEntries(
-	process.argv.slice(2).map((arg) => {
-		if (arg.startsWith('--')) {
-			const [k, v] = arg.replace(/^--/, '').split('=');
-			return [k, v ?? true];
-		}
-		return [arg, true];
-	})
-);
-
-// Handle --src argument properly
 let SRC_DIR = '../mcp-server/resources/';
+let OUT_DIR = '../mcp-server/vector-db';
 let COLLECTION_NAME = 'msxdocs';
-let CHUNK_LEN = 400;
-let OVERLAP_LEN = 50; // Default overlap of 50 characters
+let CHUNK_LEN = 1800;       // max chars per semantic chunk (~450 tokens)
+let SIM_THRESHOLD = 0.90;   // cosine threshold to keep a paragraph in the group
 
-// Parse arguments manually for better handling
 for (let i = 0; i < process.argv.length; i++) {
-	if (process.argv[i] === '--src' && i + 1 < process.argv.length) {
-		SRC_DIR = process.argv[i + 1];
-	} else if (process.argv[i] === '--collection' && i + 1 < process.argv.length) {
-		COLLECTION_NAME = process.argv[i + 1];
-	} else if (process.argv[i] === '--chunk' && i + 1 < process.argv.length) {
-		CHUNK_LEN = Number(process.argv[i + 1]);
-	} else if (process.argv[i] === '--overlap' && i + 1 < process.argv.length) {
-		OVERLAP_LEN = Number(process.argv[i + 1]);
+	const next = process.argv[i + 1];
+	switch (process.argv[i]) {
+		case '--src': if (next) { SRC_DIR = next; } break;
+		case '--out': if (next) { OUT_DIR = next; } break;
+		case '--collection': if (next) { COLLECTION_NAME = next; } break;
+		case '--chunk': if (next) { CHUNK_LEN = Number(next); } break;
+		case '--threshold': if (next) { SIM_THRESHOLD = Number(next); } break;
 	}
 }
 
-const DB_DIR = path.resolve('./');
-
-// ---------- OpenAI & Vectra ----------
-const openai = new OpenAI({ 
-	apiKey: process.env.OPENAI_API_KEY 
-});
-
-// Create vector database directory
-if (!fssync.existsSync(DB_DIR)) {
-	fssync.mkdirSync(DB_DIR, { recursive: true });
+interface DocRow {
+	id: string;
+	vector: number[];
+	text: string;
+	uri: string;
+	title: string;
+	index: number;
 }
-// Initialize Vectra index (embedded vector database)
-const index = new LocalIndex(DB_DIR);
 
 // ---------- Utilities ----------
-function calculateTokens(text: string): number {
-	// Calculate exact tokens count with tiktoken
-	const encoding = encoding_for_model('text-embedding-3-small');
-	const tokens = encoding.encode(text);
-	encoding.free(); // Important: free the encoding to prevent memory leaks
-	return tokens.length;
-}
-
-async function getEmbedding(text: string): Promise<number[]> {
-	const tokensCount = calculateTokens(text);
-	
-	if (tokensCount > 8000) { // Conservative limit
-		console.warn(`⚠️  Chunk too long (${tokensCount} estimated tokens). Truncating...`);
-		text = text.substring(0, 8000 * 4); // Truncate to ~8000 tokens
-	}
-	const response = await embeddings(text);
-	return response;
-}
-
 function stripHtml(html: string): string {
-	const clean = sanitizeHtml(html, {
-		allowedTags: [],
-		allowedAttributes: {},
-	});
+	const clean = sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} });
 	return cheerio.load(clean).text();
 }
 
 async function fileToPlainText(filePath: string): Promise<string> {
 	const raw = await fs.readFile(filePath, 'utf-8');
 	const ext = path.extname(filePath).toLowerCase();
-	
 	switch (ext) {
 		case '.md':
 		case '.markdown': {
-			const { content } = matter(raw); // Remove front-matter YAML
+			const { content } = matter(raw); // strip YAML front-matter
 			return removeMd(content);
 		}
 		case '.html':
@@ -124,257 +85,97 @@ async function fileToPlainText(filePath: string): Promise<string> {
 	}
 }
 
-async function splitText(text: string, maxLen = CHUNK_LEN, overlapLen = OVERLAP_LEN): Promise<string[]> {
-	const model = new OpenAIEmbedding(openai);
-	await model.initialize('text-embedding-3-small');
-
-	const myChunks = await chunkit(
-		[{document_text: text}], model, {
-			maxTokenSize: 400,
-			similarityThreshold: 0.5,
-			combineChunks: true,
-			combineChunksSimilarityThreshold: 0.5
-		}
-	);
-	return myChunks.map((chunk: { text: string }) => chunk.text);
-}
-
-
 // ---------- Main Indexer ----------
-async function indexFiles() {
-	try {
-		// Initialize the vector index
-		if (!await index.isIndexCreated()) {
-			console.log('🔧 Creating new vector index...');
-			await index.createIndex();
-			console.log('✅ Vector index created successfully');
-		} else {
-			console.log('📦 Using existing vector index');
-		}
-	} catch (error) {
-		console.error('💥 Failed to initialize vector index:', error);
-		console.log('🧹 Cleaning up and recreating index...');
-		
-		// Clean up any corrupted index files
-		const indexFiles = await fg(['*.json', '*.bin'], { cwd: DB_DIR, absolute: true });
-		for (const file of indexFiles) {
-			try {
-				await fs.unlink(file);
-				console.log(`   Deleted: ${path.basename(file)}`);
-			} catch (err) {
-				console.warn(`   Failed to delete ${file}:`, err);
-			}
-		}
-		
-		// Recreate the index
-		await index.createIndex();
-		console.log('✅ Vector index recreated successfully');
-	}
-
+async function indexFiles(): Promise<void> {
 	console.log(`📂 Scanning "${SRC_DIR}" for toc.json files...`);
-	const tocFiles = await fg(['**/toc.json'], { cwd: SRC_DIR, absolute: true });
-	const vectorFiles = await fg(['**/_toc.json'], { cwd: SRC_DIR, absolute: true });
-	tocFiles.push(...vectorFiles);
+	const tocFiles = await fg(['**/toc.json', '**/_toc.json'], { cwd: SRC_DIR, absolute: true });
 	console.log(`🔍 Found ${tocFiles.length} toc.json files`);
 
-	// Get existing items and check for complete resources using lastChunk metadata
-	const existingItems = new Map<string, any[]>();
-	const processedResources = new Set<string>();
-	
-	try {
-		const allItems = await index.listItems();
-
-		// Group items by URI and check for completion
-		for (const item of allItems) {
-			if (item.metadata?.uri) {
-				const uri = item.metadata.uri as string;
-				if (!existingItems.has(uri)) {
-					existingItems.set(uri, []);
-				}
-				existingItems.get(uri)!.push(item);
-				
-				// If this chunk has lastChunk=true, the resource is complete
-				if (item.metadata.lastChunk === true) {
-					processedResources.add(uri);
-				}
-			}
-		}
-
-		console.log(`📊 Found ${allItems.length} existing vectors for ${existingItems.size} resources`);
-		console.log(`✅ Complete resources (with lastChunk): ${processedResources.size}`);
-	} catch (error) {
-		console.log('❌ No existing items found, starting fresh.');
-	}
-
-	// Parse all toc.json files and collect resources
-	const allResources: Array<{uri: string, title: string, description: string, sectionName: string, filePath?: string}> = [];
-
-	let tocCount = 0;
+	// Collect resources from all toc.json files.
+	const resources: Array<{ uri: string; title: string; filePath?: string }> = [];
 	for (const tocFile of tocFiles) {
-		tocCount++;
 		const sectionName = path.basename(path.dirname(tocFile));
-		console.log(`📖 [${tocCount}] Reading ${path.parse(tocFile).base} from section: ${sectionName}`);
-
 		try {
-			const tocContent = JSON.parse(await fs.readFile(tocFile, 'utf8'));
-
-			if (tocContent.toc && Array.isArray(tocContent.toc)) {
-				for (const item of tocContent.toc) {
-					// For local files, determine the file path
+			const toc = JSON.parse(await fs.readFile(tocFile, 'utf8'));
+			if (!Array.isArray(toc.toc)) { continue; }
+			for (const item of toc.toc) {
+				let filePath: string | undefined;
+				if (typeof item.uri === 'string' && item.uri.startsWith(`${COLLECTION_NAME}://`)) {
 					const itemName = path.parse(item.uri.split('/').pop() || '').base;
-					let filePath: string | undefined;
-					if (item.uri.startsWith(`${COLLECTION_NAME}://`)) {
-						// Local resource - extract the filename from the URI
-						filePath = path.join(path.dirname(tocFile), itemName);
-					}
-
-					allResources.push({
-						uri: item.uri,
-						title: item.title,
-						description: item.description || '',
-						sectionName,
-						filePath
-					});
+					filePath = path.join(path.dirname(tocFile), itemName);
 				}
+				resources.push({ uri: item.uri, title: item.title ?? '', filePath });
 			}
 		} catch (error) {
-			console.error(`❌ Failed to parse ${tocFile}:`, error);
+			console.error(`❌ Failed to parse ${tocFile} (${sectionName}):`, error);
+		}
+	}
+	console.log(`📋 Total resources found: ${resources.length}`);
+
+	// Build rows: chunk + embed each local resource.
+	const rows: DocRow[] = [];
+	const extensions = ['.md', '.markdown', '.txt', '.html', '.htm'];
+	let processed = 0;
+
+	for (const resource of resources) {
+		if (resource.uri.startsWith('http://') || resource.uri.startsWith('https://')) {
+			console.log(`⏭️  Skipping HTTP resource: ${resource.uri}`);
 			continue;
+		}
+		if (!resource.filePath) {
+			console.log(`⏭️  Skipping unsupported resource: ${resource.uri}`);
+			continue;
+		}
+
+		// Resolve the actual file (try known extensions).
+		let actualPath: string | undefined;
+		for (const ext of extensions) {
+			const candidate = resource.filePath + ext;
+			try { await fs.access(candidate); actualPath = candidate; break; } catch { /* next */ }
+		}
+		if (!actualPath) {
+			console.log(`⚠️  File not found for resource: ${resource.uri}`);
+			continue;
+		}
+
+		const plainText = await fileToPlainText(actualPath);
+		const chunks = await semanticChunk(plainText, embedPassageBatch, {
+			maxChars: CHUNK_LEN,
+			similarityThreshold: SIM_THRESHOLD,
+		});
+		processed++;
+		console.log(`🔄 [${processed}] ${resource.uri} (${chunks.length} chunks)`);
+
+		// Re-embed the final chunks (the chunk vector ≠ mean of its sentences).
+		const vectors = await embedPassageBatch(chunks);
+		for (let i = 0; i < chunks.length; i++) {
+			rows.push({
+				id: `${resource.uri}--${i}`,
+				vector: vectors[i],
+				text: chunks[i],
+				uri: resource.uri,
+				title: resource.title,
+				index: i,
+			});
 		}
 	}
 
-	console.log(`📋 Total resources found: ${allResources.length}`);
-	
-	// Determine which resources need processing
-	const resourcesToProcess: Array<{uri: string, title: string, description: string, sectionName: string, filePath?: string, isIncomplete?: boolean}> = [];
-	
-	for (const resource of allResources) {
-		const existingChunks = existingItems.get(resource.uri) || [];
-		
-		if (processedResources.has(resource.uri)) {
-			// Resource is complete (has lastChunk=true)
-			continue;
-		} else if (existingChunks.length > 0) {
-			// Resource has chunks but no lastChunk=true, so it's incomplete
-			console.log(`⚠️  Incomplete resource detected: ${resource.uri} (${existingChunks.length} chunks, no lastChunk marker)`);
-			console.log(`🧹 Cleaning up existing chunks for: ${resource.uri}`);
-			
-			// Delete existing chunks for this resource
-			for (const chunk of existingChunks) {
-				try {
-					await index.deleteItem(chunk.id);
-				} catch (error) {
-					console.warn(`   Failed to delete chunk ${chunk.id}:`, error);
-				}
-			}
-			
-			resourcesToProcess.push({...resource, isIncomplete: true});
-		} else {
-			// New resource, no chunks exist
-			resourcesToProcess.push(resource);
-		}
+	if (rows.length === 0) {
+		console.error('💥 No rows produced; aborting (nothing to index).');
+		process.exit(1);
 	}
-	
-	const completeResources = processedResources.size;
-	const incompleteResources = resourcesToProcess.filter(r => r.isIncomplete).length;
-	const newResources = resourcesToProcess.filter(r => !r.isIncomplete).length;
-	
-	console.log(`📋 Resources status:`);
-	console.log(`   ✅ Complete: ${completeResources}`);
-	console.log(`   🔄 Incomplete (will reprocess): ${incompleteResources}`);
-	console.log(`   🆕 New: ${newResources}`);
-	console.log(`   📝 Total to process: ${resourcesToProcess.length}`);
+	console.log(`🧮 Total chunks embedded: ${rows.length}`);
 
-	if (resourcesToProcess.length === 0) {
-		console.log(`✨ All resources are complete and processed`);
-		const totalItems = await index.listItems();
-		console.log(`📊 Total vectors in the database: ${totalItems.length}`);
-		return;
-	}
+	// Write the LanceDB table (overwrite) + FTS index for BM25.
+	await fs.mkdir(OUT_DIR, { recursive: true });
+	const db = await lancedb.connect(OUT_DIR);
+	console.log(`💾 Writing table "${COLLECTION_NAME}" to ${OUT_DIR} ...`);
+	const tbl = await db.createTable(COLLECTION_NAME, rows, { mode: 'overwrite' });
+	console.log('🔤 Creating full-text (BM25) index on "text" ...');
+	await tbl.createIndex('text', { config: lancedb.Index.fts() });
 
-	// Process each resource that needs processing
-	for (const resource of resourcesToProcess) {
-		let plainText = '';
-		
-		try {
-			if (resource.uri.startsWith('http://') || resource.uri.startsWith('https://')) {
-				// For HTTP URLs, we'll skip them for now as they need special handling
-				console.log(`⏭️  Skipping HTTP resource: ${resource.uri}`);
-				continue;
-			} else if (resource.uri.startsWith(`${COLLECTION_NAME}://`) && resource.filePath) {
-				// For local resources, try to find the file
-				const extensions = ['.md', '.markdown', '.txt', '.html', '.htm'];
-				let actualFilePath = resource.filePath;
-				
-				// Try to find the file with various extensions
-				let fileFound = false;
-				for (const ext of extensions) {
-					const testPath = actualFilePath + ext;
-					try {
-						await fs.access(testPath);
-						actualFilePath = testPath;
-						fileFound = true;
-						break;
-					} catch (err) {
-						// File doesn't exist with this extension, try next
-					}
-				}
-				
-				if (!fileFound) {
-					console.log(`⚠️  File not found for resource: ${resource.uri} (tried: ${actualFilePath})`);
-					continue;
-				}
-				
-				plainText = await fileToPlainText(actualFilePath);
-			} else {
-				console.log(`⏭️  Skipping unsupported resource: ${resource.uri} (URI: ${resource.uri})`);
-				continue;
-			}
-			
-			const chunks = await splitText(plainText);
-			
-			const statusPrefix = resource.isIncomplete ? '🔄🔄 Reprocessing' : '🔄 Processing';
-			console.log(`${statusPrefix}: ${resource.uri} (${chunks.length} chunks)`);
-
-			for (let i = 0; i < chunks.length; i++) {
-				const chunk = chunks[i];
-				const embedding = await getEmbedding(chunk);
-				
-				// Mark the last chunk with lastChunk=true
-				const isLastChunk = i === chunks.length - 1;
-				
-				try {
-					await index.insertItem({
-						vector: embedding,
-						metadata: {
-							id: `${resource.uri}--${i}`,
-							document: chunk,
-							uri: resource.uri, // Use the original URI from toc.json
-							title: resource.title,
-							index: i,
-							lastChunk: isLastChunk // Mark the last chunk
-						}
-					});
-					
-					console.log(`   ✅ ${resource.uri} [chunk ${i + 1}/${chunks.length}] indexed ${calculateTokens(chunk)} tokens ${isLastChunk ? '(LAST)' : ''}`);
-				} catch (error) {
-					console.error(`   ❌ Failed to index chunk ${i + 1} of ${resource.uri}:`, error);
-					// Continue with next chunk instead of failing completely
-					continue;
-				}
-			}
-
-			console.log(`   💾 Progress saved for ${resource.uri}`);
-			
-		} catch (error) {
-			console.error(`   ❌ Failed to process resource ${resource.uri}:`, error);
-			continue;
-		}
-	}
-
-	const finalCount = await index.listItems();
-	console.log(`🎉 Vector database completed. Saved at: ${DB_DIR}`);
-	console.log(`📊 Total vectors processed: ${finalCount.length}`);
+	const count = await tbl.countRows();
+	console.log(`🎉 Done. ${count} rows indexed at ${path.resolve(OUT_DIR)}/${COLLECTION_NAME}.lance`);
 }
 
 indexFiles().catch((err) => {

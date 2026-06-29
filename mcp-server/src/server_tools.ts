@@ -1727,10 +1727,11 @@ The parameter scrbasename is the name of the filename (without path) to save the
 		{
 			title: "Vector DB query from resources",
 			// Description of the tool (what it does)
-			description: `Query the Vector DB resources to obtain information about MSX system, cartridges, programming, and other development resources.
-The query is a string used to search within the Vector DB resources; it is case-insensitive and may contain spaces.
-The response is the list of the top 10 result resources that match the query, including their score, title, and resource URI, and are sorted in descending order by proximity score to the query.
-**Important Note**: The Vector DB resources are in english, japanese, or dutch.
+			description: `Query the documentation index to obtain information about MSX system, cartridges, programming, and other development resources.
+Uses hybrid search: semantic (multilingual embeddings) combined with keyword (BM25) matching, fused with Reciprocal Rank Fusion. Good for both conceptual questions and exact terms (mnemonics, register names, BIOS calls).
+The query is a string; it is case-insensitive and may contain spaces.
+The response is the list of the top 10 matching resource chunks, including their relevance score, title, and resource URI, sorted in descending order by score.
+**Important Note**: The documentation resources are in english, japanese, or dutch (the embedding model is multilingual).
 `,
 			// Schema for the tool (input validation)
 			inputSchema: {
@@ -1741,7 +1742,7 @@ The response is the list of the top 10 result resources that match the query, in
 			},
 			outputSchema: {
 				results: z.array(z.object({
-					score: z.string().describe("Proximity score of the result to the query, higher is better."),
+					score: z.string().describe("Reciprocal Rank Fusion (RRF) relevance score combining semantic and keyword matches; higher is better. Only the relative ranking is meaningful, not the absolute value (typically ~0.01-0.03)."),
 					title: z.string().describe("Title of the resource."),
 					uri: z.string().describe("URI of the resource, which can be used to access the resource."),
 					document: z.string().describe("Document chunk of the resource, retrieved from the Vector DB."),

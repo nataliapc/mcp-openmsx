@@ -15,10 +15,10 @@
             "description": "This comprehensive instruction set reference provides a complete tabular listing of all Z80 processor instructions plus R800-specific extensions (MULUB/MULUW multiplication instructions), including documented and undocumented opcodes with precise timing data for MSX systems. It details instruction timing across four scenarios (Z80, Z80+M1 waits, R800, R800+waits), hexadecimal opcodes, instruction sizes, and MSX-specific timing considerations including M1 wait states, memory access patterns, I/O timing, and R800 internal/external memory performance characteristics. Essential for MSX assembly programming, emulator development, performance optimization, cycle-accurate timing calculations, and understanding the behavioral differences between Z80 and R800 processors in MSX environments."
         },
         {
-            "title": "The Undocumented Z80 Documented",
+            "title": "Z80 Undocumented Opcodes",
             "uri": "msxdocs://processors/z80-undocumented",
-            "external_url": "http://bifi.msxnet.org/msxnet/tech/",
-            "description": "Provides a comprehensive technical reference for Z80 microprocessor instructions, focusing on both officially documented and undocumented instruction sets. It serves as an authoritative guide for Z80 assembly programming, particularly relevant for MSX computer development."
+            "external_url": "https://www.cpcwiki.eu/index.php/Z80_-_undocumented_opcodes",
+            "description": "Reference for Z80 undocumented opcodes, covering the SLL (CB prefix) shift instruction, access to the hidden 8-bit index sub-registers IXH, IXL, IYH, IYL via DD/FD prefixes, and duplicate/unofficial ED-prefix instructions. Useful for advanced Z80 assembly programming where extra registers or non-standard shifts provide performance benefits."
         }
     ]
 }
