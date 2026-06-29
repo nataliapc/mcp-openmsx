@@ -9,10 +9,28 @@
             "description": "This comprehensive reference document provides a complete mapping of MSX computer I/O ports (#00-#FF) and memory-mapped I/O areas, detailing hardware interfaces for audio (PSG, MSX-AUDIO, MIDI), video (VDP, Graphics9000), storage (FDC, cartridges, tapes), communication (RS232, modems, Ethernet), input devices (keyboard, joysticks), system control (PPI, memory mappers, slot selection), and various peripherals across different MSX generations (MSX1, MSX2, MSX2+, turboR). It includes specific register descriptions, bit mappings, programming examples, and compatibility notes for both built-in and expansion devices, making it an essential reference for MSX programming, debugging, hardware interfacing, and emulation development."
         },
         {
+            "title": "The Memory",
+            "uri": "msxdocs://system/the_memory",
+            "external_url": "https://www.msx.org/wiki/The_Memory",
+            "description": "Comprehensive guide to the MSX memory architecture covering the slot system, Memory Mapper, RAM detection order at boot (with and without disk), and memory maps for BASIC and MSX-DOS environments. Explains page switching, Main-ROM/Sub-ROM initialization sequence, system variables BOTTOM/MEMSIZ/HIMEM, and differences across MSX1/2/2+/turboR."
+        },
+        {
             "title": "MSX System Variables",
             "uri": "https://map.grauw.nl/resources/msxsystemvars.php",
             "external_url": "https://map.grauw.nl/resources/msxsystemvars.php",
             "description": "This webpage provides an official and detailed overview of MSX system variables, including their memory addresses, lengths, and descriptions. It lists variables such as the base address of the MSX character set, VDP data ports, ROM version information, and MSX version number, among others. This resource is essential for developers and emulator authors who need to understand or manipulate the internal state and hardware configuration of MSX computers, supporting accurate software development and system emulation."
+        },
+        {
+            "title": "How to detect RAM",
+            "uri": "msxdocs://system/how_to_detect_ram",
+            "external_url": "https://www.msx.org/wiki/How_to_detect_the_RAM",
+            "description": "Guide for detecting the main RAM slot ID in MSX systems. Explains how to read the RAM slot addresses from system variables F341h–F344h (pages 0000h–FFFFh) when a disk system is present."
+        },
+        {
+            "title": "MegaROM Mappers",
+            "uri": "msxdocs://system/mrc_wiki_megarom_mappers",
+            "external_url": "https://www.msx.org/wiki/MegaROM_Mappers",
+            "description": "Reference for MSX MegaROM cartridge mappers — cartridges with 128KB or more of ROM switched via segments of 8KB or 16KB. Documents 28 known mapper types including ASCII 8K/16K, Konami with/without SCC, Game Master 2, ESE-RAM, MSX-DOS 2, and various third-party mappers, with register addresses, segment switching mechanisms, and memory page layouts."
         }
     ]
 }

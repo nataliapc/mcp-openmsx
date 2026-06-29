@@ -33,6 +33,12 @@
             "description": "Comprehensive guide to optimized mathematical operations in Z80 assembly for MSX. Covers fast multiplication and division techniques using bit shifts, generic multiplication routines, division algorithms, and square root calculations. Essential for performance-critical MSX programming where the Z80 lacks built-in multiplication instructions."
         },
         {
+            "title": "[ASM] Develop a program in a cartridge ROM",
+            "uri": "msxdocs://programming/asm_develop_a_program_in_cartridge_rom",
+            "external_url": "https://www.msx.org/wiki/Develop_a_program_in_cartridge_ROM",
+            "description": "Complete guide to writing MSX ROM cartridge programs in assembly. Covers the 16-byte ROM header structure (INIT, STATEMENT, DEVICE, TEXT), creating ROMs with and without mapper (up to 128KB with ASCII 16k mapper), disk support methods, RAM search and allocation, and practical examples for Glass, Sjasm, tniASM and Zasm assemblers."
+        },
+        {
             "title": "[ASM] Get slot ID of any page",
             "uri": "msxdocs://programming/asm_getslot",
             "external_url": "https://map.grauw.nl/sources/getslot.php",

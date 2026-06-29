@@ -38,8 +38,9 @@ inspector: build
 publish: build pack
 	@echo "$(COL_WHITE)#### Publishing MCP-openMSX project...$(COL_RESET)"
 	$(NPM) pack --dry-run
-	$(NPM) publish --access public --no-git-checks
-	$(NPM) version patch
+	npm login --registry=https://registry.npmjs.org/
+	npm publish --access public --no-git-checks
+	npm version patch
 
 info:
 	@echo "$(COL_WHITE)#### MCP-openMSX published packet information$(COL_RESET)"
