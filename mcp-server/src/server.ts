@@ -32,7 +32,12 @@ export const PACKAGE_VERSION = require('../package.json').version;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const resourcesDir = path.join(__dirname, "../resources");
-const vectorDbDir = path.join(__dirname, "../vector-db");
+// Index location. Defaults to the bundled `vector-db` next to the build, but can
+// be overridden with OPENMSX_VECTORDB_DIR. LanceDB/lance-io (Rust object_store)
+// cannot read a local index from a Windows *mapped network drive* (it drops the
+// drive letter when converting the path to a file:// URL). When the project lives
+// on a network share, point this at a copy of the index on a local disk.
+const vectorDbDir = process.env.OPENMSX_VECTORDB_DIR?.trim() || path.join(__dirname, "../vector-db");
 
 // Defaults for openMSX paths
 export interface EmuDirectories {
