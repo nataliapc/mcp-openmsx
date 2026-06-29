@@ -13,6 +13,7 @@
  * @license GPL2
  */
 import path from 'path';
+import { pathToFileURL } from 'url';
 import * as lancedb from '@lancedb/lancedb';
 import { embedQuery } from './embedder.js';
 
@@ -77,10 +78,26 @@ export class VectorDB {
 		VectorDB.vectorDbDir = dbDir;
 	}
 
+	/**
+	 * Resolve the directory into a value LanceDB can open.
+	 *
+	 * On Windows, LanceDB 0.30 (lance-io 7.0) mishandles drive-letter paths: it
+	 * builds a malformed `file://` URL that drops the drive
+	 * (`file:///mcp-server/vector-db/...`) and then fails to convert it back to a
+	 * filesystem path. Passing an explicit, well-formed `file://` URI built by Node
+	 * (`file:///M:/mcp-server/vector-db`) bypasses that broken path→URL step. On
+	 * POSIX a plain path works fine, so we leave it untouched.
+	 */
+	private static resolveUri(dir: string): string {
+		return process.platform === 'win32'
+			? pathToFileURL(path.resolve(dir)).href
+			: dir;
+	}
+
 	private getTable(): Promise<lancedb.Table> {
 		if (!this.tablePromise) {
 			this.tablePromise = (async () => {
-				const db = await lancedb.connect(VectorDB.vectorDbDir);
+				const db = await lancedb.connect(VectorDB.resolveUri(VectorDB.vectorDbDir));
 				return db.openTable(TABLE_NAME);
 			})().catch((err) => {
 				this.tablePromise = null;
