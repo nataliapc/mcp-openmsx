@@ -120,6 +120,9 @@ The MCP server translates high-level natural language commands from your Copilot
 - `vector_db_query`: Hybrid search (semantic embeddings + BM25) over the local MSX documentation index, for information about MSX systems, cartridges, programming, and other development resources.
 - `msxdocs_resource_get`: Retrieve MCP resources for MCP clients that don't support MCP resources.
 
+### Optional Advanced Tools
+- `openmsx_tcl_cmd`: Executes a native Tcl command in the connected openMSX instance. It is disabled by default and is registered only when the user sets `OPENMSX_ENABLE_RAW_TCL=true`. Existing typed tools remain available and are preferred for operations they cover.
+
 ## Available MCP Resources
 
 ### What are MCP Resources?
@@ -249,6 +252,7 @@ Edit it to include the following JSON entry:
 | `OPENMSX_SCREENSHOT_DIR` | Directory where screenshots will be saved | Default for openmsx | `/myproject/screenshots` |
 | `OPENMSX_SCREENDUMP_DIR` | Directory where screen dumps will be saved | Default for openmsx | `/myproject/screendumps` |
 | `OPENMSX_REPLAYS_DIR` | Directory where replay files will be saved | Default for openmsx | `/myproject/replays` |
+| `OPENMSX_ENABLE_RAW_TCL` | Register the optional `openmsx_tcl_cmd` native Tcl tool. This grants the MCP client powerful access to openMSX and potentially the host filesystem; enable it only when explicitly required. | `false` | `true` |
 | `MCP_TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` | `http` |
 | `MCP_HTTP_PORT` | Port number for HTTP transport mode | `3000` | `8080` |
 | `MCP_ALLOWED_ORIGINS` | Comma-separated list of allowed origins for HTTP transport | Empty for all allowed | `http://localhost,http://mydomain.com` |
@@ -256,6 +260,22 @@ Edit it to include the following JSON entry:
 | `OPENMSX_WINDOWS_PROXY_EXECUTABLE` | **Windows only.** Override path to the SSPI proxy helper (development) | Bundled `bin/win-x64/mcp-openmsx-sspi-proxy.exe` | `C:\path\to\mcp-openmsx-sspi-proxy.exe` |
 | `OPENMSX_MODELS_CACHE` | Directory where the embedding model is cached (also honors `HF_HOME` / `TRANSFORMERS_CACHE`) | `~/.cache/mcp-openmsx` | `/opt/models` |
 | `OPENMSX_EMBED_PROVIDER` | **Index generator only.** `cuda` uses the GPU (fp32 model) to regenerate the index, falling back to CPU if CUDA is unavailable. The MCP server itself always uses CPU/int8 and ignores this variable. | (generator: `cpu`) | `cuda` |
+
+#### Native Tcl command tool (`OPENMSX_ENABLE_RAW_TCL`)
+
+The optional `openmsx_tcl_cmd` tool provides direct access to openMSX's native Tcl console for advanced or version-specific functionality not covered by the typed tools. It can use the runtime self-documentation commands `help`, `about`, `openmsx_info`, and `machine_info` before executing unfamiliar commands.
+
+The tool is not registered by default. Only the user should enable it in the MCP server configuration:
+
+```json
+{
+  "env": {
+    "OPENMSX_ENABLE_RAW_TCL": "true"
+  }
+}
+```
+
+Direct Tcl is intentionally unrestricted and may modify emulator state, access files, load scripts, or terminate openMSX. Treat it as equivalent to granting the MCP client local command execution privileges. Restart the MCP server after changing the setting.
 
 #### Documentation search model
 
@@ -313,6 +333,7 @@ export OPENMSX_SHARE_DIR="/usr/share/openmsx"
 export OPENMSX_SCREENSHOT_DIR="/my_project/screenshots"
 export OPENMSX_SCREENDUMP_DIR="/my_project/screendumps"
 export OPENMSX_REPLAYS_DIR="/my_project/replays"
+export OPENMSX_ENABLE_RAW_TCL="true"
 export MCP_HTTP_PORT=3000
 export MCP_ALLOWED_ORIGINS="http://localhost,http://mydomain.com"
 ```

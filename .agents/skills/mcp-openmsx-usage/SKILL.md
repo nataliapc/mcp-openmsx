@@ -3,7 +3,7 @@ name: mcp-openmsx-usage
 description: Control and automate the openMSX emulator for MSX / MSX2 retro development. Covers Z80 and R800 assembly debugging, Z80 CPU inspection, VDP (V9938/V9958) programming, PSG sound, MSX-BASIC development, ROM/disk/tape media management, screen capture, breakpoints, memory inspection, and SDCC C development workflows. Use when direct openMSX emulator interaction is required or MSX technical information is needed.
 metadata:
   authors: https://github.com/nataliapc
-  version: "1.2.4"
+  version: "1.2.5"
 ---
 
 # MCP-OpenMSX Usage Guide
@@ -41,6 +41,7 @@ metadata:
     4. [Debugging](skill-tools-debugging.md): Control execution (break, continue, step), inspect CPU registers, RAM, and VRAM, manage breakpoints.
     5. [BASIC Programming](skill-tools-basic-programming.md): Write, load, run, and manage BASIC programs on the emulator.
     6. [Documentation & Search](skill-tools-documentation-search.md): Search and retrieve MSX technical documentation from the embedded vector database and resource library to support development tasks.
+    7. [Native Tcl Autodiscovery](references/native-tcl-autodiscovery.md): Discover and use openMSX console functionality not covered by typed tools through the optional `openmsx_tcl_cmd` tool.
 - [MCP Resources](skill-mcp-resources-prompts.md): Extensive collection of MSX documentation resources and reference materials embedded in the MCP vector database, organized by category and topic for easy retrieval.
 - [MCP Prompts](skill-mcp-resources-prompts.md): Custom MCP prompts for generating structured reference materials based on the embedded documentation resources, such as an MSX BASIC instruction manual page.
 - [Tips & Best Practices](#tips--best-practices)
@@ -59,6 +60,7 @@ Detailed step-by-step guides for common workflows. ALWAYS load reference files i
 - **[Working with media (ROM, disk, tape)](references/media-management.md)** — Insert/eject ROMs, disks, tapes. Development workflows for each media type.
 - **[Time-travel debugging with replay and savestates](references/replay-savestates.md)** — Timeline navigation, frame-by-frame stepping, checkpointing, comparing execution paths.
 - **[Screen capture and visual verification](references/screen-capture.md)** — Screenshots (inline/file), screen dumps (MSX format), text reading, before/after comparison.
+- **[Native Tcl autodiscovery](references/native-tcl-autodiscovery.md)** — Runtime discovery with `help`, `about`, `machine_info`, and `openmsx_info` through the optional raw Tcl tool.
 
 ## Tips & Best Practices
 

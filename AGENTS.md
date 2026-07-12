@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-MCP (Model Context Protocol) server for controlling the openMSX emulator. Enables AI agents to launch, operate, debug, and capture MSX emulation sessions via 17 registered tools.
+MCP (Model Context Protocol) server for controlling the openMSX emulator. Enables AI agents to launch, operate, debug, and capture MSX emulation sessions via 17 default tools plus the optional `openmsx_tcl_cmd` tool.
 
 - **Language**: TypeScript (strict, ES2022, ESM)
 - **Runtime**: Node.js ≥ 18
@@ -18,7 +18,7 @@ mcp-openmsx/
 ├── mcp-server/
 │   ├── src/
 │   │   ├── server.ts              # MCP server init, env vars, shutdown handlers
-│   │   ├── server_tools.ts        # 17 tool registrations (emulator, debug, media, VDP, etc.)
+│   │   ├── server_tools.ts        # 17 default tool registrations + opt-in native Tcl command
 │   │   ├── server_resources.ts    # MCP resource registration (MSX docs, BASIC instructions)
 │   │   ├── server_prompts.ts      # Prompt management
 │   │   ├── server_elicitations.ts # Interactive machine/extension resolution
@@ -98,7 +98,7 @@ Reference implementations: openMSX debugger `SspiNegotiateClient.cpp`, DeZog `op
 | `embedder.ts` | Local embedding engine: `onnxruntime-node` + `@anush008/tokenizers`, `multilingual-e5-small` (384d, 512-token context), **mean pooling** + L2 normalize, batched inference (multi-thread), e5 `query:`/`passage:` prefixes (`embedQuery`/`embedPassage`/`embedPassageBatch`), on-demand model download to cache. Provider is **CPU/int8 by default and only switchable via `setEmbedProvider('cuda')`** — called solely by the index generator (reads `OPENMSX_EMBED_PROVIDER`); the server never calls it, so it always uses int8 and never downloads the fp32 model. CUDA is probed with the int8 model before the fp32 download. fp32(index)/int8(query) are interchangeable (same ranking). Single source of truth for embeddings (server + generator) |
 | `chunker.ts` | `semanticChunk` (paragraph-level, groups by embedding cosine similarity into ≤~400-token chunks) + `chunkText` (deterministic fixed-size fallback / hard-split) |
 | `vectordb.ts` | LanceDB hybrid search: vector (`nearestTo`) + BM25 (`nearestToText`) fused with `fuseRRF` (exported, testable) |
-| `server_tools.ts` | 17 tools: `emu_control`, `emu_info`, `emu_media`, `emu_vdp`, `emu_keyboard`, `emu_savestates`, `emu_replay`, `screen_shot`, `screen_dump`, `debug_run`, `debug_cpu`, `debug_memory`, `debug_vram`, `debug_breakpoints`, `basic_programming`, `msxdocs_resource_get`, `vector_db_query` |
+| `server_tools.ts` | 17 default tools plus opt-in `openmsx_tcl_cmd` (`OPENMSX_ENABLE_RAW_TCL=true`) |
 | `server.ts` | MCP server bootstrap, environment variable handling, directory auto-detection |
 
 ---

@@ -21,8 +21,59 @@ import { resolveLaunchParams } from "./server_elicitations.js";
 // Tools available in the MCP server
 // https://modelcontextprotocol.io/docs/concepts/tools#tool-definition-structure
 
+const TCL_COMMAND_MAX_LENGTH = 16384;
+const TCL_RESULT_MAX_LENGTH = 65536;
+const INVALID_XML_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/;
+
+/** Register the raw Tcl escape hatch only when the user explicitly enables it. */
+export function registerOpenMsxTclCommandTool(server: McpServer): void
+{
+	if (process.env.OPENMSX_ENABLE_RAW_TCL?.trim().toLowerCase() !== 'true') return;
+
+	server.registerTool(
+		"openmsx_tcl_cmd",
+		{
+			title: "Execute an openMSX Tcl command",
+			description: `Execute one native Tcl command in the connected openMSX instance and return its raw result.
+This is an advanced escape hatch for functionality not covered by the typed tools. Prefer typed tools when available.
+Use openMSX runtime discovery before unfamiliar commands: 'help', 'help <command> [subcommand]', 'about <keyword>', 'openmsx_info', and 'machine_info'.`,
+			inputSchema: {
+				command: z.string()
+					.min(1, 'Tcl command cannot be empty')
+					.max(TCL_COMMAND_MAX_LENGTH, `Tcl command cannot exceed ${TCL_COMMAND_MAX_LENGTH} characters`)
+					.refine(command => !INVALID_XML_CONTROL_CHARACTERS.test(command), 'Tcl command contains unsupported control characters')
+					.describe("Native Tcl command to execute in openMSX."),
+			},
+			outputSchema: {
+				command: z.string().describe("The Tcl command that was executed."),
+				result: z.string().describe("Raw result returned by openMSX."),
+				truncated: z.boolean().describe("Whether the result was truncated to protect the client context."),
+			},
+			annotations: {
+				"readOnlyHint": false,
+				"destructiveHint": true,
+				"idempotentHint": false,
+				"openWorldHint": true,
+			},
+		},
+		async ({ command }: { command: string }) => {
+			const response = await openMSXInstance.sendCommand(command);
+			const truncated = response.length > TCL_RESULT_MAX_LENGTH;
+			const result = truncated ? response.slice(0, TCL_RESULT_MAX_LENGTH) : response;
+
+			return {
+				content: [{ type: "text" as const, text: result }],
+				structuredContent: { command, result, truncated },
+				isError: isErrorResponse(response),
+			};
+		}
+	);
+}
+
 export async function registerTools(server: McpServer, emuDirectories: EmuDirectories)
 {
+	registerOpenMsxTclCommandTool(server);
+
 	// emu_control
 	server.registerTool(
 		// Name of the tool (used to call it)
@@ -1851,4 +1902,3 @@ The response is the list of the top 10 matching resource chunks, including their
 		});
 
 }
-

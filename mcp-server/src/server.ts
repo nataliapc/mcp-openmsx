@@ -131,6 +131,7 @@ Environment variables:
   OPENMSX_SCREENSHOT_DIR  Screenshot output directory
   OPENMSX_SCREENDUMP_DIR  Screen dump output directory
   OPENMSX_REPLAYS_DIR     Replay output directory
+  OPENMSX_ENABLE_RAW_TCL  Set to true to register the optional openmsx_tcl_cmd tool
   MCP_HTTP_PORT           HTTP server port (default: 3000)
 
 Examples:
