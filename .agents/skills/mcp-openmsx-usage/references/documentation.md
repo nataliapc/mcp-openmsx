@@ -12,7 +12,7 @@ Search and retrieve MSX technical documentation from the embedded vector databas
     - [Tips](#tips)
 - [Direct Resource Access](#direct-resource-access)
     - [When to use](#when-to-use-1)
-- [BASIC Instruction Reference (MCP Prompt)](#basic-instruction-reference-mcp-prompt)
+. [Direct BASIC wiki access (preferred for named instructions)](#direct-basic-wiki-access-preferred-for-named-instructions)
 - [Available Resource Categories](#available-resource-categories)
 - [BASIC Wiki Resource Template](#basic-wiki-resource-template)
 - [Workflow: Research Before Coding](#workflow-research-before-coding)
@@ -67,25 +67,21 @@ Retrieves a complete named resource. Use when you know exactly which document yo
 
 **When to use**: As a fallback for MCP clients that don't support native MCP resources, or when you need the full document rather than search-matched chunks.
 
-## BASIC Instruction Reference (MCP Prompt)
+### Direct BASIC wiki access (preferred for named instructions)
 
-You can query the BASIC wiki resources from mcp-openmsx:
+For any of the ~136 standard MSX BASIC instructions, the `basic_wiki` resource gives a complete manual page (Effect, Syntax, Parameters, Examples, Related, Compatibility) in one call: no chunking, no relevance scoring.
 
 ```
-# msxdocs_basic_wiki resource
-msxdocs://basic_wiki/{instruction}
+Examples:
+
+read_mcp_resource(server="mcp-openmsx", uri="msxdocs://basic_wiki/MID$()")
+read_mcp_resource(server="mcp-openmsx", uri="msxdocs://basic_wiki/SCREEN")
+read_mcp_resource(server="mcp-openmsx", uri="msxdocs://basic_wiki/POKE")
 ```
 
-You can also use the `basic` MCP prompt generates comprehensive instruction manual pages:
+> The instruction name in the URI must match the wiki page name (case-sensitive). Common ones: MID$(), LEFT$(), RIGHT$(), SCREEN, PRINT, FOR, NEXT, POKE, PEEK, VPOKE, VPEEK, SPRITE, CIRCLE, LINE, PAINT, BLOAD, BSAVE, DEFUSR, USR, PUT, GET.
 
-- Input: `{ instruction: "PRINT" }`
-- Output: Structured reference with Description, Syntax, Parameters, Notes, Usage examples, Related instructions, Availability, and Sources.
-
-Sources exclusively from MCP resources (not general knowledge). If the instruction is unknown, suggests up to 5 similar instructions.
-
-Covers all 136 standard MSX BASIC instructions.
-
-## Available Resource Categories
+## Main Available Resource Categories
 
 | Category | Example Topics |
 |----------|---------------|
@@ -101,17 +97,9 @@ Covers all 136 standard MSX BASIC instructions.
 | **Books** | MSX2 Technical Handbook (Chapters 1-5, Appendices 1-10), The MSX Red Book |
 | **Others** | MemMan 2.4 TSR kit, keyboard matrix maps |
 
-## BASIC Wiki Resource Template
-
-```
-msxdocs_basic_wiki/{instruction}
-```
-
-Provides documentation for 136 MSX BASIC instructions. Example instructions: `PRINT`, `FOR`, `NEXT`, `POKE`, `PEEK`, `SCREEN`, `CIRCLE`, `LINE`, `PAINT`, `SPRITE`, `VPOKE`, `VPEEK`, `DEFUSR`, `USR`, `BLOAD`, `BSAVE`, `COPY`, `PUT`, `GET`, etc.
-
 ## Workflow: Research Before Coding
 
-1. `vector_db_query { query: "how to set up sprites in screen 2" }` — find relevant docs
-2. Read the top results to understand sprite attribute format, pattern definitions, and VDP register settings
-3. Write the code based on accurate documentation
-4. `vector_db_query { query: "sprite collision detection" }` — find additional info if needed
+1. **Known instruction?** `read_mcp_resource(server="mcp-openmsx", uri="msxdocs://basic_wiki/{INSTRUCTION}")`: get the full manual page.
+2. **Unknown topic?** `vector_db_query { query: "how to set up sprites in screen 2" }`: find relevant docs and read top results.
+3. Write the code based on accurate documentation.
+4. **Need more?** `vector_db_query { query: "sprite collision detection" }` for follow-up.

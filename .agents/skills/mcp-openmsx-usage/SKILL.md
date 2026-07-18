@@ -40,7 +40,7 @@ metadata:
     3. [Screen Capture](skill-tools-screen-capture.md): Capture screenshots, and screen memory dumps from the emulator.
     4. [Debugging](skill-tools-debugging.md): Control execution (break, continue, step), inspect CPU registers, RAM, and VRAM, manage breakpoints.
     5. [BASIC Programming](skill-tools-basic-programming.md): Write, load, run, and manage BASIC programs on the emulator.
-    6. [Documentation & Search](skill-tools-documentation-search.md): Search and retrieve MSX technical documentation from the embedded vector database and resource library to support development tasks.
+    6. [Documentation & Search](skill-tools-documentation-search.md): How to search and retrieve MSX technical documentation from the embedded vector database and resource library to support development tasks.
     7. [Native Tcl Autodiscovery](references/native-tcl-autodiscovery.md): Discover and use openMSX console functionality not covered by typed tools through the optional `openmsx_tcl_cmd` tool.
 - [MCP Resources](skill-mcp-resources-prompts.md): Extensive collection of MSX documentation resources and reference materials embedded in the MCP vector database, organized by category and topic for easy retrieval.
 - [MCP Prompts](skill-mcp-resources-prompts.md): Custom MCP prompts for generating structured reference materials based on the embedded documentation resources, such as an MSX BASIC instruction manual page.
@@ -64,8 +64,9 @@ Detailed step-by-step guides for common workflows. ALWAYS load reference files i
 
 ## Tips & Best Practices
 
+- **For a specific BASIC instruction, read `msxdocs://basic_wiki/{INSTRUCTION}` directly** with `read_mcp_resource` (or `msxdocs_resource_get` for enum-named resources). And complement it with a `vector_db_query`. The `basic_wiki` resource gives the complete Effect/Syntax/Parameters/Examples/Compatibility page in one call and the vector query search for cross cutting topics. For example, to get the `CALL` instruction page, use `msxdocs://basic_wiki/call` and `vector_db_query("CALL")`.
+- **Use `vector_db_query` for discovery or cross-cutting questions** (e.g. "sprite collision + interlaced mode", "PSG envelope timing").
 - Use always `\r` (CR) as line terminators in BASIC programs. Avoid `\n` (LF) or `\r\n` (CRLF) to prevent parsing issues.
-- Always fetch the documentation of every BASIC command you use with the BASIC Wiki resource or `vector_db_query` to ensure correct syntax, parameters, and behaviors.
 - All addresses and values use hexadecimal format (e.g. `0x4000`, `0xA5`).
 - Always `emu_control.wait` a few seconds after `launch` to let the machine fully boot before interacting.
 - Use `screen_shot.as_image` to visually verify emulator state at any point.

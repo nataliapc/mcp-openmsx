@@ -3,6 +3,7 @@ src/
 Makefile
 *.tgz
 *.ts
+**/*.pdf
 !*.d.ts
 tsconfig.json
 .gitignore
