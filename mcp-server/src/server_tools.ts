@@ -85,7 +85,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			// Schema for the tool (input validation)
 			inputSchema: {
 				command: z.enum(["launch", "close", "powerOn", "powerOff", "reset", "getEmulatorSpeed", "setEmulatorSpeed",
-						"machineList", "extensionList", "wait"])
+						"machineList", "extensionList", "wait", "userDataDir", "systemDataDir"])
 					.describe(`Available commands:
 'launch [machine] [extensions]': opens a powered-on openMSX emulator; you must wait some time waiting the machine is fully booted; machine and extensions parameters can be specified so use 'machineList' and 'extensionList' commands to obtain valid values, or let them ambiguous and use elicitation. " +
 'close': closes the openMSX emulator.
@@ -97,6 +97,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 'machineList': gets a list of all available MSX machines that can be emulated with openMSX.
 'extensionList': gets a list of all available MSX extensions that can be used with openMSX.
 'wait <seconds>': performs a wait for the specified number of seconds, default is 3.
+'userDataDir': returns the openMSX user data directory path.
+'systemDataDir': returns the openMSX system data directory path.
 `),
 				machine: z.string()
 					.max(100, 'Machine name too long')
@@ -214,6 +216,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					}
 					break;
 				}
+				case "userDataDir":
+					result = await openMSXInstance.sendCommand('set $env(OPENMSX_USER_DATA)');
+					break;
+				case "systemDataDir":
+					result = await openMSXInstance.sendCommand('set $env(OPENMSX_SYSTEM_DATA)');
+					break;
 				default:
 					result = `Error: Unknown command "${command}".`;
 					break;

@@ -13,6 +13,8 @@
 | `machineList` | List all available MSX machines |
 | `extensionList` | List all available extensions |
 | `wait` | Wait N seconds (1–10, default 3). Param: `seconds`. Supports abort. |
+| `userDataDir` | Returns the openMSX user data directory path. |
+| `systemDataDir` | Returns the openMSX system data directory path. |
 
 **Key params**: `machine` (string), `extensions` (string[]), `emuspeed` (number), `seconds` (number).
 
