@@ -805,7 +805,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				address: z.string()
 					.regex(/^0x[0-9a-fA-F]{4}$/, 'Address must be a 4 digits hexadecimal number')
 					.optional()
-					.describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [getBlock, readByte, writeByte, readWord, writeWord]"),
+					.describe("4 hexadecimal digits for a memory address (e.g. 0x4af3). Used by [getBlock, readByte, writeByte, readWord, writeWord, writeBlock]"),
 				lines: z.number()
 					.min(1, 'Minimum number of lines too low')
 					.max(50, 'Maximum number of lines too high')
