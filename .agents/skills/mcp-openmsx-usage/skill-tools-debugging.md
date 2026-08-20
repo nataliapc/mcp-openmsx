@@ -36,6 +36,7 @@
 | `readWord` | Read 16-bit word at address. Param: `address` |
 | `writeByte` | Write byte. Params: `address`, `value8` (hex byte) |
 | `writeWord` | Write word. Params: `address`, `value16` (hex word) |
+| `writeBlock` | Write a sequence of bytes to consecutive addresses. Params: `address` (start), `values` (space-separated hex bytes, e.g. `0x3E 0x01 0xC3 0x4F 0x22`) |
 | `searchBytes` | Search for a byte sequence in memory RAM. Params: `address` (start), `length` (number of bytes to scan, up to 65536), `values` (space-separated hex bytes, e.g. `0x00 0xFF 0x53`). Returns all the addresses that match or not found. |
 
 ## `debug_vram` — VRAM video memory operations

@@ -790,7 +790,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			description: "Slots info, and Read/write from/to memory in the openMSX emulator.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord", "searchBytes"])
+				command: z.enum(["selectedSlots", "getBlock", "readByte", "readWord", "writeByte", "writeWord", "writeBlock", "searchBytes"])
 					.describe(`Available commands:
 	'selectedSlots': to get a list of the currently selected memory slots.
 	'getBlock <address> [lines]': to read a block of memory from the specified address.
@@ -798,6 +798,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 	'readWord <address>': to read a WORD from the specified address.
 	'writeByte <address> <value8>': to write a BYTE to the specified address.
 	'writeWord <address> <value16>': to write a WORD to the specified address.
+	'writeBlock <address> <values>': to write a sequence of bytes to consecutive memory addresses starting from the specified address.
 	'searchBytes <address> <length> <values>': to search a sequence of bytes in RAM memory starting from the specified address and within the specified length.
 **Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
 `),
@@ -822,7 +823,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				values: z.string()
 					.regex(/^(\s*0x[0-9a-fA-F]{2}\s*)+$/, "Values must be a space-separated string of 2 digits hexadecimal numbers (e.g. '0x1A 0xFF 0x00')")
 					.optional()
-					.describe("Space-separated string of 2 hexadecimal digits for byte values to search (e.g. '0x1A 0xFF 0x00'). Used by [searchBytes]"),
+					.describe("Space-separated string of 2 hexadecimal digits for byte values (e.g. '0x1A 0xFF 0x00'). Used by [searchBytes, writeBlock]"),
 				length: z.number()
 					.min(1, 'Minimum search length too low. Min: 1')
 					.max(65536, 'Maximum search length too high. Max: 65536')
@@ -847,6 +848,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.describe("Length of bytes searched. Present for 'searchBytes'."),
 				values: z.string().optional()
 					.describe("Values searched for. Present for 'searchBytes'."),
+				bytesWritten: z.number().optional()
+					.describe("Number of bytes written. Present for 'writeBlock'."),
 				result: z.string().optional()
 					.describe("Generic result or status message."),
 			},
@@ -879,6 +882,17 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				case "writeWord":
 					tclCommand = `poke16 ${address} ${value16}`;
 					break;
+				case "writeBlock": {
+					if (!address || !values) {
+						return {
+							content: [{ type: "text" as const, text: "Error: 'writeBlock' requires both 'address' and 'values'." }],
+							isError: true,
+						};
+					}
+					const valuesList = values.trim();
+					tclCommand = `set addr ${address}; foreach v { ${valuesList} } { poke $addr $v; incr addr }`;
+					break;
+				}
 				case "searchBytes":
 					length = parseInt(address!, 16) + length! > 0x10000 ? 0x10000 - parseInt(address!, 16) : length;
 					tclCommand = `set pattern { ${values} }
@@ -931,6 +945,11 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				}
 				case "writeWord": {
 					structuredContent = { command, address, result: response || "Ok" };
+					break;
+				}
+				case "writeBlock": {
+					const count = values ? values.split(/\s+/).length : 0;
+					structuredContent = { command, address, bytesWritten: count, result: response || "Ok" };
 					break;
 				}
 				case "searchBytes": {
