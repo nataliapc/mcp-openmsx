@@ -8,8 +8,6 @@ COL_RESET = $(ESC)[0m
 
 SERVER_DIR = mcp-server
 MAKE = make -s --no-print-directory -C $(SERVER_DIR)
-# Fall back to npm if pnpm not found
-NPM := $(shell which pnpm 2>/dev/null && echo pnpm || echo npm)
 
 VECTOR_DIR = vector-db
 MAKE_VECTOR = make -s --no-print-directory -C $(VECTOR_DIR)

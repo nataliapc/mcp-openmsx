@@ -2,7 +2,7 @@
 .PHONY: all install embeddings
 
 # Fall back to npm if pnpm not found
-NPM := $(shell which pnpm 2>/dev/null && echo pnpm || echo npm)
+NPM := $(shell command -v pnpm >/dev/null 2>&1 && echo pnpm || echo npm)
 
 ESC = $(shell printf '\033')
 COL_WHITE = $(ESC)[1;37m
