@@ -882,9 +882,17 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				case "writeWord":
 					tclCommand = `poke16 ${address} ${value16}`;
 					break;
-				case "writeBlock":
-					tclCommand = `set addr ${address}; foreach v { ${values} } { poke $addr $v; incr addr }`;
+				case "writeBlock": {
+					if (!address || !values) {
+						return {
+							content: [{ type: "text" as const, text: "Error: 'writeBlock' requires both 'address' and 'values'." }],
+							isError: true,
+						};
+					}
+					const valuesList = values.trim();
+					tclCommand = `set addr ${address}; foreach v { ${valuesList} } { poke $addr $v; incr addr }`;
 					break;
+				}
 				case "searchBytes":
 					length = parseInt(address!, 16) + length! > 0x10000 ? 0x10000 - parseInt(address!, 16) : length;
 					tclCommand = `set pattern { ${values} }
