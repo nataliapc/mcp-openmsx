@@ -60,3 +60,10 @@
 
 **Tip**: Obtain function/variable addresses from `.sym` or `.map` files before creating breakpoints.
 
+## `debug_watchpoints` — Watchpoint management
+
+| Command | Description |
+|---------|-------------|
+| `create` | Create watchpoint with address/port range. Params: `type` (`read_mem`, `write_mem`, `read_io`, `write_io`), `begin` (start of range), `end` (end of range, must be >= begin). Optional: `condition` (Tcl condition), `cmd` (Tcl command to execute), `once` (remove after first trigger). Returns watchpoint name (e.g. `wp#1`) |
+| `remove` | Remove watchpoint by name. Param: `wpname` (e.g. `wp#1`) |
+| `list` | List all active watchpoints |

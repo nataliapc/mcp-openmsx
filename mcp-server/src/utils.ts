@@ -511,6 +511,30 @@ export function parseBreakpoints(response: string): { name: string; address: str
 }
 
 /**
+ * Parse the output of the openMSX 'debug list_watchpoint' TCL command into a structured array.
+ * Output format (one per line):
+ *   wp#1 read_mem 0x4af3 {} {}
+ */
+export function parseWatchpoints(response: string): { name: string; type: string; address: string; condition: string; command: string }[] {
+	if (!response.trim()) return [];
+	const watchpoints: { name: string; type: string; address: string; condition: string; command: string }[] = [];
+	const lines = response.trim().split('\n');
+	for (const line of lines) {
+		const match = line.match(/^(\S+)\s+(\S+)\s+(0x[0-9a-fA-F]{4})\s+\{([^}]*)\}\s+\{([^}]*)\}/);
+		if (match) {
+			watchpoints.push({
+				name: match[1],
+				type: match[2],
+				address: match[3],
+				condition: match[4],
+				command: match[5],
+			});
+		}
+	}
+	return watchpoints;
+}
+
+/**
  * Parse the output of the openMSX 'reverse status' TCL command into a structured object.
  * Output format:
  *  status enabled begin 0.0 end 294.08 current 294.08 snapshots {...} last_event 0.0
