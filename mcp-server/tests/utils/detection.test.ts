@@ -7,21 +7,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * We mock `fs.existsSync` at the module level and manipulate process.env/platform per test.
  */
 
-// Mock fs (existsSync) before importing utils
+// Mock fs (existsSync, readdirSync) before importing utils
 vi.mock('fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('fs')>();
   return {
     ...actual,
     existsSync: vi.fn(() => false),
+    readdirSync: vi.fn(() => []),
   };
 });
 
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import { detectOpenMSXShareDir, detectOpenMSXExecutable } from '../../src/utils.js';
 import os from 'os';
 import path from 'path';
 
 const mockExistsSync = vi.mocked(existsSync);
+const mockReaddirSync = vi.mocked(readdirSync);
 
 let originalPlatform: PropertyDescriptor | undefined;
 let originalEnv: NodeJS.ProcessEnv;
@@ -29,6 +31,7 @@ let originalEnv: NodeJS.ProcessEnv;
 beforeEach(() => {
   vi.clearAllMocks();
   mockExistsSync.mockReturnValue(false);
+  mockReaddirSync.mockReturnValue([]);
   originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
   originalEnv = { ...process.env };
 });
@@ -59,6 +62,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === linuxPath || s === path.join(linuxPath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(linuxPath);
   });
 
@@ -67,6 +71,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === '/usr/share/openmsx' || s === '/usr/share/openmsx/machines';
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe('/usr/share/openmsx');
   });
 
@@ -75,6 +80,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === '/usr/local/share/openmsx' || s === '/usr/local/share/openmsx/machines';
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe('/usr/local/share/openmsx');
   });
 
@@ -83,6 +89,23 @@ describe('detectOpenMSXShareDir', () => {
     // Directory exists but 'machines' subfolder does not
     mockExistsSync.mockImplementation((p: any) => p.toString() === linuxPath);
     expect(detectOpenMSXShareDir()).toBe('');
+  });
+
+  it('skips share dir when machines has no XML files', () => {
+    const homePath = path.join(os.homedir(), '.openMSX', 'share');
+    const usrPath = '/usr/share/openmsx';
+    // Home path exists with machines dir, but no XMLs; usr path has XMLs
+    mockExistsSync.mockImplementation((p: any) => {
+      const s = p.toString();
+      return s === homePath || s === path.join(homePath, 'machines')
+          || s === usrPath || s === path.join(usrPath, 'machines');
+    });
+    mockReaddirSync.mockImplementation((p: any) => {
+      const s = p.toString();
+      if (s.endsWith('machines') && s.startsWith(homePath)) return ['README'] as any;
+      return ['National_CF-3300.xml'] as any;
+    });
+    expect(detectOpenMSXShareDir()).toBe(usrPath);
   });
 
   it('returns first matching path (priority order)', () => {
@@ -94,6 +117,7 @@ describe('detectOpenMSXShareDir', () => {
       return s === homePath || s === path.join(homePath, 'machines')
           || s === usrPath || s === path.join(usrPath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(homePath);
   });
 
@@ -103,6 +127,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === docsPath || s === path.join(docsPath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(docsPath);
   });
 
@@ -113,6 +138,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === appDataPath || s === path.join(appDataPath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(appDataPath);
   });
 
@@ -123,6 +149,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === localPath || s === path.join(localPath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(localPath);
   });
 
@@ -132,6 +159,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === portablePath || s === path.join(portablePath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(portablePath);
   });
 
@@ -142,6 +170,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === progPath || s === path.join(progPath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(progPath);
   });
 
@@ -152,6 +181,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === progPath || s === path.join(progPath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(progPath);
   });
 
@@ -170,6 +200,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === macPath || s === path.join(macPath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(macPath);
   });
 
@@ -179,6 +210,7 @@ describe('detectOpenMSXShareDir', () => {
       const s = p.toString();
       return s === bundlePath || s === path.join(bundlePath, 'machines');
     });
+    mockReaddirSync.mockReturnValue(['National_CF-3300.xml'] as any);
     expect(detectOpenMSXShareDir()).toBe(bundlePath);
   });
 });

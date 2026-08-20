@@ -12,7 +12,7 @@ import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { PACKAGE_VERSION } from "./server.js";
 import sanitizeHtml from 'sanitize-html';
 
-import { existsSync } from "fs";
+import { existsSync, readdirSync } from "fs";
 import os from "os";
 
 
@@ -68,8 +68,13 @@ export function detectOpenMSXShareDir(): string {
 		];
 
 		for (const dirPath of possiblePaths) {
-			if (existsSync(dirPath) && existsSync(path.join(dirPath, 'machines'))) {
-				return dirPath;
+			const machinesDir = path.join(dirPath, 'machines');
+			if (existsSync(dirPath) && existsSync(machinesDir)) {
+				// Verify the machines directory actually contains XML definitions
+				try {
+					const hasXML = readdirSync(machinesDir).some((f: string) => f.endsWith('.xml'));
+					if (hasXML) return dirPath;
+				} catch { /* skip unreadable directories */ }
 			}
 		}
 	} catch (error) {
