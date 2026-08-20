@@ -1,11 +1,13 @@
 # Makefile for MCP-openMSX project
 .PHONY: all install embeddings
 
-NPM = pnpm
+# Fall back to npm if pnpm not found
+NPM := $(shell which pnpm 2>/dev/null && echo pnpm || echo npm)
 
-COL_WHITE = \e[1;37m
-COL_ORANGE = \e[1;38:5:208m
-COL_RESET = \e[0m
+ESC = $(shell printf '\033')
+COL_WHITE = $(ESC)[1;37m
+COL_ORANGE = $(ESC)[1;38:5:208m
+COL_RESET = $(ESC)[0m
 
 SERVER_DIR = mcp-server
 MAKE = make -s --no-print-directory -C $(SERVER_DIR)
