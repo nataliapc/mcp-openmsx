@@ -11,7 +11,7 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseReplayStatus, sleepWithAbort, ensureDirectoryExists, tclPath } from "./utils.js";
+import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseWatchpoints, parseReplayStatus, sleepWithAbort, ensureDirectoryExists, tclPath } from "./utils.js";
 import { EmuDirectories } from "./server.js";
 import { RegResource, getRegisteredResourcesList } from "./server_resources.js";
 import { resolveLaunchParams } from "./server_elicitations.js";
@@ -1184,6 +1184,141 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				case "list": {
 					const bps = parseBreakpoints(response);
 					structuredContent = { command, breakpoints: bps };
+					break;
+				}
+				default:
+					structuredContent = { command, result: response };
+			}
+			return {
+				content: [{ type: "text" as const, text: response || "Ok" }],
+				structuredContent,
+				isError: false,
+			};
+		});
+
+	// debug_watchpoints
+	server.registerTool(
+		// Name of the tool (used to call it)
+		"debug_watchpoints",
+		{
+			title: "Watchpoints tools",
+			// Description of the tool (what it does)
+			description: "Create, remove, and list watchpoints. Watchpoints trigger when a memory address or I/O port is read or written.",
+			// Schema for the tool (input validation)
+			inputSchema: {
+				command: z.enum(["create", "remove", "list"])
+					.describe(`Available commands:
+	'create <type> <begin> <end>': create a watchpoint with an address/port range. Type must be one of: 'read_mem', 'write_mem' (4-digit hex addresses), 'read_io', 'write_io' (2-digit hex ports). begin must be <= end. Optional params: 'condition', 'cmd', 'once'.
+	'remove <wpname>': remove a watchpoint by name (e.g. wp#1).
+	'list': enumerate the active watchpoints.
+**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
+`),
+				type: z.enum(["read_mem", "write_mem", "read_io", "write_io"])
+					.optional()
+					.describe("Watchpoint type. Used by [create]."),
+				begin: z.string()
+					.optional()
+					.describe("Start of address/port range. 4 hex digits for memory (e.g. 0x4af3), 2 hex digits for I/O (e.g. 0x98). Used by [create]."),
+				end: z.string()
+					.optional()
+					.describe("End of address/port range. 4 hex digits for memory (e.g. 0x4af3), 2 hex digits for I/O (e.g. 0x98). Must be >= begin. Used by [create]."),
+				condition: z.string()
+					.max(200, 'Condition too long')
+					.optional()
+					.describe("Tcl condition evaluated when watchpoint triggers. If false, watchpoint does not fire. Used by [create]."),
+				cmd: z.string()
+					.max(200, 'Command too long')
+					.optional()
+					.describe("Tcl command to execute when watchpoint triggers. Used by [create]."),
+				once: z.boolean()
+					.optional()
+					.describe("If true, remove watchpoint after first trigger. Used by [create]."),
+				wpname: z.string()
+					.min(3, 'Watchpoint name too short')
+					.max(10, 'Watchpoint name too long')
+					.optional()
+					.describe("Watchpoint name (e.g. wp#1). Used by [remove]"),
+			},
+			// Structured output schema (MCP protocol 2025-11-25)
+			outputSchema: {
+				command: z.string()
+					.describe("The executed command name."),
+				createdName: z.string().optional()
+					.describe("Name assigned to the newly created watchpoint (e.g. 'wp#1'). Present for 'create'."),
+				createdBegin: z.string().optional()
+					.describe("Start of address/port range. Present for 'create'."),
+				createdEnd: z.string().optional()
+					.describe("End of address/port range. Present for 'create'."),
+				createdType: z.string().optional()
+					.describe("Type of the newly created watchpoint. Present for 'create'."),
+				removedName: z.string().optional()
+					.describe("Name of the removed watchpoint. Present for 'remove'."),
+				watchpoints: z.array(z.object({
+					name: z.string(), type: z.string(), address: z.string(), condition: z.string(), command: z.string()
+				})).optional()
+					.describe("List of active watchpoints. Present for 'list'."),
+				result: z.string().optional()
+					.describe("Generic result or status message."),
+			},
+			annotations: {
+				"readOnlyHint": true,
+				"destructiveHint": false,
+				"idempotentHint": false,
+				"openWorldHint": false,
+			},
+		},
+		// Handler for the tool (function to be executed when the tool is called)
+		async ({ command, type, begin, end, condition, cmd, once, wpname }: { command: string; type?: string; begin?: string; end?: string; condition?: string; cmd?: string; once?: boolean; wpname?: string }) => {
+			let tclCommand: string;
+			switch (command) {
+				case "create": {
+					if (!type || !begin || !end) {
+						return { content: [{ type: "text" as const, text: "Error: 'type', 'begin', and 'end' are required for create." }], isError: true };
+					}
+					const isMem = type === "read_mem" || type === "write_mem";
+					const hexRegex = isMem ? /^0x[0-9a-fA-F]{4}$/ : /^0x[0-9a-fA-F]{2}$/;
+					if (!hexRegex.test(begin)) {
+						return { content: [{ type: "text" as const, text: `Error: 'begin' must be a 4-digit hex address for memory or 2-digit hex port for I/O (e.g. 0x${isMem ? '4af3' : '98'}).` }], isError: true };
+					}
+					if (!hexRegex.test(end)) {
+						return { content: [{ type: "text" as const, text: `Error: 'end' must be a 4-digit hex address for memory or 2-digit hex port for I/O (e.g. 0x${isMem ? '4af3' : '98'}).` }], isError: true };
+					}
+					if (parseInt(begin, 16) > parseInt(end, 16)) {
+						return { content: [{ type: "text" as const, text: `Error: 'begin' (${begin}) must be <= 'end' (${end}).` }], isError: true };
+					}
+					const condPart = condition ? ` {${condition}}` : '';
+					const cmdPart = cmd ? ` {${cmd}}` : '';
+					const onceFlag = once ? ' -once' : '';
+					tclCommand = `debug set_watchpoint${onceFlag} ${type} {${begin} ${end}}${condPart}${cmdPart}`;
+					break;
+				}
+				case "remove":
+					tclCommand = `debug remove_watchpoint ${wpname}`;
+					break;
+				case "list":
+					tclCommand = 'debug list_watchpoint';
+					break;
+				default:
+					return { content: [{ type: "text" as const, text: `Error: Unknown watchpoint command "${command}".` }], isError: true };
+			}
+			const response = await openMSXInstance.sendCommand(tclCommand);
+			if (isErrorResponse(response)) {
+				return { content: [{ type: "text" as const, text: response }], isError: true };
+			}
+
+			let structuredContent: Record<string, unknown>;
+			switch (command) {
+				case "create": {
+					structuredContent = { command, createdName: response.trim(), createdBegin: begin, createdEnd: end, createdType: type };
+					break;
+				}
+				case "remove": {
+					structuredContent = { command, removedName: wpname, result: response || "Ok" };
+					break;
+				}
+				case "list": {
+					const wps = parseWatchpoints(response);
+					structuredContent = { command, watchpoints: wps };
 					break;
 				}
 				default:
