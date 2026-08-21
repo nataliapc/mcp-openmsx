@@ -520,7 +520,7 @@ export function parseWatchpoints(response: string): { name: string; type: string
 	const watchpoints: { name: string; type: string; address: string; condition: string; command: string }[] = [];
 	const lines = response.trim().split('\n');
 	for (const line of lines) {
-		const match = line.match(/^(\S+)\s+(\S+)\s+(0x[0-9a-fA-F]{4})\s+\{([^}]*)\}\s+\{([^}]*)\}/);
+		const match = line.match(/^(\S+)\s+(\S+)\s+(\\?\{.*?\}|\\\s|\S)\s+\{([^}]*)\}\s+\{([^}]*)\}/);
 		if (match) {
 			watchpoints.push({
 				name: match[1],

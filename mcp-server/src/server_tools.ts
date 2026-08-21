@@ -1293,10 +1293,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				}
 				case "remove":
-					tclCommand = `debug remove_watchpoint ${wpname}`;
+					tclCommand = `debug watchpoint remove ${wpname}`;
 					break;
 				case "list":
-					tclCommand = 'debug list_watchpoint';
+					tclCommand = 'debug watchpoint list';
 					break;
 				default:
 					return { content: [{ type: "text" as const, text: `Error: Unknown watchpoint command "${command}".` }], isError: true };
