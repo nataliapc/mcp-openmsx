@@ -1254,7 +1254,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				removedName: z.string().optional()
 					.describe("Name of the removed watchpoint. Present for 'remove'."),
 				watchpoints: z.array(z.object({
-					name: z.string(), type: z.string(), address: z.string(), condition: z.string(), command: z.string()
+					name: z.string(), type: z.string(), address: z.string(), condition: z.string(), command: z.string(),
+					enabled: z.boolean(), once: z.boolean()
 				})).optional()
 					.describe("List of active watchpoints. Present for 'list'."),
 				result: z.string().optional()
