@@ -191,7 +191,8 @@ export class OpenMSX {
                     // await each command so replies are consumed in order and don't
                     // contaminate ioBuffer for subsequent user commands
                     await this.sendCommand('set save_settings_on_exit off');
-                    await this.sendCommand('set renderer SDLGL-PP');
+                    const renderer = process.env.OPENMSX_LAUNCH_HEADLESS?.toLowerCase() === 'true' ? 'none' : 'SDLGL-PP';
+                    await this.sendCommand(`set renderer ${renderer}`);
                     await this.sendCommand('set power on');
                     await this.sendCommand('reverse start');
                     let result = 'Ok: openMSX emulator launched successfully';

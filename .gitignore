@@ -22,6 +22,7 @@ mcp-server/bin
 mcp-server/helpers/**/obj
 mcp-server/helpers/**/bin
 mcp-output.log
+mcp_servers.json
 mcp-server/README.md
 mcp-server/LICENSE
 mcp-server/package-lock.json

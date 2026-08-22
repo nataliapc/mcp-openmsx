@@ -253,6 +253,7 @@ Edit it to include the following JSON entry:
 | `OPENMSX_SCREENDUMP_DIR` | Directory where screen dumps will be saved | Default for openmsx | `/myproject/screendumps` |
 | `OPENMSX_REPLAYS_DIR` | Directory where replay files will be saved | Default for openmsx | `/myproject/replays` |
 | `OPENMSX_ENABLE_RAW_TCL` | Register the optional `openmsx_tcl_cmd` native Tcl tool. This grants the MCP client powerful access to openMSX and potentially the host filesystem; enable it only when explicitly required. | `false` | `true` |
+| `OPENMSX_LAUNCH_HEADLESS` | Launch openMSX without a renderer window (headless mode). Sets `renderer` to `none` instead of the default `SDLGL-PP` at startup. Useful for CI, testing, and server-side environments. | `false` | `true` |
 | `MCP_TRANSPORT` | Transport mode (`stdio` or `http`) | `stdio` | `http` |
 | `MCP_HTTP_PORT` | Port number for HTTP transport mode | `3000` | `8080` |
 | `MCP_ALLOWED_ORIGINS` | Comma-separated list of allowed origins for HTTP transport | Empty for all allowed | `http://localhost,http://mydomain.com` |
@@ -334,6 +335,7 @@ export OPENMSX_SCREENSHOT_DIR="/my_project/screenshots"
 export OPENMSX_SCREENDUMP_DIR="/my_project/screendumps"
 export OPENMSX_REPLAYS_DIR="/my_project/replays"
 export OPENMSX_ENABLE_RAW_TCL="true"
+export OPENMSX_LAUNCH_HEADLESS="true"
 export MCP_HTTP_PORT=3000
 export MCP_ALLOWED_ORIGINS="http://localhost,http://mydomain.com"
 ```
