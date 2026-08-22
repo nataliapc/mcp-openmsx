@@ -511,25 +511,88 @@ export function parseBreakpoints(response: string): { name: string; address: str
 }
 
 /**
- * Parse the output of the openMSX 'debug list_watchpoint' TCL command into a structured array.
- * Output format (one per line):
- *   wp#1 read_mem 0x4af3 {} {}
+ * Parse the output of the openMSX 'debug watchpoint list' TCL command into a structured array.
+ * Output format:
+ *   wp#1 {-type write_mem -address {1 4567} -condition {[reg A] < 128} -command {debug break} -enabled 1 -once 0}
  */
-export function parseWatchpoints(response: string): { name: string; type: string; address: string; condition: string; command: string }[] {
-	if (!response.trim()) return [];
-	const watchpoints: { name: string; type: string; address: string; condition: string; command: string }[] = [];
-	const lines = response.trim().split('\n');
-	for (const line of lines) {
-		const match = line.match(/^(\S+)\s+(\S+)\s+(\\?\{.*?\}|\\\s|\S)\s+\{([^}]*)\}\s+\{([^}]*)\}/);
-		if (match) {
-			watchpoints.push({
-				name: match[1],
-				type: match[2],
-				address: match[3],
-				condition: match[4],
-				command: match[5],
-			});
+
+export type WatchpointInfo = { name: string; type: string; address: string; condition: string; command: string; enabled: boolean; once: boolean };
+
+function parseTclBraced(input: string, idx: number): { value: string; endIdx: number } {
+	if (input[idx] !== '{') return { value: '', endIdx: idx };
+	let depth = 1;
+	let i = idx + 1;
+	const start = i;
+	while (i < input.length && depth > 0) {
+		if (input[i] === '\\' && i + 1 < input.length && (input[i + 1] === '{' || input[i + 1] === '}')) {
+			i += 2; // skip escaped brace
+		} else if (input[i] === '{') {
+			depth++;
+			i++;
+		} else if (input[i] === '}') {
+			depth--;
+			if (depth > 0) i++;
+		} else {
+			i++;
 		}
+	}
+	const endIdx = depth === 0 ? i + 1 : i;
+	return { value: input.substring(start, i), endIdx };
+}
+
+function parseTclValue(input: string, idx: number): { value: string; endIdx: number } {
+	while (idx < input.length && /\s/.test(input[idx])) idx++;
+	if (idx >= input.length) return { value: '', endIdx: idx };
+	if (input[idx] === '{') return parseTclBraced(input, idx);
+	const start = idx;
+	while (idx < input.length && !/\s/.test(input[idx])) idx++;
+	return { value: input.substring(start, idx), endIdx: idx };
+}
+
+export function parseWatchpoints(response: string): WatchpointInfo[] {
+	if (!response.trim()) return [];
+	const watchpoints: WatchpointInfo[] = [];
+	const input = response.trim();
+	let idx = 0;
+	while (idx < input.length) {
+		// skip whitespace
+		while (idx < input.length && /\s/.test(input[idx])) idx++;
+		if (idx >= input.length) break;
+		// expect wp#N
+		const nameMatch = input.substring(idx).match(/^wp#\d+/);
+		if (!nameMatch) break;
+		const name = nameMatch[0];
+		idx += name.length;
+		// parse the braced block
+		while (idx < input.length && input[idx] === ' ') idx++;
+		if (idx >= input.length || input[idx] !== '{') break;
+		const block = parseTclBraced(input, idx);
+		idx = block.endIdx;
+		// parse key-value pairs inside the block
+		const props: Record<string, string> = {};
+		let bidx = 0;
+		const content = block.value;
+		while (bidx < content.length) {
+			while (bidx < content.length && content[bidx] === ' ') bidx++;
+			if (bidx >= content.length) break;
+			if (content[bidx] !== '-') break;
+			bidx++; // skip '-'
+			const keyStart = bidx;
+			while (bidx < content.length && content[bidx] !== ' ') bidx++;
+			const key = content.substring(keyStart, bidx);
+			const val = parseTclValue(content, bidx);
+			props[key] = val.value;
+			bidx = val.endIdx;
+		}
+		watchpoints.push({
+			name,
+			type: props['type'] ?? '',
+			address: props['address'] ?? '',
+			condition: props['condition'] ?? '',
+			command: props['command'] ?? '',
+			enabled: props['enabled'] === '1',
+			once: props['once'] === '1',
+		});
 	}
 	return watchpoints;
 }

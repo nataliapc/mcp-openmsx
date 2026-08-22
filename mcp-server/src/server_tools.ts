@@ -1206,11 +1206,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			description: "Create, remove, and list watchpoints. Watchpoints trigger when a memory address or I/O port is read or written.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["create", "remove", "list"])
+				command: z.enum(["create", "remove", "list", "deleteAll"])
 					.describe(`Available commands:
 	'create <type> <begin> <end>': create a watchpoint with an address/port range. Type must be one of: 'read_mem', 'write_mem' (4-digit hex addresses), 'read_io', 'write_io' (2-digit hex ports). begin must be <= end. Optional params: 'condition', 'cmd', 'once'.
 	'remove <wpname>': remove a watchpoint by name (e.g. wp#1).
 	'list': enumerate the active watchpoints.
+	'deleteAll': remove all active watchpoints at once.
 **Important Note**: Addresses and values are in hexadecimal format (e.g. 0x0000).
 `),
 				type: z.enum(["read_mem", "write_mem", "read_io", "write_io"])
@@ -1254,7 +1255,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				removedName: z.string().optional()
 					.describe("Name of the removed watchpoint. Present for 'remove'."),
 				watchpoints: z.array(z.object({
-					name: z.string(), type: z.string(), address: z.string(), condition: z.string(), command: z.string()
+					name: z.string(), type: z.string(), address: z.string(), condition: z.string(), command: z.string(),
+					enabled: z.boolean(), once: z.boolean()
 				})).optional()
 					.describe("List of active watchpoints. Present for 'list'."),
 				result: z.string().optional()
@@ -1298,6 +1300,9 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				case "list":
 					tclCommand = 'debug watchpoint list';
 					break;
+				case "deleteAll":
+					tclCommand = 'foreach {wpname body} [debug watchpoint list] { debug watchpoint remove $wpname }';
+					break;
 				default:
 					return { content: [{ type: "text" as const, text: `Error: Unknown watchpoint command "${command}".` }], isError: true };
 			}
@@ -1319,6 +1324,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				case "list": {
 					const wps = parseWatchpoints(response);
 					structuredContent = { command, watchpoints: wps };
+					break;
+				}
+				case "deleteAll": {
+					structuredContent = { command, result: "All watchpoints removed." };
 					break;
 				}
 				default:
