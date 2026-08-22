@@ -1108,11 +1108,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			description: "Create, remove, and list breakpoints.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["create", "remove", "list"])
+				command: z.enum(["create", "remove", "list", "deleteAll"])
 					.describe(`Available commands:
 	'create <address>': create a breakpoint at a specified address, and returns its name.
 	'remove <bpname>': remove a breakpoint by name (e.g. bp#1).
 	'list': enumerate the active breakpoints.
+	'deleteAll': remove all active breakpoints at once.
 "**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x4af3).
 "**Important Note**: The memory addresses of functions and variables can be previously obtained from *.sym or *.map files.
 `),
@@ -1144,7 +1145,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.describe("Generic result or status message."),
 			},
 			annotations: {
-				"readOnlyHint": true,
+				"readOnlyHint": false,
 				"destructiveHint": false,
 				"idempotentHint": false,
 				"openWorldHint": false,
@@ -1162,6 +1163,9 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				case "list":
 					tclCommand = 'debug list_bp';
+					break;
+				case "deleteAll":
+					tclCommand = 'foreach {bpname body} [debug breakpoint list] { debug breakpoint remove $bpname }';
 					break;
 				default:
 					return { content: [{ type: "text" as const, text: `Error: Unknown breakpoint command "${command}".` }], isError: true };
@@ -1184,6 +1188,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				case "list": {
 					const bps = parseBreakpoints(response);
 					structuredContent = { command, breakpoints: bps };
+					break;
+				}
+				case "deleteAll": {
+					structuredContent = { command, result: "All breakpoints removed." };
 					break;
 				}
 				default:
@@ -1263,7 +1271,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.describe("Generic result or status message."),
 			},
 			annotations: {
-				"readOnlyHint": true,
+				"readOnlyHint": false,
 				"destructiveHint": false,
 				"idempotentHint": false,
 				"openWorldHint": false,

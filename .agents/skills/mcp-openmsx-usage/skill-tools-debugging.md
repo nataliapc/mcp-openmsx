@@ -57,8 +57,12 @@
 | `create` | Create breakpoint at address. Param: `address`. Returns breakpoint name (e.g. `bp#1`) |
 | `remove` | Remove breakpoint by name. Param: `bpname` (e.g. `bp#1`) |
 | `list` | List all active breakpoints |
+| `deleteAll` | Remove all active breakpoints at once |
 
 **Tip**: Obtain function/variable addresses from `.sym` or `.map` files before creating breakpoints.
+
+**Note**: The raw Tcl one-liner to delete all breakpoints:
+`foreach {bpname body} [debug breakpoint list] { debug breakpoint remove $bpname }`
 
 ## `debug_watchpoints` — Watchpoint management
 
@@ -67,3 +71,7 @@
 | `create` | Create watchpoint with address/port range. Params: `type` (`read_mem`, `write_mem`, `read_io`, `write_io`), `begin` (start of range), `end` (end of range, must be >= begin). Optional: `condition` (Tcl condition), `cmd` (Tcl command to execute), `once` (remove after first trigger). Returns watchpoint name (e.g. `wp#1`) |
 | `remove` | Remove watchpoint by name. Param: `wpname` (e.g. `wp#1`) |
 | `list` | List all active watchpoints |
+| `deleteAll` | Remove all active watchpoints at once |
+
+**Note**: The raw Tcl one-liner to delete all watchpoints:
+`foreach {wpname body} [debug watchpoint list] { debug watchpoint remove $wpname }`
