@@ -131,19 +131,59 @@ describe('parsePalette', () => {
 // ─── parseBreakpoints ────────────────────────────────────────────────────────
 
 describe('parseBreakpoints', () => {
-  it('parses multiple breakpoints', () => {
-    const input = 'bp#1 0x4000 {} {debug break}\nbp#2 0x8000 {} {debug break}';
-    const bps = parseBreakpoints(input);
-    expect(bps).toHaveLength(2);
-    expect(bps[0]).toEqual({ name: 'bp#1', address: '0x4000', condition: '', command: 'debug break' });
-    expect(bps[1]).toEqual({ name: 'bp#2', address: '0x8000', condition: '', command: 'debug break' });
-  });
-
-  it('parses breakpoint with condition', () => {
-    const input = 'bp#3 0xC000 {[reg A] == 0x42} {debug break}';
+  it('parses a single breakpoint with all fields', () => {
+    const input = 'bp#1 {-address 0x4000 -condition {[reg A] == 0x42} -command {debug break} -enabled 1 -once 0}';
     const bps = parseBreakpoints(input);
     expect(bps).toHaveLength(1);
-    expect(bps[0].condition).toBe('[reg A] == 0x42');
+    expect(bps[0]).toEqual({
+      name: 'bp#1', address: '0x4000',
+      condition: '[reg A] == 0x42', command: 'debug break', enabled: true, once: false,
+    });
+  });
+
+  it('parses multiple breakpoints on the same line', () => {
+    const input = 'bp#1 {-address 0x4000 -condition {} -command {} -enabled 1 -once 0} bp#2 {-address 0x8000 -condition {[reg B] > 3} -command {puts hi} -enabled 0 -once 1}';
+    const bps = parseBreakpoints(input);
+    expect(bps).toHaveLength(2);
+    expect(bps[0].name).toBe('bp#1');
+    expect(bps[0].condition).toBe('');
+    expect(bps[0].enabled).toBe(true);
+    expect(bps[0].once).toBe(false);
+    expect(bps[1].name).toBe('bp#2');
+    expect(bps[1].condition).toBe('[reg B] > 3');
+    expect(bps[1].command).toBe('puts hi');
+    expect(bps[1].enabled).toBe(false);
+    expect(bps[1].once).toBe(true);
+  });
+
+  it('parses multiple breakpoints separated by newlines', () => {
+    const input = 'bp#1 {-address 0x4000 -condition {} -command {debug break} -enabled 1 -once 0}\nbp#2 {-address 0x8000 -condition {} -command {debug break} -enabled 1 -once 0}';
+    const bps = parseBreakpoints(input);
+    expect(bps).toHaveLength(2);
+    expect(bps[0].name).toBe('bp#1');
+    expect(bps[1].name).toBe('bp#2');
+  });
+
+  it('parses empty condition and command', () => {
+    const input = 'bp#3 {-address 0xC000 -condition {} -command {} -enabled 1 -once 0}';
+    const bps = parseBreakpoints(input);
+    expect(bps).toHaveLength(1);
+    expect(bps[0].condition).toBe('');
+    expect(bps[0].command).toBe('');
+  });
+
+  it('parses escaped braces in condition and command', () => {
+    const input = 'bp#4 {-address 0x1234 -condition {\\{blah} -command {doh\\}} -enabled 1 -once 0}';
+    const bps = parseBreakpoints(input);
+    expect(bps[0].condition).toBe('\\{blah');
+    expect(bps[0].command).toBe('doh\\}');
+  });
+
+  it('parses braceless input in command and condition', () => {
+    const input = 'bp#4 {-address 0x1234 -condition foo -command bar -enabled 1 -once 0}';
+    const bps = parseBreakpoints(input);
+    expect(bps[0].condition).toBe('foo');
+    expect(bps[0].command).toBe('bar');
   });
 
   it('returns empty array for empty input', () => {
@@ -151,10 +191,10 @@ describe('parseBreakpoints', () => {
     expect(parseBreakpoints('   ')).toEqual([]);
   });
 
-  it('skips malformed lines', () => {
-    const input = 'bp#1 0x4000 {} {debug break}\ngarbage line\nbp#2 0x8000 {} {debug break}';
+  it('stops at malformed input', () => {
+    const input = 'bp#1 {-address 0x4000 -condition {} -command {debug break} -enabled 1 -once 0} garbage bp#2 {-address 0x8000 -condition {} -command {debug break} -enabled 1 -once 0}';
     const bps = parseBreakpoints(input);
-    expect(bps).toHaveLength(2);
+    expect(bps).toHaveLength(1);
   });
 });
 

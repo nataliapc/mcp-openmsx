@@ -62,9 +62,9 @@ describe('debug_breakpoints deleteAll', () => {
 
 	it('sends the same Tcl one-liner and reports success with multiple breakpoints', async () => {
 		const listResponse = [
-			'bp#1 0x4000 {} {}',
-			'bp#2 0x4af3 {[reg A] == 0} {}',
-			'bp#3 0x8000 {} {}',
+			'bp#1 {-address 0x4000 -condition {} -command {debug break} -enabled 1 -once 0}',
+			'bp#2 {-address 0x4af3 -condition {[reg A] == 0} -command {debug break} -enabled 1 -once 0}',
+			'bp#3 {-address 0x8000 -condition {} -command {debug break} -enabled 1 -once 1}',
 		].join('\n');
 		mockSendCommand.mockResolvedValue(listResponse);
 		const handler = findHandler('debug_breakpoints');

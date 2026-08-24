@@ -54,7 +54,7 @@
 
 | Command | Description |
 |---------|-------------|
-| `create` | Create breakpoint at address. Param: `address`. Returns breakpoint name (e.g. `bp#1`) |
+| `create` | Create breakpoint at address. Param: `address`. Optional: `condition` (Tcl condition), `cmd` (Tcl command to execute), `once` (remove after first trigger). Returns breakpoint name (e.g. `bp#1`) |
 | `remove` | Remove breakpoint by name. Param: `bpname` (e.g. `bp#1`) |
 | `list` | List all active breakpoints |
 | `deleteAll` | Remove all active breakpoints at once |

@@ -1110,12 +1110,12 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			inputSchema: {
 				command: z.enum(["create", "remove", "list", "deleteAll"])
 					.describe(`Available commands:
-	'create <address>': create a breakpoint at a specified address, and returns its name.
+	'create <address>': create a breakpoint at a specified address, and returns its name. Optional params: 'condition', 'cmd', 'once'.
 	'remove <bpname>': remove a breakpoint by name (e.g. bp#1).
 	'list': enumerate the active breakpoints.
 	'deleteAll': remove all active breakpoints at once.
-"**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x4af3).
-"**Important Note**: The memory addresses of functions and variables can be previously obtained from *.sym or *.map files.
+**Important Note**: Addresses and values are in hexadecimal format (e.g. 0x4af3).
+**Important Note**: The memory addresses of functions and variables can be previously obtained from *.sym or *.map files.
 `),
 				address: z.string()
 					.regex(/^0x[0-9a-fA-F]{4}$/, 'Address must be a 4 digits hexadecimal number')
@@ -1126,6 +1126,17 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.max(10, 'Breakpoint name too long')
 					.optional()
 					.describe("Breakpoint name (e.g. bp#1). Used by [remove]"),
+				condition: z.string()
+					.max(200, 'Condition too long')
+					.optional()
+					.describe("Tcl boolean expression evaluated when the breakpoint hits; it only fires when true. Omit for an unconditional breakpoint. Examples: '[reg A] == 0x42', '[reg PC] < 0x8000'. Used by [create]."),
+				cmd: z.string()
+					.max(200, 'Command too long')
+					.optional()
+					.describe("Tcl command to execute when the breakpoint hits. Default if omitted: 'debug break'. Examples: 'puts hit', 'debug break'. Used by [create]."),
+				once: z.boolean()
+					.optional()
+					.describe("If true, remove breakpoint after first trigger. Used by [create]."),
 			},
 			// Structured output schema (MCP protocol 2025-11-25)
 			outputSchema: {
@@ -1138,7 +1149,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				removedName: z.string().optional()
 					.describe("Name of the removed breakpoint. Present for 'remove'."),
 				breakpoints: z.array(z.object({
-					name: z.string(), address: z.string(), condition: z.string(), command: z.string()
+					name: z.string(), address: z.string(), condition: z.string(), command: z.string(),
+					enabled: z.boolean(), once: z.boolean()
 				})).optional()
 					.describe("List of active breakpoints. Present for 'list'."),
 				result: z.string().optional()
@@ -1152,17 +1164,24 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
-		async ({ command, address, bpname }: { command: string; address?: string; bpname?: string }) => {
+		async ({ command, address, bpname, condition, cmd, once }: { command: string; address?: string; bpname?: string; condition?: string; cmd?: string; once?: boolean }) => {
 			let tclCommand: string;
 			switch (command) {
-				case "create":
-					tclCommand = `debug set_bp ${address}`;
+				case "create": {
+					if (!address) {
+						return { content: [{ type: "text" as const, text: "Error: 'address' is required for create." }], isError: true };
+					}
+					const condPart = condition ? ` -condition {${condition}}` : '';
+					const cmdPart = cmd ? ` -command {${cmd}}` : '';
+					const onceFlag = once ? ' -once 1' : '';
+					tclCommand = `debug breakpoint create -address ${address}${condPart}${cmdPart}${onceFlag}`;
 					break;
+				}
 				case "remove":
-					tclCommand = `debug remove_bp ${bpname}`;
+					tclCommand = `debug breakpoint remove ${bpname}`;
 					break;
 				case "list":
-					tclCommand = 'debug list_bp';
+					tclCommand = 'debug breakpoint list';
 					break;
 				case "deleteAll":
 					tclCommand = 'foreach {bpname body} [debug breakpoint list] { debug breakpoint remove $bpname }';
