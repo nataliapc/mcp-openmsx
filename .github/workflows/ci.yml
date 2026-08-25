@@ -30,6 +30,33 @@ jobs:
         working-directory: mcp-server
         run: pnpm build
 
-      - name: Test
+      - name: Test and coverage
         working-directory: mcp-server
-        run: pnpm test
+        run: |
+          set -o pipefail
+          pnpm test:coverage 2>&1 | tee "$RUNNER_TEMP/vitest-coverage.txt"
+
+      - name: Add coverage to job summary
+        if: always()
+        run: |
+          {
+            echo
+            echo "## Coverage"
+            echo
+            echo '```text'
+            if [[ -f "$RUNNER_TEMP/vitest-coverage.txt" ]]; then
+              sed -n '/% Coverage report from v8/,$p' "$RUNNER_TEMP/vitest-coverage.txt"
+            else
+              echo "Coverage report was not generated."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-coverage
+          path: mcp-server/coverage
+          if-no-files-found: ignore
+          retention-days: 14
