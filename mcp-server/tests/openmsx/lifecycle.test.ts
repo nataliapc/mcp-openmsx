@@ -3,11 +3,23 @@ import { OpenMSX } from '../../src/openmsx.js';
 import { EventEmitter } from 'events';
 import { spawn } from 'child_process';
 
+vi.mock('fs/promises', () => ({
+  default: {
+    readFile: vi.fn(),
+    readdir: vi.fn(),
+    mkdir: vi.fn(),
+  },
+}));
+
 vi.mock('child_process', () => ({
   spawn: vi.fn(),
 }));
 
+import fs from 'fs/promises';
+
 const mockSpawn = vi.mocked(spawn);
+const mockReadFile = vi.mocked(fs.readFile);
+const mockReaddir = vi.mocked(fs.readdir);
 
 /**
  * Tests for OpenMSX lifecycle methods: emu_close, forceClose, resetIO, destroy.
@@ -314,6 +326,47 @@ describe('emu_status', () => {
     const result = await instance.emu_status();
     expect(result).toBe('Error: not connected');
   });
+
+  it('returns a formatted error for a non-Error failure', async () => {
+    const instance = new OpenMSX();
+    vi.spyOn(instance, 'sendCommand').mockRejectedValue('connection lost');
+
+    const result = await instance.emu_status();
+
+    expect(result).toBe('Error: Failed to get machine status - Unknown error');
+  });
+});
+
+describe('getMachineList and getExtensionList', () => {
+  it('returns XML entries with descriptions', async () => {
+    const instance = new OpenMSX();
+    mockReaddir.mockResolvedValue(['MSX2.xml', 'README.txt'] as any);
+    mockReadFile.mockResolvedValue('<machine><description>MSX2 test machine</description></machine>');
+
+    const machines = await instance.getMachineList('/share/machines');
+
+    expect(mockReaddir).toHaveBeenCalledWith('/share/machines');
+    expect(mockReadFile).toHaveBeenCalledWith('/share/machines/MSX2.xml', 'utf-8');
+    expect(JSON.parse(machines)).toEqual([
+      { name: 'MSX2', description: 'MSX2 test machine' },
+    ]);
+  });
+
+  it('returns an error when no XML entries exist', async () => {
+    const instance = new OpenMSX();
+    mockReaddir.mockResolvedValue(['README.txt'] as any);
+
+    await expect(instance.getExtensionList('/share/extensions'))
+      .resolves.toBe('Error: No extensions found.');
+  });
+
+  it('returns a directory error for non-Error failures', async () => {
+    const instance = new OpenMSX();
+    mockReaddir.mockRejectedValue('permission denied');
+
+    await expect(instance.getMachineList('/share/machines'))
+      .resolves.toBe('Error: error reading machines directory - permission denied');
+  });
 });
 
 // ─── emu_launch — renderer ──────────────────────────────────────────────────
@@ -417,5 +470,83 @@ describe('emu_launch — renderer selection', () => {
     const info = await launchAndCaptureRenderer('TRUE');
     expect(info.cliRenderer).toBe('none');
     expect(info.cmdRenderer).toBeNull();
+  });
+});
+
+describe('emu_launch — Linux preflight and process failures', () => {
+  beforeEach(() => {
+    mockSpawn.mockReset();
+  });
+
+  it('rejects a second launch while an emulator is running', async () => {
+    const instance = new OpenMSX();
+    const priv = instance as any;
+    priv.process = createLaunchMockProcess();
+    priv.lastMachine = 'C-BIOS_MSX2';
+
+    const result = await instance.emu_launch('openmsx', '', []);
+
+    expect(result).toBe(
+      'Error: openMSX emulator instance is already running (current machine: C-BIOS_MSX2). Close it first.',
+    );
+    expect(mockSpawn).not.toHaveBeenCalled();
+  });
+
+  it('reports a process with no pid', async () => {
+    const processWithoutPid = createLaunchMockProcess();
+    processWithoutPid.pid = 0;
+    mockSpawn.mockReturnValue(processWithoutPid as any);
+
+    const result = await new OpenMSX().emu_launch('openmsx', '', []);
+
+    expect(result).toBe('Error: Failed to launch openMSX process');
+  });
+
+  it('reports missing stdio pipes', async () => {
+    const processWithoutStdout = createLaunchMockProcess();
+    processWithoutStdout.stdout = null as any;
+    mockSpawn.mockReturnValue(processWithoutStdout as any);
+
+    const result = await new OpenMSX().emu_launch('openmsx', '', []);
+
+    expect(result).toBe('Error: Failed to create stdio pipes');
+  });
+
+  it('returns an actionable error for ENOENT', async () => {
+    const mockProc = createLaunchMockProcess();
+    mockSpawn.mockReturnValue(mockProc as any);
+    const launchPromise = new OpenMSX().emu_launch('/missing/openmsx', '', []);
+
+    mockProc.emit('error', Object.assign(new Error('spawn failed'), { code: 'ENOENT' }));
+
+    const result = await launchPromise;
+    expect(result).toContain('Error: openMSX executable not found: "/missing/openmsx".');
+    expect(result).toContain('Set OPENMSX_EXECUTABLE to the full path.');
+  });
+
+  it('reports an unexpected process exit with diagnostics', async () => {
+    const mockProc = createLaunchMockProcess();
+    mockSpawn.mockReturnValue(mockProc as any);
+    const launchPromise = new OpenMSX().emu_launch('openmsx', '', []);
+
+    mockProc.emit('exit', 2, 'SIGTERM');
+
+    const result = await launchPromise;
+    expect(result).toContain('Error: openMSX process exited unexpectedly (code=2, signal=SIGTERM).');
+    expect(result).toContain('platform=linux IS_WINDOWS=false');
+  });
+
+  it('force closes on a fatal stderr error during the connection grace period', async () => {
+    const mockProc = createLaunchMockProcess();
+    mockSpawn.mockReturnValue(mockProc as any);
+    const instance = new OpenMSX();
+    const launchPromise = instance.emu_launch('openmsx', '', []);
+
+    mockProc.stdout.emit('data', Buffer.from('<openmsx-output>\n'));
+    mockProc.stderr.emit('data', Buffer.from('Fatal error: renderer failed\n'));
+
+    const result = await launchPromise;
+    expect(result).toBe('Error: Fatal error: renderer failed');
+    expect(mockProc.kill).toHaveBeenCalledWith('SIGKILL');
   });
 });

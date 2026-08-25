@@ -44,6 +44,12 @@ describe('sleepWithAbort', () => {
     await expect(sleepWithAbort(1000, controller.signal)).rejects.toThrow();
   });
 
+  it('uses AbortError when an already-aborted signal has no reason', async () => {
+    const signal = { aborted: true, reason: undefined } as AbortSignal;
+
+    await expect(sleepWithAbort(1000, signal)).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
   it('rejects when signal is aborted during sleep', async () => {
     vi.useFakeTimers();
     const controller = new AbortController();
@@ -52,6 +58,17 @@ describe('sleepWithAbort', () => {
     controller.abort();
     await expect(promise).rejects.toThrow();
     vi.useRealTimers();
+  });
+
+  it('uses AbortError when an abort during sleep has no reason', async () => {
+    const signal = {
+      aborted: false,
+      reason: undefined,
+      addEventListener: (_type: string, onAbort: () => void) => onAbort(),
+      removeEventListener: vi.fn(),
+    } as unknown as AbortSignal;
+
+    await expect(sleepWithAbort(1000, signal)).rejects.toMatchObject({ name: 'AbortError' });
   });
 
   it('cleans up event listener after normal completion', async () => {

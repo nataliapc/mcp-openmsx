@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 /**
  * Tests for the screen_shot tool handler logic.
@@ -29,6 +30,8 @@ vi.mock('fs/promises', () => ({
 import { openMSXInstance } from '../../src/openmsx.js';
 import fs from 'fs/promises';
 import path from 'path';
+import { registerTools } from '../../src/server_tools.js';
+import type { EmuDirectories } from '../../src/server.js';
 import { isErrorResponse, tclPath, ensureDirectoryExists } from '../../src/utils.js';
 
 const mockSendCommand = vi.mocked(openMSXInstance.sendCommand);
@@ -38,6 +41,31 @@ const mockUnlink = vi.mocked(fs.unlink);
 const mockMkdir = vi.mocked(fs.mkdir);
 
 const SCREENSHOT_DIR = '/home/user/.openMSX/share/screenshots';
+
+interface RegisteredToolResponse {
+  content: Array<Record<string, unknown>>;
+  isError?: boolean;
+}
+
+type RegisteredToolHandler = (args: Record<string, unknown>) => Promise<RegisteredToolResponse>;
+
+class ToolRegistry {
+  readonly registrations: Array<{ name: string; handler: RegisteredToolHandler }> = [];
+
+  registerTool(name: string, _config: unknown, handler: RegisteredToolHandler): void {
+    this.registrations.push({ name, handler });
+  }
+}
+
+const screenshotDirs = { OPENMSX_SCREENSHOT_DIR: SCREENSHOT_DIR } as EmuDirectories;
+
+async function findRegisteredHandler(name: string): Promise<RegisteredToolHandler> {
+  const registry = new ToolRegistry();
+  await registerTools(registry as unknown as McpServer, screenshotDirs);
+  const entry = registry.registrations.find(registration => registration.name === name);
+  if (!entry) throw new Error(`Tool "${name}" not registered`);
+  return entry.handler;
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -190,5 +218,55 @@ describe('screenshot — TCL command', () => {
     const timestamp = parseInt(prefixMatch![1]);
     expect(timestamp).toBeGreaterThanOrEqual(before);
     expect(timestamp).toBeLessThanOrEqual(after);
+  });
+});
+
+describe('screen_shot — registered handler', () => {
+  it('returns the generated file through the real tool handler', async () => {
+    const timestamp = 1700000000000;
+    vi.spyOn(Date, 'now').mockReturnValue(timestamp);
+    const screenshotPath = `${SCREENSHOT_DIR}/mcp_${timestamp}_0001.png`;
+    mockSendCommand.mockResolvedValue(screenshotPath);
+
+    const response = await (await findRegisteredHandler('screen_shot'))({ command: 'to_file' });
+
+    expect(mockMkdir).toHaveBeenCalledWith(SCREENSHOT_DIR, { recursive: true });
+    expect(mockSendCommand).toHaveBeenCalledWith(
+      `screenshot -raw -doublesize -prefix "${SCREENSHOT_DIR}/mcp_${timestamp}_"`,
+    );
+    expect(response).toEqual({
+      content: [{ type: 'text', text: `Screenshot taken in file: ${screenshotPath}` }],
+      isError: false,
+    });
+    vi.restoreAllMocks();
+  });
+
+  it('returns an image through the real tool handler', async () => {
+    const screenshotPath = `${SCREENSHOT_DIR}/mcp_test_0001.png`;
+    mockSendCommand.mockResolvedValue(screenshotPath);
+    mockReadFile.mockResolvedValue(Buffer.from('PNG fake data'));
+    mockUnlink.mockResolvedValue(undefined);
+
+    const response = await (await findRegisteredHandler('screen_shot'))({ command: 'as_image' });
+
+    expect(mockReadFile).toHaveBeenCalledWith(screenshotPath);
+    expect(mockUnlink).toHaveBeenCalledWith(screenshotPath);
+    expect(response).toEqual({
+      content: [
+        { type: 'text', text: 'Screenshot taken successfully:' },
+        { type: 'image', data: Buffer.from('PNG fake data').toString('base64'), mimeType: 'image/png' },
+      ],
+    });
+  });
+
+  it('propagates renderer errors through the real tool handler', async () => {
+    mockSendCommand.mockResolvedValue('Error: renderer not initialized');
+
+    const response = await (await findRegisteredHandler('screen_shot'))({ command: 'to_file' });
+
+    expect(response).toEqual({
+      content: [{ type: 'text', text: 'Error: renderer not initialized' }],
+      isError: true,
+    });
   });
 });

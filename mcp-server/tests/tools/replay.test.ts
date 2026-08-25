@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import path from 'path';
 import { tclPath, parseReplayStatus } from '../../src/utils.js';
 
@@ -16,9 +17,36 @@ vi.mock('../../src/openmsx.js', () => ({
 }));
 
 import { openMSXInstance } from '../../src/openmsx.js';
+import { registerTools } from '../../src/server_tools.js';
+import type { EmuDirectories } from '../../src/server.js';
 
 const mockSendCommand = vi.mocked(openMSXInstance.sendCommand);
 const REPLAYS_DIR = '/home/user/.openMSX/share/replays';
+const replayDirs = { OPENMSX_REPLAYS_DIR: REPLAYS_DIR } as EmuDirectories;
+
+interface RegisteredToolResponse {
+  content: Array<Record<string, unknown>>;
+  structuredContent?: Record<string, unknown>;
+  isError?: boolean;
+}
+
+type RegisteredToolHandler = (args: Record<string, unknown>) => Promise<RegisteredToolResponse>;
+
+class ToolRegistry {
+  readonly registrations: Array<{ name: string; handler: RegisteredToolHandler }> = [];
+
+  registerTool(name: string, _config: unknown, handler: RegisteredToolHandler): void {
+    this.registrations.push({ name, handler });
+  }
+}
+
+async function findRegisteredHandler(name: string): Promise<RegisteredToolHandler> {
+  const registry = new ToolRegistry();
+  await registerTools(registry as unknown as McpServer, replayDirs);
+  const entry = registry.registrations.find(registration => registration.name === name);
+  if (!entry) throw new Error(`Tool "${name}" not registered`);
+  return entry.handler;
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -173,6 +201,57 @@ describe('replay — status response integration', () => {
       end: 120.5,
       current: 60.2,
       snapshotCount: 4,
+    });
+  });
+});
+
+describe('emu_replay — registered handler', () => {
+  it('returns structured replay status through the real tool handler', async () => {
+    const rawStatus = 'status enabled begin 0.0 end 120.5 current 60.2 snapshots {0.0 30.0 60.0 90.0} last_event 0.0';
+    mockSendCommand.mockResolvedValue(rawStatus);
+
+    const response = await (await findRegisteredHandler('emu_replay'))({ command: 'status' });
+
+    expect(mockSendCommand).toHaveBeenCalledWith('reverse status');
+    expect(response).toEqual({
+      content: [{ type: 'text', text: rawStatus }],
+      structuredContent: {
+        command: 'status',
+        enabled: true,
+        beginTime: 0,
+        endTime: 120.5,
+        currentTime: 60.2,
+        snapshotCount: 4,
+      },
+      isError: false,
+    });
+  });
+
+  it('adds the extension and replay directory through the real tool handler', async () => {
+    mockSendCommand.mockResolvedValue('saved');
+
+    const response = await (await findRegisteredHandler('emu_replay'))({
+      command: 'saveReplay',
+      filename: 'checkpoint',
+    });
+
+    const expectedPath = `${REPLAYS_DIR}/checkpoint.omr`;
+    expect(mockSendCommand).toHaveBeenCalledWith(`reverse savereplay ${expectedPath}`);
+    expect(response.structuredContent).toEqual({
+      command: 'saveReplay',
+      filename: expectedPath,
+      result: 'saved',
+    });
+  });
+
+  it('returns replay command errors through the real tool handler', async () => {
+    mockSendCommand.mockResolvedValue('Error: replay is disabled');
+
+    const response = await (await findRegisteredHandler('emu_replay'))({ command: 'start' });
+
+    expect(response).toEqual({
+      content: [{ type: 'text', text: 'Error: replay is disabled' }],
+      isError: true,
     });
   });
 });

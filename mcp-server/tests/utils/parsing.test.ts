@@ -196,6 +196,12 @@ describe('parseBreakpoints', () => {
     const bps = parseBreakpoints(input);
     expect(bps).toHaveLength(1);
   });
+
+  it('uses defaults for missing breakpoint properties', () => {
+    expect(parseBreakpoints('bp#1 {}')).toEqual([{
+      name: 'bp#1', address: '', condition: '', command: '', enabled: false, once: false,
+    }]);
+  });
 });
 
 // ─── parseWatchpoints ──────────────────────────────────────────────────────
@@ -287,6 +293,18 @@ describe('parseWatchpoints', () => {
     const input = 'wp#1 {-type read_mem -address {1 100} -condition {} -command {} -enabled 1 -once 0} garbage wp#2 {-type read_io -address {0x98 0x98} -condition {} -command {} -enabled 1 -once 0}';
     const wps = parseWatchpoints(input);
     expect(wps).toHaveLength(1);
+  });
+
+  it('handles missing values and malformed Tcl blocks', () => {
+    expect(parseWatchpoints('wp#1 {-type}')[0]).toEqual({
+      name: 'wp#1', type: '', address: '', condition: '', command: '', enabled: false, once: false,
+    });
+    expect(parseWatchpoints('wp#2 {')[0]).toEqual({
+      name: 'wp#2', type: '', address: '', condition: '', command: '', enabled: false, once: false,
+    });
+    expect(parseWatchpoints('wp#3 garbage')).toEqual([]);
+    expect(parseWatchpoints('wp#4 {-type read_mem   }')[0].type).toBe('read_mem');
+    expect(parseWatchpoints('wp#5 {garbage}')[0].type).toBe('');
   });
 });
 

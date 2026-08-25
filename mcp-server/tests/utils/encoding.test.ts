@@ -94,6 +94,10 @@ describe('encodeHtmlEntities', () => {
     expect(encoded).not.toContain('>');
   });
 
+  it('leaves backticks unchanged', () => {
+    expect(encodeHtmlEntities('`')).toBe('`');
+  });
+
   it('returns empty string unchanged', () => {
     expect(encodeHtmlEntities('')).toBe('');
   });

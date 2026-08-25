@@ -72,6 +72,14 @@ describe('addFileExtension', () => {
     expect(typeof mime).toBe('string');
   });
 
+  it('falls back to text/plain for a definitely unknown extension', async () => {
+    mockReaddir.mockResolvedValue(['data.definitely-unknown'] as any);
+    const [mime, fullPath] = await addFileExtension('/docs/data');
+
+    expect(mime).toBe('text/plain');
+    expect(fullPath).toContain('data.definitely-unknown');
+  });
+
   it('returns original path when no match found', async () => {
     mockReaddir.mockResolvedValue(['other.txt'] as any);
     const [mime, fullPath] = await addFileExtension('/docs/README');
@@ -131,5 +139,12 @@ describe('ensureDirectoryExists', () => {
     expect(result).toContain('Cannot create directory');
     expect(result).toContain('/root/protected');
     expect(result).toContain('EACCES');
+  });
+
+  it('formats non-Error failures', async () => {
+    mockMkdir.mockRejectedValue('EACCES');
+    const result = await ensureDirectoryExists('/root/protected');
+
+    expect(result).toBe('Cannot create directory "/root/protected": EACCES');
   });
 });
