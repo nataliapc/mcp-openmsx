@@ -3,7 +3,7 @@
 // Generates a portable LanceDB vector index from .md/.txt/.html resources
 // for the mcp-openmsx server. 100% local: embeddings via
 // ../mcp-server/src/embedder.ts (onnxruntime-node + tokenizer, mean pooling),
-// chunking via ../mcp-server/src/chunker.ts. No external API.
+// chunking via ./chunker.ts. No external API.
 // ---------------------------------------------------------------
 //  Requires mcp-server deps installed (onnxruntime-node, @anush008/tokenizers):
 //    cd ../mcp-server && pnpm install
@@ -28,7 +28,7 @@ import matter from 'gray-matter';
 import sanitizeHtml from 'sanitize-html';
 
 import { embedPassageBatch, setEmbedProvider } from '../mcp-server/src/embedder.js';
-import { semanticChunk } from '../mcp-server/src/chunker.js';
+import { semanticChunk } from './chunker.ts';
 
 // GPU is opt-in for the generator only (the server never touches this).
 // OPENMSX_EMBED_PROVIDER=cuda uses the GPU (fp32) if available, else falls back

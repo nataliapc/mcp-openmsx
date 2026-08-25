@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { chunkText, DEFAULT_MAX_CHARS, DEFAULT_OVERLAP, semanticChunk, splitSentences } from '../../src/chunker.js';
+import { chunkText, DEFAULT_MAX_CHARS, DEFAULT_OVERLAP, semanticChunk, splitSentences } from '../../../vector-db/chunker.js';
 
 describe('chunkText', () => {
 	it('returns [] for empty or whitespace-only input', () => {
