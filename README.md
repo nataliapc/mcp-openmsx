@@ -108,6 +108,7 @@ The MCP server translates high-level natural language commands from your Copilot
 - `debug_memory`: RAM memory operations: _`selectedSlots`, `getBlock`, `readByte`, `readWord`, `writeByte`, `writeWord`, `writeBlock`, `searchBytes`_.
 - `debug_vram`: VRAM operations: _`getBlock`, `readByte`, `writeByte`, `searchBytes`_.
 - `debug_breakpoints`: Breakpoint management: _`create`, `remove`, `list`_.
+- `debug_log`: Debug log: _`log`, `read`_.
 
 ### Automation Tools
 - `emu_keyboard`: Send text or key combinations to emulator: _`sendText`, `sendKeyCombo`_.

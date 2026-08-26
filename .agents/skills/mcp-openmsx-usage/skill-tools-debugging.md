@@ -75,3 +75,18 @@
 
 **Note**: The raw Tcl one-liner to delete all watchpoints:
 `foreach {wpname body} [debug watchpoint list] { debug watchpoint remove $wpname }`
+
+## `debug_log` — Debug log
+
+| Command | Description |
+|---------|-------------|
+| `log` | Append a message to the log buffer. Param: `message` |
+| `read` | Read all accumulated log messages and clear the buffer |
+
+Logs diagnostic output from the openMSX Tcl interpreter. Messages are accumulated in the global `::mcp_log` variable and can be read back with the `read` command. Useful for getting script output through the MCP server, since `puts`/`stderr` output is not visible to MCP tools.
+
+**Example**:
+```
+debug_log { command: "log", message: "step_in at 0x4000" }
+debug_log { command: "read" }
+```
