@@ -20,10 +20,10 @@ interface ToolResponse {
 type ToolHandler = (args: Record<string, unknown>) => Promise<ToolResponse>;
 
 class ToolRegistry {
-	readonly registrations: Array<{ name: string; handler: ToolHandler }> = [];
+	readonly registrations: Array<{ name: string; config: unknown; handler: ToolHandler }> = [];
 
-	registerTool(name: string, _config: unknown, handler: ToolHandler): void {
-		this.registrations.push({ name, handler });
+	registerTool(name: string, config: unknown, handler: ToolHandler): void {
+		this.registrations.push({ name, config, handler });
 	}
 }
 
@@ -36,6 +36,15 @@ async function findHandler(name: string): Promise<ToolHandler> {
 	const entry = registry.registrations.find(registration => registration.name === name);
 	if (!entry) throw new Error(`Tool "${name}" not registered`);
 	return entry.handler;
+}
+
+async function findInputSchema(name: string): Promise<Record<string, { safeParse: (value: unknown) => { success: boolean } }>> {
+	const registry = new ToolRegistry();
+	await registerTools(registry as unknown as McpServer, dummyDirs);
+	const entry = registry.registrations.find(registration => registration.name === name);
+	const config = entry?.config as { inputSchema?: Record<string, { safeParse: (value: unknown) => { success: boolean } }> } | undefined;
+	if (!config?.inputSchema) throw new Error(`Tool "${name}" does not have an input schema`);
+	return config.inputSchema;
 }
 
 beforeEach(() => {
@@ -76,6 +85,16 @@ describe('debug_run', () => {
 		});
 	});
 
+	it('rejects runTo without an address before resuming the CPU', async () => {
+		const response = await (await findHandler('debug_run'))({ command: 'runTo' });
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: "Error: 'address' is required for runTo." }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
 	it('rejects unknown commands', async () => {
 		const response = await (await findHandler('debug_run'))({ command: 'unknown' });
 
@@ -113,6 +132,28 @@ describe('debug_cpu', () => {
 			decimalValue: Number(rawValue),
 			hexValue,
 		});
+	});
+
+	it.each([
+		[{ command: 'getRegister' }, "'register' is required for getRegister."],
+		[{ command: 'setRegister', register: 'a' }, "'register' and 'value' are required for setRegister."],
+	] as const)('rejects missing CPU arguments: %j', async (args, message) => {
+		const response = await (await findHandler('debug_cpu'))(args);
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: `Error: ${message}` }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
+	it.each(['12partial', '256'])('rejects malformed or out-of-range register responses: %s', async rawResponse => {
+		mockSendCommand.mockResolvedValue(rawResponse);
+		const response = await (await findHandler('debug_cpu'))({ command: 'getRegister', register: 'a' });
+
+		expect(response.isError).toBe(true);
+		expect(response.content[0].text).toContain('Invalid numeric response from openMSX for getRegister');
+		 expect(response.structuredContent).toBeUndefined();
 	});
 
 	it('writes a register and reports an empty response as success', async () => {
@@ -231,6 +272,49 @@ describe('debug_memory', () => {
 	});
 
 	it.each([
+		[{ command: 'readByte' }, "'address' is required for readByte."],
+		[{ command: 'writeByte', address: '0x4000' }, "'address' and 'value8' are required for writeByte."],
+		[{ command: 'searchBytes', address: '0x4000', values: '0x01' }, "'address', 'length', and 'values' are required for searchBytes."],
+	] as const)('rejects missing memory arguments: %j', async (args, message) => {
+		const response = await (await findHandler('debug_memory'))(args);
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: `Error: ${message}` }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		['readByte', '256'],
+		['readWord', '65536'],
+		['readByte', '12partial'],
+	] as const)('rejects malformed or out-of-range memory responses: %s', async (command, rawResponse) => {
+		mockSendCommand.mockResolvedValue(rawResponse);
+		const response = await (await findHandler('debug_memory'))({ command, address: '0x4000' });
+
+		expect(response.isError).toBe(true);
+		expect(response.content[0].text).toContain(`Invalid numeric response from openMSX for ${command}`);
+		expect(response.structuredContent).toBeUndefined();
+	});
+
+	it('counts only byte values when values have surrounding whitespace', async () => {
+		mockSendCommand.mockResolvedValue('');
+		const response = await (await findHandler('debug_memory'))({
+			command: 'writeBlock',
+			address: '0x4000',
+			values: ' 0x01 0xFF 0x00 ',
+		});
+
+		expect(mockSendCommand).toHaveBeenCalledWith(
+			'set addr 0x4000; foreach v { 0x01 0xFF 0x00 } { poke $addr $v; incr addr }',
+		);
+		expect(response.structuredContent).toEqual({
+			command: 'writeBlock', address: '0x4000', bytesWritten: 3, result: 'Ok',
+		});
+	});
+
+	it.each([
 		{},
 		{ address: '0x4000' },
 		{ values: '0x01' },
@@ -304,6 +388,29 @@ describe('debug_vram', () => {
 		});
 	});
 
+	it.each([
+		[{ command: 'readByte' }, "'address' is required for readByte."],
+		[{ command: 'writeByte', address: '0x04000' }, "'address' and 'value8' are required for writeByte."],
+		[{ command: 'searchBytes', address: '0x04000', length: 1 }, "'address', 'length', and 'values' are required for searchBytes."],
+	] as const)('rejects missing VRAM arguments: %j', async (args, message) => {
+		const response = await (await findHandler('debug_vram'))(args);
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: `Error: ${message}` }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
+	it.each(['256', '12partial'])('rejects malformed or out-of-range VRAM responses: %s', async rawResponse => {
+		mockSendCommand.mockResolvedValue(rawResponse);
+		const response = await (await findHandler('debug_vram'))({ command: 'readByte', address: '0x04000' });
+
+		expect(response.isError).toBe(true);
+		expect(response.content[0].text).toContain('Invalid numeric response from openMSX for readByte');
+		expect(response.structuredContent).toBeUndefined();
+	});
+
 	it('keeps VRAM searches within the address space', async () => {
 		mockSendCommand.mockResolvedValue('No matches found');
 		const response = await (await findHandler('debug_vram'))({
@@ -316,6 +423,26 @@ describe('debug_vram', () => {
 		expect(response.structuredContent).toEqual({
 			command: 'searchBytes', address: '0x1FFF0', length: 16, values: '0xAA 0xBB', result: 'No matches found',
 		});
+	});
+
+	it('rejects VRAM addresses beyond 128 KiB in the input schema', async () => {
+		const inputSchema = await findInputSchema('debug_vram');
+
+		expect(inputSchema.address.safeParse('0x1FFFF').success).toBe(true);
+		expect(inputSchema.address.safeParse('0x20000').success).toBe(false);
+		expect(inputSchema.address.safeParse('0xFFFFF').success).toBe(false);
+	});
+
+	it.each(['0x20000', '0xFFFFF'])('rejects VRAM searches beginning outside 128 KiB: %s', async address => {
+		const response = await (await findHandler('debug_vram'))({
+			command: 'searchBytes', address, length: 1, values: '0xAA',
+		});
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: "Error: 'address' must be between 0x00000 and 0x1FFFF for VRAM searches." }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
 	});
 
 	it('returns VRAM command errors', async () => {
@@ -344,18 +471,18 @@ describe('debug_log', () => {
 		mockSendCommand.mockResolvedValue('test message');
 		const response = await (await findHandler('debug_log'))({ command: 'log', message: 'test message' });
 
-		expect(mockSendCommand).toHaveBeenCalledWith("lindex [lappend ::mcp_log {test message}] end");
+		expect(mockSendCommand).toHaveBeenCalledWith('lindex [lappend ::mcp_log "test message"] end');
 		expect(response).toEqual({
 			content: [{ type: 'text', text: 'test message' }],
 			isError: false,
 		});
 	});
 
-	it('escapes braces in log messages', async () => {
-		mockSendCommand.mockResolvedValue('');
+	it('preserves braces in log messages', async () => {
+		mockSendCommand.mockResolvedValue('value is {hello}');
 		await (await findHandler('debug_log'))({ command: 'log', message: 'value is {hello}' });
 
-		expect(mockSendCommand).toHaveBeenCalledWith("lindex [lappend ::mcp_log {value is \\{hello\\}}] end");
+		expect(mockSendCommand).toHaveBeenCalledWith('lindex [lappend ::mcp_log "value is {hello}"] end');
 	});
 
 	it('reads accumulated messages and clears the buffer', async () => {

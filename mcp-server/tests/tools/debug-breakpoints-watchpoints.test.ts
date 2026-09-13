@@ -9,6 +9,7 @@ vi.mock('../../src/openmsx.js', () => ({
 
 import { openMSXInstance } from '../../src/openmsx.js';
 import { registerTools } from '../../src/server_tools.js';
+import { tclQuote } from '../../src/utils.js';
 import type { EmuDirectories } from '../../src/server.js';
 
 interface ToolResponse {
@@ -127,7 +128,7 @@ describe('debug_breakpoints commands', () => {
 		});
 
 		expect(mockSendCommand).toHaveBeenCalledWith(
-			'debug breakpoint create -address 0x4000 -condition {[reg A] == 0x42} -command {debug break} -once 1',
+			'debug breakpoint create -address 0x4000 -condition "\\[reg A\\] == 0x42" -command "debug break" -once 1',
 		);
 		expect(response.structuredContent).toEqual({
 			command: 'create',
@@ -149,6 +150,18 @@ describe('debug_breakpoints commands', () => {
 		});
 	});
 
+	it('quotes breakpoint conditions and commands as single Tcl arguments', async () => {
+		mockSendCommand.mockResolvedValue('bp#8');
+		const condition = '[reg A] == 0x42; {literal}';
+		const cmd = 'debug break; puts "$env(TEST)" [expr 1] \\path';
+
+		await findHandler('debug_breakpoints')({ command: 'create', address: '0x4000', condition, cmd });
+
+		expect(mockSendCommand).toHaveBeenCalledWith(
+			`debug breakpoint create -address 0x4000 -condition ${tclQuote(condition)} -command ${tclQuote(cmd)}`,
+		);
+	});
+
 	it('rejects creation without an address', async () => {
 		const response = await findHandler('debug_breakpoints')({ command: 'create' });
 
@@ -163,12 +176,22 @@ describe('debug_breakpoints commands', () => {
 		mockSendCommand.mockResolvedValue('');
 		const response = await findHandler('debug_breakpoints')({ command: 'remove', bpname: 'bp#1' });
 
-		expect(mockSendCommand).toHaveBeenCalledWith('debug breakpoint remove bp#1');
+		expect(mockSendCommand).toHaveBeenCalledWith('debug breakpoint remove "bp#1"');
 		expect(response.structuredContent).toEqual({
 			command: 'remove',
 			removedName: 'bp#1',
 			result: 'Ok',
 		});
+	});
+
+	it('rejects breakpoint removal without a name', async () => {
+		const response = await findHandler('debug_breakpoints')({ command: 'remove' });
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: "Error: 'bpname' is required for remove." }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
 	});
 
 	it('parses the breakpoint list into structured content', async () => {
@@ -225,7 +248,7 @@ describe('debug_watchpoints commands', () => {
 		});
 
 		expect(mockSendCommand).toHaveBeenCalledWith(
-			'debug set_watchpoint -once write_mem {0x4000 0x4FFF} {[reg A] < 128} {debug break}',
+			'debug set_watchpoint -once write_mem {0x4000 0x4FFF} "\\[reg A\\] < 128" "debug break"',
 		);
 		expect(response.structuredContent).toEqual({
 			command: 'create',
@@ -305,12 +328,36 @@ describe('debug_watchpoints commands', () => {
 		mockSendCommand.mockResolvedValue('');
 		const response = await findHandler('debug_watchpoints')({ command: 'remove', wpname: 'wp#1' });
 
-		expect(mockSendCommand).toHaveBeenCalledWith('debug watchpoint remove wp#1');
+		expect(mockSendCommand).toHaveBeenCalledWith('debug watchpoint remove "wp#1"');
 		expect(response.structuredContent).toEqual({
 			command: 'remove',
 			removedName: 'wp#1',
 			result: 'Ok',
 		});
+	});
+
+	it('rejects watchpoint removal without a name', async () => {
+		const response = await findHandler('debug_watchpoints')({ command: 'remove' });
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: "Error: 'wpname' is required for remove." }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
+	it('quotes watchpoint conditions and commands as single Tcl arguments', async () => {
+		mockSendCommand.mockResolvedValue('wp#8');
+		const condition = '[reg A] == 0x42; {literal}';
+		const cmd = 'debug break; puts "$env(TEST)" [expr 1] \\path';
+
+		await findHandler('debug_watchpoints')({
+			command: 'create', type: 'write_mem', begin: '0x4000', end: '0x4000', condition, cmd,
+		});
+
+		expect(mockSendCommand).toHaveBeenCalledWith(
+			`debug set_watchpoint write_mem {0x4000 0x4000} ${tclQuote(condition)} ${tclQuote(cmd)}`,
+		);
 	});
 
 	it('parses the watchpoint list into structured content', async () => {
@@ -399,7 +446,7 @@ describe('debug_conditions commands', () => {
 		});
 
 		expect(mockSendCommand).toHaveBeenCalledWith(
-			'debug condition create -condition {[reg A] == 0x42} -command {debug break} -once 1',
+			'debug condition create -condition "\\[reg A\\] == 0x42" -command "debug break" -once 1',
 		);
 		expect(response.structuredContent).toEqual({
 			command: 'create',
@@ -417,12 +464,24 @@ describe('debug_conditions commands', () => {
 		});
 
 		expect(mockSendCommand).toHaveBeenCalledWith(
-			'debug condition create -condition {[reg SP] > 0xC000} -enabled 0',
+			'debug condition create -condition "\\[reg SP\\] > 0xC000" -enabled 0',
 		);
 		expect(response.structuredContent).toEqual({
 			command: 'create',
 			createdName: 'cond#3',
 		});
+	});
+
+	it('quotes conditions and commands as single Tcl arguments', async () => {
+		mockSendCommand.mockResolvedValue('cond#8');
+		const condition = '[reg A] == 0x42; {literal}';
+		const cmd = 'debug break; puts "$env(TEST)" [expr 1] \\path';
+
+		await findHandler('debug_conditions')({ command: 'create', condition, cmd });
+
+		expect(mockSendCommand).toHaveBeenCalledWith(
+		`debug condition create -condition ${tclQuote(condition)} -command ${tclQuote(cmd)}`,
+		);
 	});
 
 	it('rejects creation without a condition expression', async () => {
@@ -439,12 +498,22 @@ describe('debug_conditions commands', () => {
 		mockSendCommand.mockResolvedValue('');
 		const response = await findHandler('debug_conditions')({ command: 'remove', condname: 'cond#1' });
 
-		expect(mockSendCommand).toHaveBeenCalledWith('debug condition remove cond#1');
+		expect(mockSendCommand).toHaveBeenCalledWith('debug condition remove "cond#1"');
 		expect(response.structuredContent).toEqual({
 			command: 'remove',
 			removedName: 'cond#1',
 			result: 'Ok',
 		});
+	});
+
+	it('rejects condition removal without a name', async () => {
+		const response = await findHandler('debug_conditions')({ command: 'remove' });
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: "Error: 'condname' is required for remove." }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
 	});
 
 	it('parses the condition list into structured content', async () => {

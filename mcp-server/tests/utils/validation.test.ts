@@ -3,12 +3,13 @@ import {
   is16bitRegister,
   isErrorResponse,
   getResponseContent,
+  parseIntegerResponse,
 } from '../../src/utils.js';
 
 // ─── is16bitRegister ─────────────────────────────────────────────────────────
 
 describe('is16bitRegister', () => {
-  const VALID_16BIT = ['pc', 'sp', 'ix', 'iy', 'af', 'bc', 'de', 'hl'];
+  const VALID_16BIT = ['pc', 'sp', 'ix', 'iy', 'af', 'bc', 'de', 'hl', "af'", "bc'", "de'", "hl'"];
 
   for (const reg of VALID_16BIT) {
     it(`returns true for "${reg}"`, () => {
@@ -108,5 +109,22 @@ describe('getResponseContent', () => {
   it('does not flag non-error responses', () => {
     const result = getResponseContent(['Everything is fine']);
     expect(result.isError).toBe(false);
+  });
+});
+
+// ─── parseIntegerResponse ───────────────────────────────────────────────────
+
+describe('parseIntegerResponse', () => {
+  it('parses a trimmed decimal integer within range', () => {
+    expect(parseIntegerResponse(' 255\n', 0, 255)).toBe(255);
+  });
+
+  it.each(['', '12partial', 'NaN', '-1', '1.5'])('rejects malformed values: %j', response => {
+    expect(parseIntegerResponse(response, 0, 255)).toBeNull();
+  });
+
+  it('rejects values outside the inclusive range', () => {
+    expect(parseIntegerResponse('256', 0, 255)).toBeNull();
+    expect(parseIntegerResponse('65535', 0, 255)).toBeNull();
   });
 });

@@ -11,7 +11,7 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseConditions, parseWatchpoints, parseReplayStatus, sleepWithAbort, ensureDirectoryExists, tclPath } from "./utils.js";
+import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseConditions, parseWatchpoints, parseReplayStatus, sleepWithAbort, ensureDirectoryExists, tclPath, tclQuote, parseIntegerResponse } from "./utils.js";
 import { EmuDirectories } from "./server.js";
 import { RegResource, getRegisteredResourcesList } from "./server_resources.js";
 import { resolveLaunchParams } from "./server_elicitations.js";
@@ -24,6 +24,18 @@ import { resolveLaunchParams } from "./server_elicitations.js";
 const TCL_COMMAND_MAX_LENGTH = 16384;
 const TCL_RESULT_MAX_LENGTH = 65536;
 const INVALID_XML_CONTROL_CHARACTERS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/;
+const VRAM_SIZE = 0x20000;
+
+function toolError(message: string) {
+	return {
+		content: [{ type: "text" as const, text: `Error: ${message}` }],
+		isError: true as const,
+	};
+}
+
+function invalidNumericResponse(command: string, response: string) {
+	return toolError(`Invalid numeric response from openMSX for ${command}: ${response.trim() || "(empty)"}.`);
+}
 
 /** Register the raw Tcl escape hatch only when the user explicitly enables it. */
 export function registerOpenMsxTclCommandTool(server: McpServer): void
@@ -498,9 +510,11 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = "vdpregs";
 					break;
 				case "getRegisterValue":
+					if (register === undefined) return toolError("'register' is required for getRegisterValue.");
 					tclCommand = `vdpreg ${register}`;
 					break;
 				case "setRegisterValue":
+					if (register === undefined || !value) return toolError("'register' and 'value' are required for setRegisterValue.");
 					tclCommand = `vdpreg ${register} ${value}`;
 					break;
 				case "screenGetMode":
@@ -538,7 +552,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				}
 				case "getRegisterValue": {
-					const dec = parseInt(response.trim(), 10);
+					const dec = parseIntegerResponse(response, 0, 0xFF);
+					if (dec === null) return invalidNumericResponse(command, response);
 					const hex = `0x${dec.toString(16).toUpperCase().padStart(2, '0')}`;
 					structuredContent = { command, register, decimalValue: dec, hexValue: hex };
 					break;
@@ -622,6 +637,11 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = "step_back";
 					break;
 				case "runTo":
+					if (!address) {
+						return getResponseContent([
+							"Error: 'address' is required for runTo."
+						]);
+					}
 					tclCommand = `run_to ${address}`;
 					break;
 				default:
@@ -714,9 +734,11 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = "cpuregs";
 					break;
 				case "getRegister":
+					if (!register) return toolError("'register' is required for getRegister.");
 					tclCommand = `reg ${register}`;
 					break;
 				case "setRegister":
+					if (!register || !value) return toolError("'register' and 'value' are required for setRegister.");
 					tclCommand = `reg ${register} ${value}`;
 					break;
 				case "getStackPile":
@@ -753,7 +775,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				}
 				case "getRegister": {
-					const decValue = parseInt(response.trim(), 10);
+					const decValue = parseIntegerResponse(response, 0, is16bitRegister(register!) ? 0xFFFF : 0xFF);
+					if (decValue === null) return invalidNumericResponse(command, response);
 					const padLen = is16bitRegister(register!) ? 4 : 2;
 					const hexVal = `0x${decValue.toString(16).toUpperCase().padStart(padLen, '0')}`;
 					structuredContent = { command, register, decimalValue: decValue, hexValue: hexVal };
@@ -876,18 +899,23 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = "slotselect";
 					break;
 				case "getBlock":
-					tclCommand = `showmem ${address} ${lines}`;
+					if (!address) return toolError("'address' is required for getBlock.");
+					tclCommand = `showmem ${address} ${lines ?? 8}`;
 					break;
 				case "readByte":
+					if (!address) return toolError("'address' is required for readByte.");
 					tclCommand = `peek ${address}`;
 					break;
 				case "readWord":
+					if (!address) return toolError("'address' is required for readWord.");
 					tclCommand = `peek16 ${address}`;
 					break;
 				case "writeByte":
+					if (!address || !value8) return toolError("'address' and 'value8' are required for writeByte.");
 					tclCommand = `poke ${address} ${value8}`;
 					break;
 				case "writeWord":
+					if (!address || !value16) return toolError("'address' and 'value16' are required for writeWord.");
 					tclCommand = `poke16 ${address} ${value16}`;
 					break;
 				case "writeBlock": {
@@ -902,6 +930,9 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				}
 				case "searchBytes":
+					if (!address || length === undefined || length < 1 || !values) {
+						return toolError("'address', 'length', and 'values' are required for searchBytes.");
+					}
 					length = parseInt(address!, 16) + length! > 0x10000 ? 0x10000 - parseInt(address!, 16) : length;
 					tclCommand = `set pattern { ${values} }
 								set len [llength $pattern]
@@ -938,12 +969,14 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				}
 				case "readByte": {
-					const dec = parseInt(response.trim(), 10);
+					const dec = parseIntegerResponse(response, 0, 0xFF);
+					if (dec === null) return invalidNumericResponse(command, response);
 					structuredContent = { command, address, decimalValue: dec, hexValue: `0x${dec.toString(16).toUpperCase().padStart(2, '0')}` };
 					break;
 				}
 				case "readWord": {
-					const dec = parseInt(response.trim(), 10);
+					const dec = parseIntegerResponse(response, 0, 0xFFFF);
+					if (dec === null) return invalidNumericResponse(command, response);
 					structuredContent = { command, address, decimalValue: dec, hexValue: `0x${dec.toString(16).toUpperCase().padStart(4, '0')}` };
 					break;
 				}
@@ -956,7 +989,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				}
 				case "writeBlock": {
-					const count = values ? values.split(/\s+/).length : 0;
+					const count = values ? values.trim().split(/\s+/).filter(Boolean).length : 0;
 					structuredContent = { command, address, bytesWritten: count, result: response || "Ok" };
 					break;
 				}
@@ -994,8 +1027,9 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 `),
 				address: z.string()
 					.regex(/^0x[0-9a-fA-F]{5}$/, 'Address must be a 5 digits hexadecimal number')
+					.refine(address => parseInt(address, 16) < VRAM_SIZE, 'VRAM address must be between 0x00000 and 0x1FFFF')
 					.optional()
-					.describe("5 hexadecimal digits for a VRAM address (e.g. 0x04af3). Used by [getBlock, readByte, writeByte]"),
+					.describe("5 hexadecimal digits for a 128 KiB VRAM address (0x00000-0x1FFFF, e.g. 0x04af3). Used by [getBlock, readByte, writeByte]"),
 				lines: z.number()
 					.min(1, 'Minimum number of lines too low')
 					.max(50, 'Maximum number of lines too high')
@@ -1044,16 +1078,29 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			let tclCommand: string;
 			switch (command) {
 				case "getBlock":
-					tclCommand = `showdebuggable VRAM ${address} ${lines}`;
+					if (!address) return toolError("'address' is required for getBlock.");
+					tclCommand = `showdebuggable VRAM ${address} ${lines ?? 8}`;
 					break;
 				case "readByte":
+					if (!address) return toolError("'address' is required for readByte.");
 					tclCommand = `vpeek ${address}`;
 					break;
 				case "writeByte":
+					if (!address || !value8) return toolError("'address' and 'value8' are required for writeByte.");
 					tclCommand = `vpoke ${address} ${value8}`;
 					break;
-				case "searchBytes":
-					length = parseInt(address!, 16) + length! > 0x20000 ? 0x20000 - parseInt(address!, 16) : length;
+				case "searchBytes": {
+					if (!address || length === undefined || length < 1 || !values) {
+						return toolError("'address', 'length', and 'values' are required for searchBytes.");
+					}
+					const startAddress = parseInt(address ?? '', 16);
+					if (!address || !Number.isInteger(startAddress) || startAddress >= VRAM_SIZE) {
+						return {
+							content: [{ type: "text" as const, text: "Error: 'address' must be between 0x00000 and 0x1FFFF for VRAM searches." }],
+							isError: true,
+						};
+					}
+					length = Math.min(length!, VRAM_SIZE - startAddress);
 					tclCommand = `set pattern { ${values} }
 								set len [llength $pattern]
 								set results ""
@@ -1069,6 +1116,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 								if {$results eq ""} { return "No matches found" }
 								return $results`;
 					break;
+				}
 				default:
 					return { content: [{ type: "text" as const, text: `Error: Unknown video memory command "${command}".` }], isError: true };
 			}
@@ -1084,7 +1132,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				}
 				case "readByte": {
-					const dec = parseInt(response.trim(), 10);
+					const dec = parseIntegerResponse(response, 0, 0xFF);
+					if (dec === null) return invalidNumericResponse(command, response);
 					structuredContent = { command, address, decimalValue: dec, hexValue: `0x${dec.toString(16).toUpperCase().padStart(2, '0')}` };
 					break;
 				}
@@ -1177,16 +1226,17 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			switch (command) {
 				case "create": {
 					if (!address) {
-						return { content: [{ type: "text" as const, text: "Error: 'address' is required for create." }], isError: true };
+						return toolError("'address' is required for create.");
 					}
-					const condPart = condition ? ` -condition {${condition}}` : '';
-					const cmdPart = cmd ? ` -command {${cmd}}` : '';
+					const condPart = condition ? ` -condition ${tclQuote(condition)}` : '';
+					const cmdPart = cmd ? ` -command ${tclQuote(cmd)}` : '';
 					const onceFlag = once ? ' -once 1' : '';
 					tclCommand = `debug breakpoint create -address ${address}${condPart}${cmdPart}${onceFlag}`;
 					break;
 				}
 				case "remove":
-					tclCommand = `debug breakpoint remove ${bpname}`;
+					if (!bpname) return toolError("'bpname' is required for remove.");
+					tclCommand = `debug breakpoint remove ${tclQuote(bpname)}`;
 					break;
 				case "list":
 					tclCommand = 'debug breakpoint list';
@@ -1298,16 +1348,17 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			switch (command) {
 				case "create": {
 					if (!condition) {
-						return { content: [{ type: "text" as const, text: "Error: 'condition' is required for create." }], isError: true };
+						return toolError("'condition' is required for create.");
 					}
-					const cmdPart = cmd ? ` -command {${cmd}}` : '';
+					const cmdPart = cmd ? ` -command ${tclQuote(cmd)}` : '';
 					const onceFlag = once ? ' -once 1' : '';
 					const enabledFlag = enabled === false ? ' -enabled 0' : '';
-					tclCommand = `debug condition create -condition {${condition}}${cmdPart}${onceFlag}${enabledFlag}`;
+					tclCommand = `debug condition create -condition ${tclQuote(condition)}${cmdPart}${onceFlag}${enabledFlag}`;
 					break;
 				}
 				case "remove":
-					tclCommand = `debug condition remove ${condname}`;
+					if (!condname) return toolError("'condname' is required for remove.");
+					tclCommand = `debug condition remove ${tclQuote(condname)}`;
 					break;
 				case "list":
 					tclCommand = 'debug condition list';
@@ -1444,14 +1495,15 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					if (parseInt(begin, 16) > parseInt(end, 16)) {
 						return { content: [{ type: "text" as const, text: `Error: 'begin' (${begin}) must be <= 'end' (${end}).` }], isError: true };
 					}
-					const condPart = condition ? ` {${condition}}` : '';
-					const cmdPart = cmd ? ` {${cmd}}` : '';
+					const condPart = condition ? ` ${tclQuote(condition)}` : '';
+					const cmdPart = cmd ? ` ${tclQuote(cmd)}` : '';
 					const onceFlag = once ? ' -once' : '';
 					tclCommand = `debug set_watchpoint${onceFlag} ${type} {${begin} ${end}}${condPart}${cmdPart}`;
 					break;
 				}
 				case "remove":
-					tclCommand = `debug watchpoint remove ${wpname}`;
+					if (!wpname) return toolError("'wpname' is required for remove.");
+					tclCommand = `debug watchpoint remove ${tclQuote(wpname)}`;
 					break;
 				case "list":
 					tclCommand = 'debug watchpoint list';
@@ -2121,7 +2173,7 @@ Useful for getting diagnostic output from Tcl scripts without requiring the raw 
 							"Error: 'log' command requires a 'message' parameter."
 						]);
 					}
-					tclCommand = `lindex [lappend ::mcp_log {${message.replace(/\\/g, '\\\\').replace(/{/g, '\\{').replace(/}/g, '\\}')}}] end`;
+					tclCommand = `lindex [lappend ::mcp_log ${tclQuote(message)}] end`;
 					break;
 				case "read":
 					tclCommand = "if {[info exists ::mcp_log]} { apply {{} { set r [join $::mcp_log \"\\n\"]; unset ::mcp_log; set r }} }";

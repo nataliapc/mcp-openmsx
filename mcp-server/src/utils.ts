@@ -286,6 +286,35 @@ export function encodeTypeText(text: string): string {
 }
 
 /**
+ * Quote arbitrary text as one Tcl word without allowing substitutions.
+ * @param value - Text to pass as a single Tcl argument
+ * @returns A Tcl double-quoted word containing the original text
+ */
+export function tclQuote(value: string): string {
+	const escaped = value
+		.replace(/\\/g, () => '\\\\')
+		.replace(/"/g, () => '\\"')
+		.replace(/\$/g, () => '\\$')
+		.replace(/\[/g, () => '\\[')
+		.replace(/\]/g, () => '\\]');
+	return `"${escaped}"`;
+}
+
+/**
+ * Parse a decimal integer response and enforce an inclusive range.
+ * @param response - Raw response returned by openMSX
+ * @param min - Smallest accepted value
+ * @param max - Largest accepted value
+ * @returns The parsed value, or null for malformed/out-of-range responses
+ */
+export function parseIntegerResponse(response: string, min: number, max: number): number | null {
+	const trimmed = response.trim();
+	if (!/^\d+$/.test(trimmed)) return null;
+	const value = Number(trimmed);
+	return Number.isSafeInteger(value) && value >= min && value <= max ? value : null;
+}
+
+/**
  * MSX keyboard matrix mapping for International (QWERTY) layout.
  * Maps key names to [row, mask] coordinates in the MSX keyboard matrix.
  * 
@@ -436,7 +465,7 @@ export function parseCpuRegs(response: string): Record<string, string> {
  * @returns true if the register is 16-bit
  */
 export function is16bitRegister(register: string): boolean {
-	return ["pc", "sp", "ix", "iy", "af", "bc", "de", "hl"].includes(register.toLowerCase());
+	return ["pc", "sp", "ix", "iy", "af", "bc", "de", "hl", "af'", "bc'", "de'", "hl'"].includes(register.toLowerCase());
 }
 
 /**

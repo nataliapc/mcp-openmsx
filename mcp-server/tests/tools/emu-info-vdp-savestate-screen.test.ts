@@ -152,6 +152,28 @@ describe('emu_vdp', () => {
 		});
 	});
 
+	it.each([
+		[{ command: 'getRegisterValue' }, "'register' is required for getRegisterValue."],
+		[{ command: 'setRegisterValue', register: 7 }, "'register' and 'value' are required for setRegisterValue."],
+	] as const)('rejects missing VDP arguments: %j', async (args, message) => {
+		const response = await (await findHandler('emu_vdp'))(args);
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: `Error: ${message}` }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
+	it.each(['256', '12partial'])('rejects malformed or out-of-range VDP register responses: %s', async rawResponse => {
+		mockSendCommand.mockResolvedValue(rawResponse);
+		const response = await (await findHandler('emu_vdp'))({ command: 'getRegisterValue', register: 7 });
+
+		expect(response.isError).toBe(true);
+		expect(response.content[0].text).toContain('Invalid numeric response from openMSX for getRegisterValue');
+		expect(response.structuredContent).toBeUndefined();
+	});
+
 	it('sets a VDP register and treats an empty response as success', async () => {
 		mockSendCommand.mockResolvedValue('');
 		const response = await (await findHandler('emu_vdp'))({
