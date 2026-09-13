@@ -3,6 +3,7 @@ import {
   decodeHtmlEntities,
   encodeHtmlEntities,
   encodeTypeText,
+  tclQuote,
   tclPath,
 } from '../../src/utils.js';
 
@@ -148,6 +149,19 @@ describe('encodeTypeText', () => {
 
   it('returns empty string unchanged', () => {
     expect(encodeTypeText('')).toBe('');
+  });
+});
+
+// ─── tclQuote ───────────────────────────────────────────────────────────────
+
+describe('tclQuote', () => {
+  it('quotes Tcl substitutions and preserves literal syntax characters', () => {
+    expect(tclQuote('literal {braces} $env(HOME) [expr 2 + 2]; "quoted" \\path'))
+      .toBe('"literal {braces} \\$env(HOME) \\[expr 2 + 2\\]; \\"quoted\\" \\\\path"');
+  });
+
+  it('preserves newlines and trailing backslashes', () => {
+    expect(tclQuote('line one\nline two\\')).toBe('"line one\nline two\\\\"');
   });
 });
 
