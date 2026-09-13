@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   is16bitRegister,
+  parseRegisterValue,
   isErrorResponse,
   getResponseContent,
   parseIntegerResponse,
@@ -44,6 +45,25 @@ describe('is16bitRegister', () => {
   it('returns false for invalid names', () => {
     expect(is16bitRegister('xx')).toBe(false);
     expect(is16bitRegister('')).toBe(false);
+  });
+});
+
+describe('parseRegisterValue', () => {
+  it.each([
+    ['0xFF', 'a', 0xFF],
+    ['0x1234', 'hl', 0x1234],
+    ['0xFFFF', "af'", 0xFFFF],
+  ] as const)('accepts %s for %s', (value, register, expected) => {
+    expect(parseRegisterValue(value, register)).toBe(expected);
+  });
+
+  it.each([
+    ['0x100', 'a'],
+    ['0x1234', 'ixh'],
+    ['0x10000', 'pc'],
+    ['0xGG', 'a'],
+  ] as const)('rejects %s for %s', (value, register) => {
+    expect(parseRegisterValue(value, register)).toBeNull();
   });
 });
 

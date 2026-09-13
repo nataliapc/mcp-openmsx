@@ -162,6 +162,18 @@ describe('debug_breakpoints commands', () => {
 		);
 	});
 
+	it.each(['condition', 'cmd'] as const)('rejects XML-invalid breakpoint %s', async field => {
+		const response = await findHandler('debug_breakpoints')({
+			command: 'create', address: '0x4000', [field]: `value\u000B${field}`,
+		});
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: `Error: '${field}' contains unsupported XML control characters.` }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
 	it('rejects creation without an address', async () => {
 		const response = await findHandler('debug_breakpoints')({ command: 'create' });
 
@@ -257,6 +269,18 @@ describe('debug_watchpoints commands', () => {
 			createdEnd: '0x4FFF',
 			createdType: 'write_mem',
 		});
+	});
+
+	it.each(['condition', 'cmd'] as const)('rejects XML-invalid watchpoint %s', async field => {
+		const response = await findHandler('debug_watchpoints')({
+			command: 'create', type: 'write_mem', begin: '0x4000', end: '0x4000', [field]: `value\u000B${field}`,
+		});
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: `Error: '${field}' contains unsupported XML control characters.` }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
 	});
 
 	it('creates an I/O watchpoint with the two-digit port format', async () => {
@@ -470,6 +494,19 @@ describe('debug_conditions commands', () => {
 			command: 'create',
 			createdName: 'cond#3',
 		});
+	});
+
+	it.each(['condition', 'cmd'] as const)('rejects XML-invalid condition %s', async field => {
+		const response = await findHandler('debug_conditions')({
+			command: 'create', condition: field === 'condition' ? 'value\u000Bcondition' : 'true',
+			...(field === 'cmd' ? { cmd: 'value\u000Bcmd' } : {}),
+		});
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: `Error: '${field}' contains unsupported XML control characters.` }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
 	});
 
 	it('quotes conditions and commands as single Tcl arguments', async () => {

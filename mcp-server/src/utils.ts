@@ -468,6 +468,13 @@ export function is16bitRegister(register: string): boolean {
 	return ["pc", "sp", "ix", "iy", "af", "bc", "de", "hl", "af'", "bc'", "de'", "hl'"].includes(register.toLowerCase());
 }
 
+export function parseRegisterValue(value: string, register: string): number | null {
+	if (!/^0x[0-9a-fA-F]{2,4}$/.test(value)) return null;
+	const parsedValue = Number.parseInt(value.slice(2), 16);
+	const maximum = is16bitRegister(register) ? 0xFFFF : 0xFF;
+	return parsedValue <= maximum ? parsedValue : null;
+}
+
 /**
  * Parse the output of the openMSX 'vdpregs' TCL command into a structured object.
  * Output format:

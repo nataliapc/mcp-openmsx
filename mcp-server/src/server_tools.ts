@@ -11,7 +11,7 @@ import fs from "fs/promises";
 import path from "path";
 import { openMSXInstance } from "./openmsx.js";
 import { VectorDB } from "./vectordb.js";
-import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseVdpRegs, parsePalette, parseBreakpoints, parseConditions, parseWatchpoints, parseReplayStatus, sleepWithAbort, ensureDirectoryExists, tclPath, tclQuote, parseIntegerResponse } from "./utils.js";
+import { encodeTypeText, buildKeyComboCommand, isErrorResponse, getResponseContent, parseCpuRegs, is16bitRegister, parseRegisterValue, parseVdpRegs, parsePalette, parseBreakpoints, parseConditions, parseWatchpoints, parseReplayStatus, sleepWithAbort, ensureDirectoryExists, tclPath, tclQuote, parseIntegerResponse } from "./utils.js";
 import { EmuDirectories } from "./server.js";
 import { RegResource, getRegisteredResourcesList } from "./server_resources.js";
 import { resolveLaunchParams } from "./server_elicitations.js";
@@ -35,6 +35,19 @@ function toolError(message: string) {
 
 function invalidNumericResponse(command: string, response: string) {
 	return toolError(`Invalid numeric response from openMSX for ${command}: ${response.trim() || "(empty)"}.`);
+}
+
+function xmlSafeTclText(maxLength?: number, maxLengthMessage = "Text too long") {
+	const schema = maxLength === undefined ? z.string() : z.string().max(maxLength, maxLengthMessage);
+	return schema.refine(
+		value => !INVALID_XML_CONTROL_CHARACTERS.test(value),
+		"Text contains unsupported XML control characters",
+	);
+}
+
+function invalidXmlControlError(fields: Array<[string, string | undefined]>) {
+	const invalidField = fields.find(([, value]) => value !== undefined && INVALID_XML_CONTROL_CHARACTERS.test(value));
+	return invalidField ? toolError(`'${invalidField[0]}' contains unsupported XML control characters.`) : undefined;
 }
 
 /** Register the raw Tcl escape hatch only when the user explicitly enables it. */
@@ -739,6 +752,9 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					break;
 				case "setRegister":
 					if (!register || !value) return toolError("'register' and 'value' are required for setRegister.");
+					if (parseRegisterValue(value, register) === null) {
+						return toolError(`'value' is outside the valid range for ${register}.`);
+					}
 					tclCommand = `reg ${register} ${value}`;
 					break;
 				case "getStackPile":
@@ -1183,12 +1199,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.max(10, 'Breakpoint name too long')
 					.optional()
 					.describe("Breakpoint name (e.g. bp#1). Used by [remove]"),
-				condition: z.string()
-					.max(200, 'Condition too long')
+				condition: xmlSafeTclText(200, 'Condition too long')
 					.optional()
 					.describe("Tcl boolean expression evaluated when the breakpoint hits; it only fires when true. Omit for an unconditional breakpoint. Examples: '[reg A] == 0x42', '[reg PC] < 0x8000'. Used by [create]."),
-				cmd: z.string()
-					.max(200, 'Command too long')
+				cmd: xmlSafeTclText(200, 'Command too long')
 					.optional()
 					.describe("Tcl command to execute when the breakpoint hits. Default if omitted: 'debug break'. Examples: 'puts hit', 'debug break'. Used by [create]."),
 				once: z.boolean()
@@ -1228,6 +1242,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					if (!address) {
 						return toolError("'address' is required for create.");
 					}
+					const invalidTextError = invalidXmlControlError([["condition", condition], ["cmd", cmd]]);
+					if (invalidTextError) return invalidTextError;
 					const condPart = condition ? ` -condition ${tclQuote(condition)}` : '';
 					const cmdPart = cmd ? ` -command ${tclQuote(cmd)}` : '';
 					const onceFlag = once ? ' -once 1' : '';
@@ -1304,12 +1320,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.max(10, 'Condition name too long')
 					.optional()
 					.describe("Condition name (e.g. cond#1). Used by [remove]"),
-				condition: z.string()
-					.max(200, 'Condition too long')
+				condition: xmlSafeTclText(200, 'Condition too long')
 					.optional()
 					.describe("Tcl boolean expression evaluated while the CPU runs; the condition fires whenever it is true. Examples: '[reg A] == 0x42', '[reg SP] > 0xC000 && [reg B] != 0'. Required for [create]."),
-				cmd: z.string()
-					.max(200, 'Command too long')
+				cmd: xmlSafeTclText(200, 'Command too long')
 					.optional()
 					.describe("Tcl command to execute when the condition triggers. Default if omitted: 'debug break'. Examples: 'puts hit', 'debug break'. Used by [create]."),
 				once: z.boolean()
@@ -1350,6 +1364,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					if (!condition) {
 						return toolError("'condition' is required for create.");
 					}
+					const invalidTextError = invalidXmlControlError([["condition", condition], ["cmd", cmd]]);
+					if (invalidTextError) return invalidTextError;
 					const cmdPart = cmd ? ` -command ${tclQuote(cmd)}` : '';
 					const onceFlag = once ? ' -once 1' : '';
 					const enabledFlag = enabled === false ? ' -enabled 0' : '';
@@ -1430,12 +1446,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 				end: z.string()
 					.optional()
 					.describe("End of address/port range. 4 hex digits for memory (e.g. 0x4af3), 2 hex digits for I/O (e.g. 0x98). Must be >= begin. Used by [create]."),
-				condition: z.string()
-					.max(200, 'Condition too long')
+				condition: xmlSafeTclText(200, 'Condition too long')
 					.optional()
 					.describe("Tcl condition evaluated when watchpoint triggers. If false, watchpoint does not fire. Used by [create]."),
-				cmd: z.string()
-					.max(200, 'Command too long')
+				cmd: xmlSafeTclText(200, 'Command too long')
 					.optional()
 					.describe("Tcl command to execute when watchpoint triggers. Used by [create]."),
 				once: z.boolean()
@@ -1484,6 +1498,8 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					if (!type || !begin || !end) {
 						return { content: [{ type: "text" as const, text: "Error: 'type', 'begin', and 'end' are required for create." }], isError: true };
 					}
+					const invalidTextError = invalidXmlControlError([["condition", condition], ["cmd", cmd]]);
+					if (invalidTextError) return invalidTextError;
 					const isMem = type === "read_mem" || type === "write_mem";
 					const hexRegex = isMem ? /^0x[0-9a-fA-F]{4}$/ : /^0x[0-9a-fA-F]{2}$/;
 					if (!hexRegex.test(begin)) {
@@ -2154,7 +2170,7 @@ Useful for getting diagnostic output from Tcl scripts without requiring the raw 
 			inputSchema: {
 				command: z.enum(["log", "read"])
 					.describe("'log': append a message to the log buffer. 'read': read all accumulated messages and clear the buffer."),
-				message: z.string().optional()
+				message: xmlSafeTclText().optional()
 					.describe("Message to log (required for 'log' command)."),
 			},
 			annotations: {
@@ -2173,6 +2189,8 @@ Useful for getting diagnostic output from Tcl scripts without requiring the raw 
 							"Error: 'log' command requires a 'message' parameter."
 						]);
 					}
+					const invalidTextError = invalidXmlControlError([["message", message]]);
+					if (invalidTextError) return invalidTextError;
 					tclCommand = `lindex [lappend ::mcp_log ${tclQuote(message)}] end`;
 					break;
 				case "read":

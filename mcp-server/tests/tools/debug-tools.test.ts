@@ -147,6 +147,19 @@ describe('debug_cpu', () => {
 		expect(mockSendCommand).not.toHaveBeenCalled();
 	});
 
+	it.each([
+		['a', '0x1234'],
+		['ixh', '0x100'],
+	] as const)('rejects a value wider than register %s', async (register, value) => {
+		const response = await (await findHandler('debug_cpu'))({ command: 'setRegister', register, value });
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: `Error: 'value' is outside the valid range for ${register}.` }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
 	it.each(['12partial', '256'])('rejects malformed or out-of-range register responses: %s', async rawResponse => {
 		mockSendCommand.mockResolvedValue(rawResponse);
 		const response = await (await findHandler('debug_cpu'))({ command: 'getRegister', register: 'a' });
@@ -483,6 +496,24 @@ describe('debug_log', () => {
 		await (await findHandler('debug_log'))({ command: 'log', message: 'value is {hello}' });
 
 		expect(mockSendCommand).toHaveBeenCalledWith('lindex [lappend ::mcp_log "value is {hello}"] end');
+	});
+
+	it.each(['\u0000', '\u000B', '\u001F'])('rejects XML-invalid control characters: %j', async control => {
+		const response = await (await findHandler('debug_log'))({ command: 'log', message: `before${control}after` });
+
+		expect(response).toEqual({
+			content: [{ type: 'text', text: "Error: 'message' contains unsupported XML control characters." }],
+			isError: true,
+		});
+		expect(mockSendCommand).not.toHaveBeenCalled();
+	});
+
+	it('allows XML whitespace controls', async () => {
+		mockSendCommand.mockResolvedValue('line 1\nline 2');
+		const response = await (await findHandler('debug_log'))({ command: 'log', message: 'line 1\nline 2\t' });
+
+		expect(response.isError).toBe(false);
+		expect(mockSendCommand).toHaveBeenCalledWith('lindex [lappend ::mcp_log "line 1\nline 2\t"] end');
 	});
 
 	it('reads accumulated messages and clears the buffer', async () => {
