@@ -735,3 +735,90 @@ export function sleepWithAbort(ms: number, signal: AbortSignal): Promise<void> {
 		signal.addEventListener('abort', onAbort, { once: true });
 	});
 }
+
+/**
+ * Build an IPS patch file from two versions of a binary blob.
+ *
+ * IPS (International Patching System) format:
+ *   - "PATCH" magic (5 bytes)
+ *   - zero or more records: 3-byte big-endian offset, 2-byte big-endian size,
+ *     then `size` data bytes. When size == 0, a 2-byte big-endian RLE run
+ *     length + 1 repeat byte follows instead.
+ *   - "EOF" terminator (3 bytes)
+ *
+ * This is a pure function (no I/O) so it is trivially unit-testable.
+ *
+ * @param original - the pristine ROM/disk bytes
+ * @param patched  - the modified bytes (must be same length as original)
+ * @returns a Buffer containing the IPS patch
+ */
+export function buildIpsPatch(original: Buffer, patched: Buffer): Buffer {
+	if (original.length !== patched.length) {
+		throw new Error(
+			`buildIpsPatch: original and patched must have equal length ` +
+			`(got ${original.length} vs ${patched.length})`);
+	}
+
+	const records: Buffer[] = [];
+	let offset = 0;
+	while (offset < original.length) {
+		// Skip bytes that are unchanged
+		while (offset < original.length && original[offset] === patched[offset]) {
+			offset++;
+		}
+		if (offset >= original.length) break;
+		const recOffset = offset;
+
+		// Extend the run while bytes differ
+		const runStart = offset;
+		while (offset < original.length && original[offset] !== patched[offset]) {
+			offset++;
+		}
+		const runLen = offset - runStart;
+
+		// Detect an all-equal run -> encode as a single RLE record
+		let rleValue = patched[runStart];
+		let rleLen = runLen;
+		for (let i = runStart; i < offset; i++) {
+			if (patched[i] !== rleValue) { rleLen = 0; break; }
+		}
+
+		const header = Buffer.alloc(5);
+		writeIpsBE24(header, 0, recOffset);
+		if (rleLen > 0) {
+			// RLE record: size=0, then 2-byte run length + 1 byte value
+			header[3] = 0;
+			header[4] = 0;
+			const body = Buffer.alloc(3);
+			body.writeUInt16BE(rleLen, 0);
+			body[2] = rleValue;
+			records.push(Buffer.concat([header, body]));
+		} else {
+			header.writeUInt16BE(runLen, 3);
+			records.push(Buffer.concat([header, patched.subarray(runStart, offset)]));
+		}
+	}
+
+	return Buffer.concat([Buffer.from('PATCH', 'ascii'), ...records, Buffer.from('EOF', 'ascii')]);
+}
+
+function writeIpsBE24(buf: Buffer, offset: number, value: number): void {
+	buf[offset] = (value >> 16) & 0xFF;
+	buf[offset + 1] = (value >> 8) & 0xFF;
+	buf[offset + 2] = value & 0xFF;
+}
+
+/**
+ * Convert a binary buffer to a space-separated list of hex bytes as needed by
+ * debug_memory.writeBlock / SSD 'values' (e.g. "0x3E 0x01 0xC3 0x00 0x10").
+ *
+ * @param buf - the binary data
+ * @returns a string of space-separated 0xNN bytes
+ */
+export function bytesToHexList(buf: Buffer): string {
+	const parts: string[] = new Array(buf.length);
+	for (let i = 0; i < buf.length; i++) {
+		parts[i] = `0x${buf[i].toString(16).padStart(2, '0').toUpperCase()}`;
+	}
+	return parts.join(' ');
+}

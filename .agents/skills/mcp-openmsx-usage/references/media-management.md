@@ -60,6 +60,19 @@ emu_media { command: "diskInsert", diskfile: "/path/to/disk.dsk" }
 
 Supported format: `.dsk` (raw sector images). Inserted into drive A.
 
+### Apply an IPS patch on insert
+
+`romInsert` and `diskInsert` accept an optional `ips` parameter (absolute path to a `.ips` file). openMSX applies the patch to the image in memory at insert time; the file on disk is never modified. The patch needs no special handling beyond the normal single `reset` after inserting media — a reboot is only required when adding/changing the `ips` of media the machine has already booted with.
+
+**DSK + already-loaded programs**: the patch applies to the disk image in the drive, not to a program the machine already loaded into RAM. After re-inserting a patched disk on a booted machine, rerun the program from disk to reload it and pick up the patched content with **no reset**. When the program cannot be reloaded from disk (if auto-running from boot), a `reset` is likely the only option to run the patched content.
+
+```
+emu_media { command: "diskInsert", diskfile: "/path/to/disk.dsk", ips: "/path/to/disk.patch.ips" }
+emu_media { command: "romInsert", romfile: "/path/to/game.rom", ips: "/path/to/game.patch.ips" }
+```
+
+e2e fixtures live in `mcp-server/tests/fixtures/` (`sample.dsk`/`sample.patch.ips`, `sample16k.rom`/`sample16k.patch.ips`); patched strings appear on screen after reset (verified on `National_CF-3300`). See [patch-rom-assembly.md](references/patch-rom-assembly.md) for generating IPS patches from assembled code.
+
 ### Use a host folder as floppy
 
 ```
@@ -126,9 +139,9 @@ Alternative load commands:
 
 | Operation | Command | Key Parameter |
 |-----------|---------|---------------|
-| Insert ROM | `romInsert` | `romfile` (path, `.rom`) |
+| Insert ROM | `romInsert` | `romfile` (path, `.rom`), optional `ips` (path, `.ips`) |
 | Eject ROM | `romEject` | — |
-| Insert disk | `diskInsert` | `diskfile` (path, `.dsk`) |
+| Insert disk | `diskInsert` | `diskfile` (path, `.dsk`), optional `ips` (path, `.ips`) |
 | Insert folder as disk | `diskInsertFolder` | `diskfolder` (path) |
 | Eject disk | `diskEject` | — |
 | Insert tape | `tapeInsert` | `tapefile` (path, `.cas`/`.wav`/`.tsx`) |

@@ -73,6 +73,7 @@
     "resources/**/*",
     "vector-db/**/*",
     "bin/win-x64/**/*",
+    "tests/fixtures/**/*",
     "README.md",
     "LICENSE"
   ],

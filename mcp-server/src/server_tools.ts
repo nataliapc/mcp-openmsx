@@ -304,17 +304,20 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			description: "Manage tapes, rom cartridges, and floppy disks.",
 			// Schema for the tool (input validation)
 			inputSchema: {
-				command: z.enum(["tapeInsert", "tapeRewind", "tapeEject", "romInsert", "romEject", "diskInsert",
-						"diskInsertFolder", "diskEject"])
+				command: z.enum(["tapeInsert", "tapeRewind", "tapeEject", "romInsert", "romEject", "romInfo",
+						"diskInsert", "diskInsertFolder", "diskEject", "diskInfo"])
 					.describe(`Available commands:
 	'tapeInsert <tapefile>': insert a valid tape file (*.cas, *.wav, *.tsx).
 	'tapeRewind': rewind the current tape.
 	'tapeEject': remove tape from virtual cassette player.
 	'romInsert <romfile>': insert a valid ROM cartridge file (*.rom) at cartridge slot A.
 	'romEject': remove the current ROM cartridge from cartridge slot A.
+	'romInfo': returns info about the current ROM cartridge in slot A, including filename, mapper type, SHA1 hashes, and IPS patches.
 	'diskInsert <diskfile>': insert a valid disk file (*.dsk) in floppy disk A.
 	'diskInsertFolder <diskfolder>': use a host folder as a floppy disk A root directory.
 	'diskEject': remove the current disk from floppy disk A.
+	'diskInfo': returns info about the current disk in drive A, including filename, type, size, and IPS patches.
+	'romInsert <romfile> [ips...]' and 'diskInsert <diskfile> [ips...]' support applying one or more IPS patches to the inserted ROM or disk image at insert time.
 `),
 				tapefile: z.string()
 					.max(200, 'Tape filename too long')
@@ -326,6 +329,10 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					.max(200, 'ROM filename too long')
 					.optional()
 					.describe("Absolute ROM filename to insert. Used by [romInsert]"),
+				ips: z.array(z.string())
+					.max(20, 'Too many IPS patches')
+					.optional()
+					.describe("Absolute IPS patch filename(s) to apply to the ROM or disk image at insert time. Used by [romInsert] and [diskInsert]. Maps to openMSX's '-ips' option; multiple entries are applied in order."),
 				diskfile: z.string()
 					.max(200, 'Disk filename too long')
 					.optional()
@@ -343,7 +350,7 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 			},
 		},
 		// Handler for the tool (function to be executed when the tool is called)
-		async ({ command, tapefile, romfile, diskfile, diskfolder }: { command: string; tapefile?: string; romfile?: string; diskfile?: string; diskfolder?: string }) => {
+		async ({ command, tapefile, romfile, ips, diskfile, diskfolder }: { command: string; tapefile?: string; romfile?: string; ips?: string[]; diskfile?: string; diskfolder?: string }) => {
 			let tclCommand: string;
 			switch (command) {
 				case "tapeInsert":
@@ -356,19 +363,25 @@ export async function registerTools(server: McpServer, emuDirectories: EmuDirect
 					tclCommand = "cassetteplayer eject";
 					break;
 				case "romInsert":
-					tclCommand = `carta insert "${romfile}"`;
+					tclCommand = `carta insert "${romfile}"${ips?.map(ip => ` -ips "${ip}"`).join('') ?? ''}`;
 					break;
 				case "romEject":
 					tclCommand = "carta eject";
 					break;
 				case "diskInsert":
-					tclCommand = `diska insert "${diskfile}"`;
+					tclCommand = `diska insert "${diskfile}"${ips?.map(ip => ` -ips "${ip}"`).join('') ?? ''}`;
 					break;
 				case "diskInsertFolder":
 					tclCommand = `diska insert "${diskfolder}"`;
 					break;
 				case "diskEject":
 					tclCommand = "diska eject";
+					break;
+				case "romInfo":
+					tclCommand = "machine_info media carta";
+					break;
+				case "diskInfo":
+					tclCommand = "machine_info media diska";
 					break;
 				default:
 					return getResponseContent([

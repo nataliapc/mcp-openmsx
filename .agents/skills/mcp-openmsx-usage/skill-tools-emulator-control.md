@@ -25,9 +25,9 @@
 | `tapeInsert` | Insert tape file (`.cas`/`.wav`/`.tsx`). Param: `tapefile` |
 | `tapeRewind` | Rewind current tape |
 | `tapeEject` | Eject tape |
-| `romInsert` | Insert ROM cartridge (`.rom`). Param: `romfile` |
+| `romInsert` | Insert ROM cartridge (`.rom`). Params: `romfile`, optional `ips` |
 | `romEject` | Eject ROM cartridge |
-| `diskInsert` | Insert disk image (`.dsk`). Param: `diskfile` |
+| `diskInsert` | Insert disk image (`.dsk`). Params: `diskfile`, optional `ips` |
 | `diskInsertFolder` | Use host folder as floppy root. Param: `diskfolder` |
 | `diskEject` | Eject floppy disk |
 
